@@ -38,10 +38,10 @@ def _convert_variable(v):
 
 
 def _convert_expr(e):
+    if isinstance(e, bool):
+        return ('true' if e else 'false')
     if isinstance(e, int):
         return str(e)
-    if isinstance(e, bool):
-        return 'true' if e else 'false'
     if not isinstance(e, Expr):
         raise TypeError()
 

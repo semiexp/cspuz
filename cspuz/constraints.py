@@ -127,6 +127,9 @@ class BoolVars(object):
     def count_true(self):
         return functools.reduce(lambda x, y: x + y, map(lambda x: x.cond(1, 0), self.vars))
 
+    def __iter__(self):
+        return iter(self.vars)
+
 
 class IntVar(IntExpr):
     def __init__(self, id, lo, hi):

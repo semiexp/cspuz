@@ -4,6 +4,7 @@ from cspuz import Solver, BoolGrid
 def solve_heyawake(height, width, problem):
     solver = Solver()
     grid = BoolGrid(solver, height, width)
+    solver.add_answer_key(grid[:, :])
     grid.forbid_adjacent_true_cells()
     grid.connect_false_cells()
 
@@ -17,11 +18,17 @@ def solve_heyawake(height, width, problem):
             for y in range(y0, y1):
                 solver.ensure(grid[y, (x0 - 1):(x1 + 1)].fold_or())
 
-    solver.find_answer()
+    solver.solve()
 
     for y in range(height):
         for x in range(width):
-            print('# ' if grid[y, x].sol else '. ', end='')
+            s = grid[y, x].sol
+            if s is None:
+                print('? ', end='')
+            elif s:
+                print('# ', end='')
+            else:
+                print('. ', end='')
         print()
 
 
