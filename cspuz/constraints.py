@@ -1,4 +1,5 @@
 from enum import Enum, auto
+import functools
 
 
 class Op(Enum):
@@ -58,6 +59,15 @@ class BoolExpr(Expr):
     def __ne__(self, other):
         return BoolExpr(Op.XOR, [self, other])
 
+    def fold_or(self):
+        return self
+
+    def fold_and(self):
+        return self
+
+    def count_true(self):
+        return self.cond(1, 0)
+
 
 class IntExpr(Expr):
     def __init__(self, op, operands):
@@ -107,6 +117,15 @@ class BoolVar(BoolExpr):
 class BoolVars(object):
     def __init__(self, vars):
         self.vars = vars
+
+    def fold_or(self):
+        return functools.reduce(lambda x, y: x | y, self.vars)
+
+    def fold_and(self):
+        return functools.reduce(lambda x, y: x & y, self.vars)
+
+    def count_true(self):
+        return functools.reduce(lambda x, y: x + y, map(lambda x: x.cond(1, 0), self.vars))
 
 
 class IntVar(IntExpr):
