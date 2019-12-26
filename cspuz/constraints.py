@@ -17,6 +17,7 @@ class Op(Enum):
     OR = auto()  # bool | bool : bool
     IFF = auto()  # bool == bool : bool
     XOR = auto()  # bool != bool : bool
+    IMP = auto()  # bool (=>) bool : bool
     IF = auto()  # if (bool) { int } else { int } : int
 
 
@@ -32,6 +33,9 @@ class BoolExpr(Expr):
 
     def cond(self, t, f):
         return IntExpr(Op.IF, [self, t, f])
+
+    def then(self, other):
+        return BoolExpr(Op.IMP, [self, other])
 
     def __invert__(self):
         return BoolExpr(Op.NOT, [self])

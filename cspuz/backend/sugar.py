@@ -23,6 +23,7 @@ OP_TO_OPNAME = {
     Op.OR: '||',
     Op.IFF: 'iff',
     Op.XOR: 'xor',
+    Op.IMP: '=>',
     Op.IF: 'if'
 }
 
