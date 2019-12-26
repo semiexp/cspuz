@@ -3,6 +3,7 @@ from enum import Enum, auto
 
 class Op(Enum):
     VAR = auto()
+    NEG = auto()  # -int : int
     ADD = auto()  # int + int : int
     SUB = auto()  # int - int : int
     EQ = auto()  # int == int : bool
@@ -11,6 +12,9 @@ class Op(Enum):
     LT = auto()  # int < int : bool
     GE = auto()  # int >= int : bool
     GT = auto()  # int > int : bool
+    NOT = auto()  # !bool : bool
+    AND = auto()  # bool & bool : bool
+    OR = auto()  # bool | bool : bool
     IFF = auto()  # bool == bool : bool
     XOR = auto()  # bool != bool : bool
     IF = auto()  # if (bool) { int } else { int } : int
@@ -29,6 +33,21 @@ class BoolExpr(Expr):
     def cond(self, t, f):
         return IntExpr(Op.IF, [self, t, f])
 
+    def __invert__(self):
+        return BoolExpr(Op.NOT, [self])
+
+    def __and__(self, other):
+        return BoolExpr(Op.AND, [self, other])
+
+    def __rand__(self, other):
+        return BoolExpr(Op.AND, [other, self])
+
+    def __or__(self, other):
+        return BoolExpr(Op.OR, [self, other])
+
+    def __ror__(self, other):
+        return BoolExpr(Op.OR, [other, self])
+
     def __eq__(self, other):
         return BoolExpr(Op.IFF, [self, other])
 
@@ -40,11 +59,20 @@ class IntExpr(Expr):
     def __init__(self, op, operands):
         super(IntExpr, self).__init__(op, operands)
 
+    def __neg__(self):
+        return IntExpr(Op.NEG, [self])
+
     def __add__(self, other):
         return IntExpr(Op.ADD, [self, other])
 
+    def __radd__(self, other):
+        return IntExpr(Op.ADD, [other, self])
+
     def __sub__(self, other):
         return IntExpr(Op.SUB, [self, other])
+
+    def __rsub__(self, other):
+        return IntExpr(Op.ADD, [other, self])
 
     def __eq__(self, other):
         return BoolExpr(Op.EQ, [self, other])

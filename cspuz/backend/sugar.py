@@ -9,6 +9,7 @@ from cspuz.constraints import Op, Expr, BoolVar, IntVar
 
 
 OP_TO_OPNAME = {
+    Op.NEG: '-',
     Op.ADD: '+',
     Op.SUB: '-',
     Op.EQ: '=',
@@ -17,6 +18,9 @@ OP_TO_OPNAME = {
     Op.LT: '<',
     Op.GE: '>=',
     Op.GT: '>',
+    Op.NOT: '!',
+    Op.AND: '&&',
+    Op.OR: '||',
     Op.IFF: 'iff',
     Op.XOR: 'xor',
     Op.IF: 'if'
@@ -33,6 +37,10 @@ def _convert_variable(v):
 
 
 def _convert_expr(e):
+    if isinstance(e, int):
+        return str(e)
+    if isinstance(e, bool):
+        return 'true' if e else 'false'
     if not isinstance(e, Expr):
         raise TypeError()
 
