@@ -87,3 +87,26 @@ class BoolGrid(object):
                     root_count = root_count + is_root[y][x].cond(1, 0)
 
         solver.ensure(root_count <= 1)
+
+    def forbid_adjacent_true_cells_and_connect_false_cells(self):
+        self.forbid_adjacent_true_cells()
+        solver = self.solver
+        height = self.height
+        width = self.width
+
+        ranks = [[solver.int_var(0, height * width - 1) for _ in range(width)] for _ in range(height)]
+        for y in range(height):
+            for x in range(width):
+                less_ranks = []
+                nonzero = False
+                for dy in [-1, 1]:
+                    for dx in [-1, 1]:
+                        y2 = y + dy
+                        x2 = x + dx
+                        if 0 <= y2 < height and 0 <= x2 < width:
+                            less_ranks.append(((ranks[y2][x2] < ranks[y][x]) & self[y2, x2]).cond(1, 0))
+                            if (y2, x2) < (y, x):
+                                solver.ensure(ranks[y2][x2] != ranks[y][x])
+                        else:
+                            nonzero = True
+                solver.ensure(self[y, x].then(sum(less_ranks) == (0 if nonzero else 1)))

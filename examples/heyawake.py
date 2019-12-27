@@ -5,8 +5,7 @@ def solve_heyawake(height, width, problem):
     solver = Solver()
     grid = BoolGrid(solver, height, width)
     solver.add_answer_key(grid[:, :])
-    grid.forbid_adjacent_true_cells()
-    grid.connect_false_cells()
+    grid.forbid_adjacent_true_cells_and_connect_false_cells()
 
     for y0, x0, y1, x1, n in problem:
         if n >= 0:
