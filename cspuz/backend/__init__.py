@@ -1,1 +1,1 @@
-from cspuz.backend import sugar
+from cspuz.backend import sugar, sugar_extended

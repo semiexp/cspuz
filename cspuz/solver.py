@@ -48,6 +48,10 @@ class Solver(object):
             backend = DEFAULT_BACKEND
         csp_solver = backend.CSPSolver(self.variables)
         csp_solver.add_constraint(self.constraints)
+
+        if hasattr(csp_solver, 'solve_irrefutably'):
+            return csp_solver.solve_irrefutably(self.is_answer_key)
+
         if not csp_solver.solve():
             # inconsistent problem
             return False
