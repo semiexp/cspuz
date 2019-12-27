@@ -11,10 +11,10 @@ def solve_heyawake(height, width, problem):
     for y0, x0, y1, x1, n in problem:
         if n >= 0:
             solver.ensure(grid[y0:y1, x0:x1].count_true() == n)
-        if 0 < y0 and y1 < height - 1:
+        if 0 < y0 and y1 < height:
             for x in range(x0, x1):
                 solver.ensure(grid[(y0 - 1):(y1 + 1), x].fold_or())
-        if 0 < x0 and x1 < width - 1:
+        if 0 < x0 and x1 < width:
             for y in range(y0, y1):
                 solver.ensure(grid[y, (x0 - 1):(x1 + 1)].fold_or())
 
