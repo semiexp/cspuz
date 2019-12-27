@@ -94,7 +94,7 @@ class BoolGrid(object):
         height = self.height
         width = self.width
 
-        ranks = [[solver.int_var(0, height * width - 1) for _ in range(width)] for _ in range(height)]
+        ranks = [[solver.int_var(0, (height * width - 1) // 2) for _ in range(width)] for _ in range(height)]
         for y in range(height):
             for x in range(width):
                 less_ranks = []
@@ -109,4 +109,4 @@ class BoolGrid(object):
                                 solver.ensure(ranks[y2][x2] != ranks[y][x])
                         else:
                             nonzero = True
-                solver.ensure(self[y, x].then(sum(less_ranks) == (0 if nonzero else 1)))
+                solver.ensure(self[y, x].then(sum(less_ranks) <= (0 if nonzero else 1)))
