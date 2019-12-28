@@ -79,13 +79,15 @@ class CspuzSugarInterface {
         boolVars = new ArrayList<String>();
 
         for (Expression e : problem) {
-            Sequence seq = (Sequence)e;
-            if (((Atom)seq.get(0)).stringValue().equals(SugarConstants.INT_DEFINITION)) {
-                String name = ((Atom)seq.get(1)).stringValue();
-                intVars.add(name);
-            } else if (((Atom)seq.get(0)).stringValue().equals(SugarConstants.BOOL_DEFINITION)) {
-                String name = ((Atom)seq.get(1)).stringValue();
-                boolVars.add(name);
+            if (e instanceof Sequence) {
+                Sequence seq = (Sequence)e;
+                if (((Atom)seq.get(0)).stringValue().equals(SugarConstants.INT_DEFINITION)) {
+                    String name = ((Atom)seq.get(1)).stringValue();
+                    intVars.add(name);
+                } else if (((Atom)seq.get(0)).stringValue().equals(SugarConstants.BOOL_DEFINITION)) {
+                    String name = ((Atom)seq.get(1)).stringValue();
+                    boolVars.add(name);
+                }
             }
         }
 
