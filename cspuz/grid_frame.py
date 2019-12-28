@@ -35,7 +35,7 @@ class BoolGridFrame(object):
         height = self.height
         width = self.width
         ranks = [[solver.int_var(0, (height + 1) * (width + 1) - 1) for _ in range(width + 1)] for _ in range(height + 1)]
-        passed = [[solver.bool_var() for _ in range(width + 1)] for _ in range(height + 1)]
+        passed = BoolGrid(solver, height + 1, width + 1)
         is_root = [[solver.bool_var() for _ in range(width + 1)] for _ in range(height + 1)]
         for y in range(height + 1):
             for x in range(width + 1):
@@ -49,8 +49,8 @@ class BoolGridFrame(object):
                 if x < width:
                     neighbor_edges.append((2 * y, 2 * x + 1))
                 degree = sum(map(lambda p: self[p].cond(1, 0), neighbor_edges))
-                solver.ensure(degree == passed[y][x].cond(2, 0))
-                solver.ensure(passed[y][x].then(sum(map(lambda p: (self[p] & (ranks[p[0] - y][p[1] - x] >= ranks[y][x])).cond(1, 0),
-                                      neighbor_edges)) <= is_root[y][x].cond(2, 1)))
+                solver.ensure(degree == passed[y, x].cond(2, 0))
+                solver.ensure(passed[y, x].then(sum(map(lambda p: (self[p] & (ranks[p[0] - y][p[1] - x] >= ranks[y][x])).cond(1, 0),
+                                                        neighbor_edges)) <= is_root[y][x].cond(2, 1)))
         solver.ensure(sum(map(lambda v: v.cond(1, 0), sum(is_root, []))) == 1)
         return passed
