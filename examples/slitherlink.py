@@ -1,6 +1,4 @@
-from cspuz import Solver
-from cspuz.constraints import BoolVars
-from cspuz.grid_frame import BoolGridFrame
+from cspuz import Solver, BoolGridFrame, BoolVars
 from cspuz import backend
 
 
