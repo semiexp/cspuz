@@ -125,7 +125,10 @@ class BoolVars(object):
         return functools.reduce(lambda x, y: x & y, self.vars)
 
     def count_true(self):
-        return functools.reduce(lambda x, y: x + y, map(lambda x: x.cond(1, 0), self.vars))
+        if len(self.vars) == 0:
+            return 0
+        else:
+            return functools.reduce(lambda x, y: x + y, map(lambda x: x.cond(1, 0), self.vars))
 
     def __iter__(self):
         return iter(self.vars)
