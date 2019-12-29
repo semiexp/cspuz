@@ -20,6 +20,7 @@ class Op(Enum):
     XOR = auto()  # bool != bool : bool
     IMP = auto()  # bool (=>) bool : bool
     IF = auto()  # if (bool) { int } else { int } : int
+    ALLDIFF = auto()  # alldifferent(int*) : bool
 
 
 class Expr(object):
@@ -134,6 +135,17 @@ class BoolVars(object):
         return iter(self.vars)
 
 
+class IntVars(object):
+    def __init__(self, vars):
+        self.vars = vars
+
+    def __iter__(self):
+        return iter(self.vars)
+
+    def alldifferent(self):
+        return alldifferent(self.vars)
+
+
 class IntVar(IntExpr):
     def __init__(self, id, lo, hi):
         super(IntVar, self).__init__(Op.VAR, [])
@@ -141,3 +153,13 @@ class IntVar(IntExpr):
         self.lo = lo
         self.hi = hi
         self.sol = None
+
+
+def alldifferent(*args):
+    if len(args) >= 2:
+        return BoolExpr(Op.ALLDIFF, args)
+    arg, = args
+    if hasattr(arg, '__iter__'):
+        return BoolExpr(Op.ALLDIFF, list(arg))
+    else:
+        return True

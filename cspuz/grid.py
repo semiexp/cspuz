@@ -1,6 +1,6 @@
 import functools
 
-from cspuz.constraints import BoolVars
+from cspuz.constraints import BoolVars, IntVars
 
 
 def parse_range(r, lim):
@@ -110,3 +110,49 @@ class BoolGrid(object):
                         else:
                             nonzero = True
                 solver.ensure(self[y, x].then(sum(less_ranks) <= (0 if nonzero else 1)))
+
+
+class IntGrid(object):
+    def __init__(self, solver, height, width, low=None, high=None, variables=None):
+        self.solver = solver
+        self.height = height
+        self.width = width
+        if variables is not None:
+            self.variables = list(variables)
+        else:
+            if low is None or high is None:
+                raise ValueError('range of int variables should be specified')
+            self.variables = [solver.int_var(low, high) for _ in range(height * width)]
+
+    def __getitem__(self, pos):
+        y, x = pos
+
+        if isinstance(y, int) and isinstance(x, int):
+            if not (0 <= y < self.height and 0 <= x < self.width):
+                raise ValueError('position ({}, {}) is out of range of a {} * {} grid'.format(
+                    y, x, self.height, self.width))
+            return self.variables[y * self.width + x]
+        ylo, yhi = parse_range(y, self.height)
+        xlo, xhi = parse_range(x, self.width)
+
+        ret = []
+        for i in range(ylo, yhi):
+            for j in range(xlo, xhi):
+                ret.append(self.variables[i * self.width + j])
+
+        return IntVars(ret)
+
+    def alldifferent_every_row(self):
+        for y in range(self.height):
+            self.solver.ensure(self[y, :].alldifferent())
+
+    def alldifferent_every_column(self):
+        for x in range(self.width):
+            self.solver.ensure(self[:, x].alldifferent())
+
+
+def latin_square(solver, size):
+    grid = IntGrid(solver, size, size, low=1, high=size)
+    grid.alldifferent_every_row()
+    grid.alldifferent_every_column()
+    return grid
