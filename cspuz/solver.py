@@ -1,5 +1,5 @@
 from cspuz import backend
-from cspuz.constraints import BoolVar, IntVar, BoolVars
+from cspuz.constraints import BoolVar, IntVar, BoolVars, Array
 
 
 DEFAULT_BACKEND = backend.sugar
@@ -22,6 +22,24 @@ class Solver(object):
         self.variables.append(v)
         self.is_answer_key.append(False)
         return v
+
+    def bool_array(self, shape):
+        if len(shape) == 1:
+            size, = shape
+        else:
+            h, w = shape
+            size = h * w
+        vars = [self.bool_var() for _ in range(size)]
+        return Array(vars, shape=shape, dtype=bool)
+
+    def int_array(self, shape, lo, hi):
+        if len(shape) == 1:
+            size, = shape
+        else:
+            h, w = shape
+            size = h * w
+        vars = [self.int_var(lo, hi) for _ in range(size)]
+        return Array(vars, shape=shape, dtype=int)
 
     def ensure(self, constraint):
         if hasattr(constraint, '__iter__'):
