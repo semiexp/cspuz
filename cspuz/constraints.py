@@ -2,6 +2,13 @@ from enum import Enum, auto
 import functools
 
 
+def check_dtype(obj, dtype):
+    if dtype is int:
+        return isinstance(obj, (int, IntVar, IntExpr))
+    elif dtype is bool:
+        return isinstance(obj, (bool, BoolVar, BoolExpr))
+
+
 class Op(Enum):
     VAR = auto()
     NEG = auto()  # -int : int
@@ -23,6 +30,26 @@ class Op(Enum):
     ALLDIFF = auto()  # alldifferent(int*) : bool
 
 
+def _make_expr(op, operands):
+    # type checking
+    if op in [Op.NEG, Op.ADD, Op.SUB, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT, Op.ALLDIFF]:
+        # operand type: int
+        if not all(map(lambda o: check_dtype(o, int), operands)):
+            return NotImplemented
+    elif op in [Op.NOT, Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP]:
+        # operand type: bool
+        if not all(map(lambda o: check_dtype(o, bool), operands)):
+            return NotImplemented
+    elif op == Op.IF:
+        if not (check_dtype(operands[0], bool) and check_dtype(operands[1], int) and check_dtype(operands[2], int)):
+            return NotImplemented
+
+    if op in [Op.NEG, Op.ADD, Op.SUB, Op.IF]:
+        return IntExpr(op, operands)
+    else:
+        return BoolExpr(op, operands)
+
+
 class Expr(object):
     def __init__(self, op, operands):
         self.op = op
@@ -34,31 +61,38 @@ class BoolExpr(Expr):
         super(BoolExpr, self).__init__(op, operands)
 
     def cond(self, t, f):
-        return IntExpr(Op.IF, [self, t, f])
+        res = _make_expr(Op.IF, [self, t, f])
+        if res is NotImplemented:
+            raise TypeError('unsupported argument type(s) for operator `cond`: \'{}\' and \'{}\''.format(
+                type(t).__name__, type(f).__name__))
+        return res
 
     def then(self, other):
-        return BoolExpr(Op.IMP, [self, other])
+        res = _make_expr(Op.IMP, [self, other])
+        if res is NotImplemented:
+            raise TypeError('unsupported argument type(s) for operator `then`: \'{}\''.format(type(other).__name__))
+        return res
 
     def __invert__(self):
-        return BoolExpr(Op.NOT, [self])
+        return _make_expr(Op.NOT, [self])
 
     def __and__(self, other):
-        return BoolExpr(Op.AND, [self, other])
+        return _make_expr(Op.AND, [self, other])
 
     def __rand__(self, other):
-        return BoolExpr(Op.AND, [other, self])
+        return _make_expr(Op.AND, [other, self])
 
     def __or__(self, other):
-        return BoolExpr(Op.OR, [self, other])
+        return _make_expr(Op.OR, [self, other])
 
     def __ror__(self, other):
-        return BoolExpr(Op.OR, [other, self])
+        return _make_expr(Op.OR, [other, self])
 
     def __eq__(self, other):
-        return BoolExpr(Op.IFF, [self, other])
+        return _make_expr(Op.IFF, [self, other])
 
     def __ne__(self, other):
-        return BoolExpr(Op.XOR, [self, other])
+        return _make_expr(Op.XOR, [self, other])
 
     def fold_or(self):
         return self
@@ -75,37 +109,37 @@ class IntExpr(Expr):
         super(IntExpr, self).__init__(op, operands)
 
     def __neg__(self):
-        return IntExpr(Op.NEG, [self])
+        return _make_expr(Op.NEG, [self])
 
     def __add__(self, other):
-        return IntExpr(Op.ADD, [self, other])
+        return _make_expr(Op.ADD, [self, other])
 
     def __radd__(self, other):
-        return IntExpr(Op.ADD, [other, self])
+        return _make_expr(Op.ADD, [other, self])
 
     def __sub__(self, other):
-        return IntExpr(Op.SUB, [self, other])
+        return _make_expr(Op.SUB, [self, other])
 
     def __rsub__(self, other):
-        return IntExpr(Op.ADD, [other, self])
+        return _make_expr(Op.ADD, [other, self])
 
     def __eq__(self, other):
-        return BoolExpr(Op.EQ, [self, other])
+        return _make_expr(Op.EQ, [self, other])
 
     def __ne__(self, other):
-        return BoolExpr(Op.NE, [self, other])
+        return _make_expr(Op.NE, [self, other])
 
     def __ge__(self, other):
-        return BoolExpr(Op.GE, [self, other])
+        return _make_expr(Op.GE, [self, other])
 
     def __gt__(self, other):
-        return BoolExpr(Op.GT, [self, other])
+        return _make_expr(Op.GT, [self, other])
 
     def __le__(self, other):
-        return BoolExpr(Op.LE, [self, other])
+        return _make_expr(Op.LE, [self, other])
 
     def __lt__(self, other):
-        return BoolExpr(Op.LT, [self, other])
+        return _make_expr(Op.LT, [self, other])
 
 
 class BoolVar(BoolExpr):
@@ -120,10 +154,16 @@ class BoolVars(object):
         self.vars = vars
 
     def fold_or(self):
-        return functools.reduce(lambda x, y: x | y, self.vars)
+        if len(self.vars) == 0:
+            return False
+        else:
+            return functools.reduce(lambda x, y: x | y, self.vars)
 
     def fold_and(self):
-        return functools.reduce(lambda x, y: x & y, self.vars)
+        if len(self.vars) == 0:
+            return True
+        else:
+            return functools.reduce(lambda x, y: x & y, self.vars)
 
     def count_true(self):
         if len(self.vars) == 0:
@@ -157,9 +197,9 @@ class IntVar(IntExpr):
 
 def alldifferent(*args):
     if len(args) >= 2:
-        return BoolExpr(Op.ALLDIFF, args)
+        return _make_expr(Op.ALLDIFF, args)
     arg, = args
     if hasattr(arg, '__iter__'):
-        return BoolExpr(Op.ALLDIFF, list(arg))
+        return _make_expr(Op.ALLDIFF, list(arg))
     else:
         return True
