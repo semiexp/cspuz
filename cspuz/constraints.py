@@ -239,6 +239,63 @@ def alldifferent(*args):
         return True
 
 
+def count_true(*args):
+    res = None
+    for arg in args:
+        if hasattr(arg, '__iter__'):
+            for x in arg:
+                if res is None:
+                    res = x.cond(1, 0)
+                else:
+                    res = res + x.cond(1, 0)
+        else:
+            if res is None:
+                res = arg.cond(1, 0)
+            else:
+                res = res + arg.cond(1, 0)
+    return res
+
+
+def fold_or(*args):
+    res = None
+    for arg in args:
+        if hasattr(arg, '__iter__'):
+            for x in arg:
+                if res is None:
+                    res = x
+                else:
+                    res = res | x
+        else:
+            if res is None:
+                res = arg
+            else:
+                res = res | arg
+    if res is None:
+        return False
+    else:
+        return res
+
+
+def fold_and(*args):
+    res = None
+    for arg in args:
+        if hasattr(arg, '__iter__'):
+            for x in arg:
+                if res is None:
+                    res = x
+                else:
+                    res = res & x
+        else:
+            if res is None:
+                res = arg
+            else:
+                res = res & arg
+    if res is None:
+        return True
+    else:
+        return res
+
+
 def _compute_shape(data):
     if hasattr(data, '__len__') and hasattr(data, '__iter__') and hasattr(data, '__getitem__'):
         h = len(data)
