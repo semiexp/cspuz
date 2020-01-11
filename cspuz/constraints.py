@@ -253,6 +253,8 @@ def count_true(*args):
                 res = arg.cond(1, 0)
             else:
                 res = res + arg.cond(1, 0)
+    if res is None:
+        return 0
     return res
 
 
@@ -342,6 +344,8 @@ def _parse_range(r, size):
 
 class Array(object):
     def __init__(self, data, shape=None, dtype=None):
+        if isinstance(shape, int):
+            shape = (shape,)
         if shape is not None:
             self.data = data
             self.shape = shape
@@ -361,10 +365,10 @@ class Array(object):
         if dtype is None:
             if len(self.data) == 0:
                 raise TypeError('dtype cannot be inferred from empty data')
-            if check_dtype(self.data[0], int):
-                self.dtype = int
-            elif check_dtype(self.data[0], bool):
+            if check_dtype(self.data[0], bool):
                 self.dtype = bool
+            elif check_dtype(self.data[0], int):
+                self.dtype = int
             else:
                 raise TypeError('unsupported dtype')
             if not all(map(lambda o: check_dtype(o, self.dtype), self.data)):

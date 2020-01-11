@@ -24,7 +24,9 @@ class Solver(object):
         return v
 
     def bool_array(self, shape):
-        if len(shape) == 1:
+        if isinstance(shape, int):
+            size = shape
+        elif len(shape) == 1:
             size, = shape
         else:
             h, w = shape
@@ -33,7 +35,9 @@ class Solver(object):
         return Array(vars, shape=shape, dtype=bool)
 
     def int_array(self, shape, lo, hi):
-        if len(shape) == 1:
+        if isinstance(shape, int):
+            size = shape
+        elif len(shape) == 1:
             size, = shape
         else:
             h, w = shape
