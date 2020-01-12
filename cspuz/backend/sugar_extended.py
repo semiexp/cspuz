@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+import cspuz
 from cspuz.constraints import BoolVar, IntVar
 from cspuz.backend import sugar
 
@@ -21,7 +22,7 @@ class CSPSolver(sugar.CSPSolver):
                     raise TypeError()
         answer_keys_desc = '#' + ' '.join(answer_keys)
         csp_description = '\n'.join(self.converted_variables + self.converted_constraints + [answer_keys_desc])
-        sugar_path = os.environ.get('SUGAR_PATH', 'sugar')
+        sugar_path = cspuz.config.backend_path or 'sugar'
         result = subprocess.run([sugar_path, '/dev/stdin'],
                                 input=csp_description.encode('ascii'),
                                 stdout=subprocess.PIPE)

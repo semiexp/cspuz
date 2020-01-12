@@ -1,8 +1,16 @@
+import cspuz
 from cspuz import backend
 from cspuz.constraints import BoolVar, IntVar, BoolVars, Array
 
 
-DEFAULT_BACKEND = backend.sugar
+def _get_default_backend():
+    backend_name = cspuz.config.default_backend
+    if backend_name == 'sugar':
+        return backend.sugar
+    elif backend_name == 'sugar_extended':
+        return backend.sugar_extended
+    else:
+        raise ValueError('invalid default backend {}'.format(backend_name))
 
 
 class Solver(object):
@@ -60,14 +68,14 @@ class Solver(object):
 
     def find_answer(self, backend=None):
         if backend is None:
-            backend = DEFAULT_BACKEND
+            backend = _get_default_backend()
         csp_solver = backend.CSPSolver(self.variables)
         csp_solver.add_constraint(self.constraints)
         return csp_solver.solve()
 
     def solve(self, backend=None):
         if backend is None:
-            backend = DEFAULT_BACKEND
+            backend = _get_default_backend()
         csp_solver = backend.CSPSolver(self.variables)
         csp_solver.add_constraint(self.constraints)
 

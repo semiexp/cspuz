@@ -5,6 +5,7 @@ CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 import os
 import subprocess
 
+import cspuz
 from cspuz.constraints import Op, Expr, BoolVar, IntVar
 
 
@@ -78,7 +79,7 @@ class CSPSolver(object):
 
     def solve(self):
         csp_description = '\n'.join(self.converted_variables + self.converted_constraints)
-        sugar_path = os.environ.get('SUGAR_PATH', 'sugar')
+        sugar_path = cspuz.config.backend_path or 'sugar'
         result = subprocess.run([sugar_path, '/dev/stdin'],
                                 input=csp_description.encode('ascii'),
                                 stdout=subprocess.PIPE)
