@@ -55,7 +55,7 @@ def active_vertices_connected(solver, is_active, graph=None):
         if not _check_array_shape(is_active, bool, 2):
             raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
         height, width = is_active.shape
-        _active_vertices_connected(solver, _grid_graph(height, width), is_active.flatten())
+        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width))
     else:
         _active_vertices_connected(solver, is_active, graph)
 
