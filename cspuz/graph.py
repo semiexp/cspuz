@@ -75,6 +75,24 @@ def active_vertices_not_adjacent_and_not_segmenting(solver, is_active, graph=Non
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
             raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
+        active_vertices_not_adjacent(solver, is_active)
+        height, width = is_active.shape
+        ranks = solver.int_array((height, width), 0, (height * width - 1) // 2)
+        for y in range(height):
+            for x in range(width):
+                less_ranks = []
+                nonzero = False
+                for dy in [-1, 1]:
+                    for dx in [-1, 1]:
+                        y2 = y + dy
+                        x2 = x + dx
+                        if 0 <= y2 < height and 0 <= x2 < width:
+                            less_ranks.append((ranks[y2, x2] < ranks[y, x]) & is_active[y2, x2])
+                            if (y2, x2) < (y, x):
+                                solver.ensure(ranks[y2, x2] != ranks[y, x])
+                        else:
+                            nonzero = True
+                solver.ensure(is_active[y, x].then(count_true(less_ranks) <= (0 if nonzero else 1)))
     else:
         active_vertices_not_adjacent(solver, is_active, graph)
         active_vertices_connected(solver, ~is_active, graph)  # TODO: is_active may not be an Array
