@@ -21,16 +21,7 @@ def solve_shakashaka(height, width, problem):
             if problem[y][x] is not None:
                 solver.ensure(answer[y, x] == 0)
                 if problem[y][x] >= 0:
-                    neighbors = []
-                    if y > 0:
-                        neighbors.append((y - 1, x))
-                    if x > 0:
-                        neighbors.append((y, x - 1))
-                    if y < height - 1:
-                        neighbors.append((y + 1, x))
-                    if x < width - 1:
-                        neighbors.append((y, x + 1))
-                    solver.ensure(count_true([answer[p] != 0 for p in neighbors]) == problem[y][x])
+                    solver.ensure(count_true(answer.four_neighbors(y, x) != 0) == problem[y][x])
     for y in range(height + 1):
         for x in range(width + 1):
             diagonals = []
