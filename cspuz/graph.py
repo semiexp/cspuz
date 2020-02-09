@@ -1,4 +1,5 @@
 from cspuz.constraints import count_true, Array
+from cspuz.grid_frame import BoolGridFrame
 
 
 def _check_array_shape(array, dtype, dim):
@@ -36,6 +37,22 @@ def _grid_graph(height, width):
             if y < height - 1:
                 graph.add_edge(y * width + x, (y + 1) * width + x)
     return graph
+
+
+def _from_grid_frame(grid_frame):
+    height = grid_frame.height
+    width = grid_frame.width
+    edges = []
+    graph = Graph((height + 1) * (width + 1))
+    for y in range(height + 1):
+        for x in range(width + 1):
+            if y != height:
+                edges.append(grid_frame[y * 2 + 1, x * 2])
+                graph.add_edge(y * (width + 1) + x, (y + 1) * (width + 1) + x)
+            if x != width:
+                edges.append(grid_frame[y * 2, x * 2 + 1])
+                graph.add_edge(y * (width + 1) + x, y * (width + 1) + (x + 1))
+    return edges, graph
 
 
 def _active_vertices_connected(solver, is_active, graph):
@@ -154,3 +171,30 @@ def division_connected(solver, division, num_regions, graph=None, roots=None):
         _division_connected(solver, division.flatten(), num_regions, _grid_graph(height, width), roots=roots_conv)
     else:
         _division_connected(solver, division, num_regions, graph, roots=roots)
+
+
+def _active_edges_single_cycle(solver, is_active_edge, graph):
+    n = graph.num_vertices
+    m = len(graph)
+
+    rank = solver.int_array(n, 0, n - 1)
+    is_passed = solver.bool_array(n)
+    is_root = solver.bool_array(n)
+
+    for i in range(n):
+        degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+        solver.ensure(degree == is_passed[i].cond(2, 0))
+        solver.ensure(is_passed[i].then(count_true(
+            [is_active_edge[e] & (rank[j] >= rank[i]) for j, e in graph.incident_edges[i]]
+        ) <= is_root[i].cond(2, 1)))
+    solver.ensure(count_true(is_root) == 1)
+
+
+def active_edges_single_cycle(solver, is_active_edge, graph=None):
+    if graph is None:
+        if not isinstance(is_active_edge, BoolGridFrame):
+            raise TypeError('`is_active_edge` should be a BoolGridFrame if graph is not specified')
+        edges, graph = _from_grid_frame(is_active_edge)
+        _active_edges_single_cycle(solver, edges, graph)
+    else:
+        _active_edges_single_cycle(solver, is_active_edge, graph)
