@@ -188,6 +188,7 @@ def _active_edges_single_cycle(solver, is_active_edge, graph):
             [is_active_edge[e] & (rank[j] >= rank[i]) for j, e in graph.incident_edges[i]]
         ) <= is_root[i].cond(2, 1)))
     solver.ensure(count_true(is_root) == 1)
+    return is_passed
 
 
 def active_edges_single_cycle(solver, is_active_edge, graph=None):
@@ -195,6 +196,7 @@ def active_edges_single_cycle(solver, is_active_edge, graph=None):
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError('`is_active_edge` should be a BoolGridFrame if graph is not specified')
         edges, graph = _from_grid_frame(is_active_edge)
-        _active_edges_single_cycle(solver, edges, graph)
+        is_passed_flat = _active_edges_single_cycle(solver, edges, graph)
+        return is_passed_flat.reshape((is_active_edge.height + 1, is_active_edge.width + 1))
     else:
-        _active_edges_single_cycle(solver, is_active_edge, graph)
+        return _active_edges_single_cycle(solver, is_active_edge, graph)

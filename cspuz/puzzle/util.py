@@ -19,3 +19,32 @@ def stringify_array(array, symbol_map=None):
         rows.append(' '.join(row))
 
     return '\n'.join(rows)
+
+
+_VERTICAL_EDGE = {
+    None: ' ',
+    True: '|',
+    False: 'x'
+}
+
+_HORIZONTAL_EDGE = {
+    None: ' ',
+    True: '-',
+    False: 'x'
+}
+
+
+def stringify_grid_frame(grid_frame):
+    res = []
+    for y in range(2 * grid_frame.height + 1):
+        for x in range(2 * grid_frame.width + 1):
+            if y % 2 == 0 and x % 2 == 0:
+                res.append('+')
+            elif y % 2 == 1 and x % 2 == 0:
+                res.append(_VERTICAL_EDGE[grid_frame[y, x].sol])
+            elif y % 2 == 0 and x % 2 == 1:
+                res.append(_HORIZONTAL_EDGE[grid_frame[y, x].sol])
+            else:
+                res.append(' ')
+        res.append('\n')
+    return ''.join(res)

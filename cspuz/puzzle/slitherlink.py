@@ -1,29 +1,24 @@
-from cspuz import Solver, BoolGridFrame, BoolVars, backend
 import random
 import math
 import sys
 
+from cspuz import Solver, graph
+from cspuz.grid_frame import BoolGridFrame
+from cspuz.constraints import count_true
+from cspuz.puzzle import util
 
-def solve_slitherlink(height, width, problem, check_sat_only=False):
+
+def solve_slitherlink(height, width, problem):
     solver = Solver()
     grid_frame = BoolGridFrame(solver, height, width)
-    grid_frame.single_loop()
+    solver.add_answer_key(grid_frame)
+    graph.active_edges_single_cycle(solver, grid_frame)
     for y in range(height):
         for x in range(width):
             if problem[y][x] >= 0:
-                solver.ensure(BoolVars(
-                    [grid_frame[y * 2 + 1, x * 2 + 0],
-                     grid_frame[y * 2 + 1, x * 2 + 2],
-                     grid_frame[y * 2 + 0, x * 2 + 1],
-                     grid_frame[y * 2 + 2, x * 2 + 1]]
-                ).count_true() == problem[y][x])
-
-    if check_sat_only:
-        return solver.find_answer()
-
-    solver.add_answer_key(grid_frame.all_edges())
-    sat = solver.solve(backend=backend.sugar_extended)
-    return sat, grid_frame
+                solver.ensure(count_true(grid_frame.cell_neighbors(y, x)) == problem[y][x])
+    is_sat = solver.solve()
+    return is_sat, grid_frame
 
 
 def compute_score(grid_frame):
@@ -34,7 +29,7 @@ def compute_score(grid_frame):
     return score
 
 
-def generate_slitherlink(height, width):
+def generate_slitherlink(height, width, verbose=False):
     problem = [[-1 for _ in range(width)] for _ in range(height)]
     score = 0
     n_clues = 0
@@ -62,17 +57,13 @@ def generate_slitherlink(height, width):
             else:
                 raw_score = compute_score(grid_frame)
                 if raw_score == fully_solved_score:
-                    for y in range(height):
-                        for x in range(width):
-                            n = problem[y][x]
-                            print(n if n >= 0 else '.', end=' ')
-                        print()
-                    return
+                    return problem
                 score_next = raw_score - 5.0 * n_clues_next
                 update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
 
             if update:
-                print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                if verbose:
+                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
                 score = score_next
                 n_clues = n_clues_next
                 break
@@ -80,9 +71,33 @@ def generate_slitherlink(height, width):
                 problem[y][x] = n_prev
 
         temperature *= 0.995
-    print('failed')
+    if verbose:
+        print('failed')
+    return None
+
+
+def _main():
+    if len(sys.argv) == 1:
+        # original example: http://pzv.jp/p.html?slither/4/4/dgdh2c7b
+        height = 4
+        width = 4
+        problem = [
+            [3, -1, -1, -1],
+            [3, -1, -1, -1],
+            [-1, 2, 2, -1],
+            [-1, 2, -1, 1]
+        ]
+        is_sat, is_line = solve_slitherlink(height, width, problem)
+        print('has answer:', is_sat)
+        if is_sat:
+            print(util.stringify_grid_frame(is_line))
+    else:
+        height, width = map(int, sys.argv[1:])
+        while True:
+            problem = generate_slitherlink(height, width, verbose=True)
+            if problem is not None:
+                print(util.stringify_array(problem, { -1: '.', 0: '0', 1: '1', 2: '2', 3: '3' }))
 
 
 if __name__ == '__main__':
-    height, width = map(int, sys.argv[1:])
-    generate_slitherlink(height, width)
+    _main()

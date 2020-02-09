@@ -379,6 +379,21 @@ class Array(object):
     def flatten(self):
         return Array(self.data, shape=(len(self.data),), dtype=self.dtype)
 
+    def reshape(self, shape):
+        if isinstance(shape, int):
+            size = shape
+        else:
+            if len(shape) == 1:
+                size, = shape
+            elif len(shape) == 2:
+                h, w = shape
+                size = h * w
+            else:
+                raise ValueError('invalid shape')
+        if size != len(self.data):
+            raise ValueError('reshaping into array of different size')
+        return Array(self.data, shape=shape, dtype=self.dtype)
+
     def __getitem__(self, item):
         if len(self.shape) == 1:
             sz, = self.shape

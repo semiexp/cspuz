@@ -1,6 +1,6 @@
 import itertools
 
-from cspuz.constraints import BoolVars
+from cspuz.constraints import Array, BoolVars
 from cspuz.grid import BoolGrid
 
 
@@ -29,27 +29,18 @@ class BoolGridFrame(object):
     def all_edges(self):
         return BoolVars(list(itertools.chain(self.horizontal, self.vertical)))
 
+    def __iter__(self):
+        return itertools.chain(self.horizontal, self.vertical)
+
+    def cell_neighbors(self, *p):
+        if len(p) == 1:
+            y, x = p[0]
+        else:
+            y, x = p
+        if not (0 <= y < self.height and 0 <= x < self.width):
+            raise IndexError('index out of range')
+        return Array([self.horizontal[y, x], self.horizontal[y + 1, x], self.vertical[y, x], self.vertical[y, x + 1]])
+
     def single_loop(self):
-        solver = self.solver
-        height = self.height
-        width = self.width
-        ranks = [[solver.int_var(0, (height + 1) * (width + 1) - 1) for _ in range(width + 1)] for _ in range(height + 1)]
-        passed = BoolGrid(solver, height + 1, width + 1)
-        is_root = [[solver.bool_var() for _ in range(width + 1)] for _ in range(height + 1)]
-        for y in range(height + 1):
-            for x in range(width + 1):
-                neighbor_edges = []
-                if y > 0:
-                    neighbor_edges.append((2 * y - 1, 2 * x))
-                if y < height:
-                    neighbor_edges.append((2 * y + 1, 2 * x))
-                if x > 0:
-                    neighbor_edges.append((2 * y, 2 * x - 1))
-                if x < width:
-                    neighbor_edges.append((2 * y, 2 * x + 1))
-                degree = sum(map(lambda p: self[p].cond(1, 0), neighbor_edges))
-                solver.ensure(degree == passed[y, x].cond(2, 0))
-                solver.ensure(passed[y, x].then(sum(map(lambda p: (self[p] & (ranks[p[0] - y][p[1] - x] >= ranks[y][x])).cond(1, 0),
-                                                        neighbor_edges)) <= is_root[y][x].cond(2, 1)))
-        solver.ensure(sum(map(lambda v: v.cond(1, 0), sum(is_root, []))) == 1)
-        return passed
+        from cspuz import graph
+        return graph.active_edges_single_cycle(self.solver, self)
