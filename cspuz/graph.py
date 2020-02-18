@@ -55,7 +55,7 @@ def _from_grid_frame(grid_frame):
     return edges, graph
 
 
-def _active_vertices_connected(solver, is_active, graph):
+def _active_vertices_connected(solver, is_active, graph, acyclic=False):
     n = graph.num_vertices
 
     ranks = solver.int_array(n, 0, n - 1)
@@ -63,18 +63,24 @@ def _active_vertices_connected(solver, is_active, graph):
 
     for i in range(n):
         less_ranks = [((ranks[j] < ranks[i]) & is_active[j]) for j, _ in graph.incident_edges[i]]
-        solver.ensure(is_active[i].then(count_true(less_ranks + [is_root[i]]) >= 1))
+        if acyclic:
+            for j, _ in graph.incident_edges[i]:
+                if i < j:
+                    solver.ensure(ranks[j] != ranks[i])
+            solver.ensure(is_active[i].then(count_true(less_ranks + [is_root[i]]) == 1))
+        else:
+            solver.ensure(is_active[i].then(count_true(less_ranks + [is_root[i]]) >= 1))
     solver.ensure(count_true(is_root) <= 1)
 
 
-def active_vertices_connected(solver, is_active, graph=None):
+def active_vertices_connected(solver, is_active, graph=None, acyclic=False):
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
             raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
         height, width = is_active.shape
-        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width))
+        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width), acyclic=acyclic)
     else:
-        _active_vertices_connected(solver, is_active, graph)
+        _active_vertices_connected(solver, is_active, graph, acyclic=acyclic)
 
 
 def active_vertices_not_adjacent(solver, is_active, graph=None):
