@@ -190,7 +190,7 @@ def problem_to_pzv_url(height, width, wall_vertical, wall_horizontal, mark, star
             elif (y, x) == goal:
                 v = 2
             if v == 0:
-                if contiguous_empty_cells == 32:
+                if contiguous_empty_cells == 31:
                     ret += 'z'
                     contiguous_empty_cells = 1
                 else:
