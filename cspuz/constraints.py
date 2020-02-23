@@ -451,6 +451,25 @@ class Array(object):
             ret.append(self[y, x + 1])
         return Array(ret, shape=(len(ret),), dtype=self.dtype)
 
+    def four_neighbor_indices(self, *p):
+        if len(self.shape) != 2:
+            raise ValueError('four_neighbors is applicable only to 2-D arrays')
+        height, width = self.shape
+        if len(p) == 1:
+            y, x = p[0]
+        else:
+            y, x = p
+        ret = []
+        if y > 0:
+            ret.append((y - 1, x))
+        if y < height - 1:
+            ret.append((y + 1, x))
+        if x > 0:
+            ret.append((y, x - 1))
+        if x < width - 1:
+            ret.append((y, x + 1))
+        return ret
+
     def cond(self, t, f):
         res = _make_expr(Op.IF, [self, t, f])
         if res is NotImplemented:
