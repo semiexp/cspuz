@@ -1,9 +1,22 @@
-from cspuz.constraints import count_true, Array
+from cspuz.constraints import count_true, Array, IntVar, IntExpr, _compute_shape
 from cspuz.grid_frame import BoolGridFrame
 
 
 def _check_array_shape(array, dtype, dim):
     return isinstance(array, Array) and array.dtype is dtype and len(array.shape) == dim
+
+
+def _get_array_shape_2d(array):
+    if isinstance(array, Array):
+        shape = array.shape
+        if len(shape) != 2:
+            raise ValueError('`array` is not a 2-d Array')
+        return shape
+    else:
+        shape = _compute_shape(array)
+        if len(shape) != 2:
+            raise ValueError('`array` is not a 2-d array (list of list)')
+        return shape
 
 
 class Graph(object):
@@ -177,6 +190,71 @@ def division_connected(solver, division, num_regions, graph=None, roots=None):
         _division_connected(solver, division.flatten(), num_regions, _grid_graph(height, width), roots=roots_conv)
     else:
         _division_connected(solver, division, num_regions, graph, roots=roots)
+
+
+def _division_connected_variable_groups(solver, graph, group_size=None):
+    n = graph.num_vertices
+    m = len(graph)
+
+    group_id = solver.int_array(n, 0, n - 1)
+    rank = solver.int_array(n, 0, n - 1)
+    is_root = solver.bool_array(n)
+    is_active_edge = solver.bool_array(m)
+    solver.ensure(is_root == (rank == 0))
+
+    for i in range(n):
+        solver.ensure(is_root[i].then(group_id[i] == i))
+        for j, e in graph.incident_edges[i]:
+            solver.ensure(is_active_edge[e].then(rank[j] != rank[i]))
+        solver.ensure(count_true(
+            [is_active_edge[e] & (rank[j] < rank[i]) for j, e in graph.incident_edges[i]]
+        ) == is_root[i].cond(0, 1))
+    for i, (u, v) in enumerate(graph):
+        solver.ensure(is_active_edge[i].then(group_id[u] == group_id[v]))
+    if group_size is not None:
+        downstream_size = solver.int_array(n, 1, n)
+        total_size = solver.int_array(n, 1, n)
+        solver.ensure(downstream_size <= total_size)
+        solver.ensure(is_root.then(downstream_size == total_size))
+        for i in range(n):
+            solver.ensure(sum(
+                [(is_active_edge[e] & (rank[j] > rank[i])).cond(downstream_size[j], 0) for j, e in graph.incident_edges[i]]
+            ) + 1 == downstream_size[i])
+
+            if isinstance(group_size, (int, IntVar, IntExpr)):
+                s = group_size
+            else:
+                s = group_size[i]
+            if s is not None:
+                solver.ensure(total_size[i] == s)
+        if not isinstance(group_size, (int, IntVar, IntExpr)):
+            for i, (u, v) in enumerate(graph):
+                s = total_size[u]
+                t = total_size[v]
+                solver.ensure(is_active_edge[i].then(s == t))
+    return group_id
+
+
+def division_connected_variable_groups(solver, graph=None, shape=None, group_size=None):
+    if graph is None:
+        if shape is None:
+            shape = _get_array_shape_2d(group_size)
+        if group_size is None:
+            group_size_converted = None
+        elif isinstance(group_size, int):
+            group_size_converted = group_size
+        elif isinstance(group_size, Array):
+            group_size_converted = group_size.flatten()
+        else:
+            group_size_converted = sum(group_size, [])  # TODO: error checking
+        height, width = shape
+        group_id_flat = _division_connected_variable_groups(
+            solver, _grid_graph(height, width), group_size=group_size_converted)
+        return group_id_flat.reshape(shape)
+    else:
+        if shape is not None:
+            raise ValueError('`graph` and `shape` cannot be specified at the same time')
+        return _division_connected_variable_groups(solver, graph, group_size=group_size)
 
 
 def _active_edges_single_cycle(solver, is_active_edge, graph):
