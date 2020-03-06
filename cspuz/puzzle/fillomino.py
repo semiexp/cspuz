@@ -18,7 +18,7 @@ def solve_fillomino(height, width, problem):
         for x in range(width):
             if problem[y][x] >= 1:
                 solver.ensure(size[y, x] == problem[y][x])
-    is_sat = solver.find_answer()
+    is_sat = solver.solve()
     return is_sat, size
 
 
@@ -106,6 +106,7 @@ def _main():
             problem = generate_fillomino(height, width, verbose=True)
             if problem is not None:
                 print(util.stringify_array(problem, lambda x: '.' if x == 0 else str(x)), flush=True)
+                print(flush=True)
 
 
 if __name__ == '__main__':
