@@ -49,7 +49,22 @@ def compute_score(ans):
     return score
 
 
-def generate_nurimaze(height, width, verbose=False):
+def check_isolatedness(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+    for y in range(height):
+        for x in range(width):
+            if mark[y][x] != 0 or (y, x) == start or (y, x) == goal:
+                if y > 0 and (mark[y - 1][x] != 0 or wall_horizontal[y - 1][x] == 0):
+                    return False
+                if y < height - 1 and (mark[y + 1][x] != 0 or wall_horizontal[y][x] == 0):
+                    return False
+                if x > 0 and (mark[y][x - 1] != 0 or wall_vertical[y][x - 1] == 0):
+                    return False
+                if x < width - 1 and (mark[y][x + 1] != 0 or wall_vertical[y][x] == 0):
+                    return False
+    return True
+
+
+def generate_nurimaze(height, width, verbose=False, isolated_clues=False):
     wall_vertical = [[1 for _ in range(width - 1)] for _ in range(height)]
     wall_horizontal = [[1 for _ in range(width)] for _ in range(height - 1)]
     mark = [[0 for _ in range(width)] for _ in range(height)]
@@ -105,7 +120,10 @@ def generate_nurimaze(height, width, verbose=False):
                 n_prev = goal
                 goal = val[0]
 
-            sat, is_white = solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, goal)
+            if isolated_clues and not check_isolatedness(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+                sat, is_white = False, None
+            else:
+                sat, is_white = solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, goal)
             if not sat:
                 score_next = -1
                 update = False
