@@ -173,18 +173,25 @@ def problem_to_pzv_url(n, k, blocks):
 
 
 def _main():
-    # generated example: http://pzv.jp/p.html?starbattle/6/6/1/2u9gn9c9jpmk
-    is_sat, has_star = solve_star_battle(6, [
-        [0, 0, 0, 0, 1, 1],
-        [0, 2, 3, 0, 1, 1],
-        [2, 2, 3, 3, 3, 1],
-        [2, 1, 1, 1, 1, 1],
-        [2, 4, 4, 1, 4, 5],
-        [2, 2, 4, 4, 4, 5],
-    ], 1)
-    print('has answer:', is_sat)
-    if is_sat:
-        print(util.stringify_array(has_star, {None: '?', True: '*', False: '.'}))
+    if len(sys.argv) == 1:
+        # generated example: http://pzv.jp/p.html?starbattle/6/6/1/2u9gn9c9jpmk
+        is_sat, has_star = solve_star_battle(6, [
+            [0, 0, 0, 0, 1, 1],
+            [0, 2, 3, 0, 1, 1],
+            [2, 2, 3, 3, 3, 1],
+            [2, 1, 1, 1, 1, 1],
+            [2, 4, 4, 1, 4, 5],
+            [2, 2, 4, 4, 4, 5],
+        ], 1)
+        print('has answer:', is_sat)
+        if is_sat:
+            print(util.stringify_array(has_star, {None: '?', True: '*', False: '.'}))
+    else:
+        n, k = map(int, sys.argv[1:])
+        while True:
+            problem = generate_star_battle(n, k, verbose=True)
+            if problem is not None:
+                print(problem_to_pzv_url(n, k, problem), flush=True)
 
 
 if __name__ == '__main__':
