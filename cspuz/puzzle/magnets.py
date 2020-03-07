@@ -2,6 +2,8 @@ import random
 import math
 import sys
 
+import svgwrite
+
 from cspuz import Solver, Array
 from cspuz.constraints import count_true
 
@@ -221,9 +223,119 @@ def stringify_magnets_problem(height, width, to_right, to_down, cond_row, cond_c
     return ''.join(ret)
 
 
+def emit_svg(height, width, to_right, to_down, cond_row, cond_col):
+    boundary = 5
+    cell_size = 50
+
+    dwg = svgwrite.Drawing(size=(boundary * 2 + cell_size * (width + 2), boundary * 2 + cell_size * (height + 2)))
+
+    grid_style = {
+        'stroke': 'black',
+        'stroke_width': 1
+    }
+    dotted_grid_style = {
+        'stroke': 'gray',
+        'stroke_width': 1,
+        'stroke_dasharray': cell_size / 12
+    }
+    border_style = {
+        'stroke': 'black',
+        'stroke_width': 4
+    }
+    text_style = {
+        'fill': 'black',
+        'font_size': cell_size * 0.85,
+        'text_anchor': 'middle',
+        'dominant_baseline': 'mathematical',
+        'font_family': 'Helvetica'
+    }
+
+    # border
+    dwg.add(dwg.line((boundary - 2 + 2 * cell_size, boundary + 2 * cell_size),
+                     (boundary + (width + 2) * cell_size + 2, boundary + 2 * cell_size),
+                     **border_style))
+    dwg.add(dwg.line((boundary - 2 + 2 * cell_size, boundary + (height + 2) * cell_size),
+                     (boundary + (width + 2) * cell_size + 2, boundary + (height + 2) * cell_size),
+                     **border_style))
+    dwg.add(dwg.line((boundary + 2 * cell_size, boundary - 2 + 2 * cell_size),
+                     (boundary + 2 * cell_size, boundary + (height + 2) * cell_size + 2),
+                     **border_style))
+    dwg.add(dwg.line((boundary + (width + 2) * cell_size, boundary - 2 + 2 * cell_size),
+                     (boundary + (width + 2) * cell_size, boundary + (height + 2) * cell_size + 2),
+                     **border_style))
+
+    # outer grid
+    for y in range(0, height + 1):
+        dwg.add(dwg.line((boundary, boundary + (y + 2) * cell_size),
+                         (boundary + 2 * cell_size, boundary + (y + 2) * cell_size),
+                         **dotted_grid_style))
+    for x in range(0, width + 1):
+        dwg.add(dwg.line((boundary + (x + 2) * cell_size, boundary),
+                         (boundary + (x + 2) * cell_size, boundary + 2 * cell_size),
+                         **dotted_grid_style))
+    dwg.add(dwg.line((boundary + 2 * cell_size, boundary),
+                     (boundary + (width + 2) * cell_size, boundary),
+                     **dotted_grid_style))
+    dwg.add(dwg.line((boundary + 2 * cell_size, boundary + cell_size),
+                     (boundary + (width + 2) * cell_size, boundary + cell_size),
+                     **dotted_grid_style))
+    dwg.add(dwg.line((boundary, boundary + 2 * cell_size),
+                     (boundary, boundary + (height + 2) * cell_size),
+                     **dotted_grid_style))
+    dwg.add(dwg.line((boundary + cell_size, boundary + 2 * cell_size),
+                     (boundary + cell_size, boundary + (height + 2) * cell_size),
+                     **dotted_grid_style))
+
+    # inner grid
+    for y in range(height):
+        for x in range(width):
+            if y < height - 1 and to_down[y][x]:
+                dwg.add(dwg.line((boundary + (x + 2) * cell_size, boundary + (y + 3) * cell_size),
+                                 (boundary + (x + 3) * cell_size, boundary + (y + 3) * cell_size),
+                                 **dotted_grid_style))
+            if x < width - 1 and to_right[y][x]:
+                dwg.add(dwg.line((boundary + (x + 3) * cell_size, boundary + (y + 2) * cell_size),
+                                 (boundary + (x + 3) * cell_size, boundary + (y + 3) * cell_size),
+                                 **dotted_grid_style))
+    for y in range(height):
+        for x in range(width):
+            if not (y < height - 1 and to_down[y][x]):
+                dwg.add(dwg.line((boundary + (x + 2) * cell_size, boundary + (y + 3) * cell_size),
+                                 (boundary + (x + 3) * cell_size, boundary + (y + 3) * cell_size),
+                                 **border_style))
+            if not (x < width - 1 and to_right[y][x]):
+                dwg.add(dwg.line((boundary + (x + 3) * cell_size, boundary + (y + 2) * cell_size),
+                                 (boundary + (x + 3) * cell_size, boundary + (y + 3) * cell_size),
+                                 **border_style))
+
+    # clues
+    for y in range(height):
+        for x in range(2):
+            if cond_row[y][x] >= 0:
+                dwg.add(dwg.text(str(cond_row[y][x]),
+                                 x=[boundary + (x + 0.5) * cell_size],
+                                 y=[boundary + (y + 2.5) * cell_size],
+                                 **text_style))
+    for x in range(height):
+        for y in range(2):
+            if cond_col[x][y] >= 0:
+                dwg.add(dwg.text(str(cond_col[x][y]),
+                                 x=[boundary + (x + 2.5) * cell_size],
+                                 y=[boundary + (y + 0.5) * cell_size],
+                                 **text_style))
+    dwg.add(dwg.text('＋', x=[boundary + 0.5 * cell_size], y=[boundary + 0.5 * cell_size], **text_style))
+    dwg.add(dwg.text('－', x=[boundary + 1.5 * cell_size], y=[boundary + 1.5 * cell_size], **text_style))
+    return dwg
+
+
 def _main():
-    to_right, to_down, cond_row, cond_col = generate_magnets(6, 6, verbose=True)
-    print(stringify_magnets_problem(6, 6, to_right, to_down, cond_row, cond_col))
+    while True:
+        height = 8
+        width = 8
+        to_right, to_down, cond_row, cond_col = generate_magnets(height, width, no_easy_constraints=True, verbose=True)
+        #print(stringify_magnets_problem(height, width, to_right, to_down, cond_row, cond_col))
+        print(emit_svg(height, width, to_right, to_down, cond_row, cond_col).tostring())
+        print(flush=True)
 
 
 if __name__ == '__main__':
