@@ -2,15 +2,15 @@ import random
 import math
 import sys
 
-from cspuz import Solver, BoolGrid, BoolGridFrame, BoolVars
-from cspuz import backend
+from cspuz import Solver, BoolGridFrame, graph
+from cspuz.constraints import count_true
 
 
 def solve_castle_wall(height, width, arrow, inside):
     solver = Solver()
     grid_frame = BoolGridFrame(solver, height - 1, width - 1)
-    passed = grid_frame.single_loop()
-    solver.add_answer_key(grid_frame.all_edges())
+    solver.add_answer_key(grid_frame)
+    passed = graph.active_edges_single_cycle(solver, grid_frame)
 
     # arrow constraints
     for y in range(height):
@@ -19,19 +19,19 @@ def solve_castle_wall(height, width, arrow, inside):
                 continue
             solver.ensure(~passed[y, x])
             if arrow[y][x][0] == '^':
-                related_edges = [grid_frame[y2 * 2 + 1, x * 2] for y2 in range(0, y)]
+                related_edges = grid_frame.vertical[:y, x]
             elif arrow[y][x][0] == 'v':
-                related_edges = [grid_frame[y2 * 2 + 1, x * 2] for y2 in range(y, height - 1)]
+                related_edges = grid_frame.vertical[y:, x]
             elif arrow[y][x][0] == '<':
-                related_edges = [grid_frame[y * 2, x2 * 2 + 1] for x2 in range(0, x)]
+                related_edges = grid_frame.horizontal[y, :x]
             elif arrow[y][x][0] == '>':
-                related_edges = [grid_frame[y * 2, x2 * 2 + 1] for x2 in range(x, width - 1)]
+                related_edges = grid_frame.horizontal[y, x:]
             else:
                 continue
-            solver.ensure(BoolVars(related_edges).count_true() == int(arrow[y][x][1:]))
+            solver.ensure(count_true(related_edges) == int(arrow[y][x][1:]))
 
     # inout constraints
-    is_inside = BoolGrid(solver, height - 1, width - 1)
+    is_inside = solver.bool_array((height - 1, width - 1))
     for y in range(height - 1):
         for x in range(width - 1):
             if y == 0:
@@ -44,21 +44,46 @@ def solve_castle_wall(height, width, arrow, inside):
                 solver.ensure(is_inside[max(0, y - 1), max(0, x - 1)])
             elif inside[y][x] is False:
                 solver.ensure(~is_inside[max(0, y - 1), max(0, x - 1)])
-    solver.add_answer_key(grid_frame.all_edges())
-    sat = solver.solve(backend=backend.sugar_extended)
+    is_sat = solver.solve()
 
-    return sat, grid_frame
+    return is_sat, grid_frame
 
 
 def compute_score(grid_frame):
     score = 0
-    for e in grid_frame.all_edges():
+    for e in grid_frame:
         if e.sol is not None:
             score += 1
     return score
 
 
-def generate_castle_wall(height, width):
+def trivial_decision(arrow):
+    def max_lines(seq):
+        ret = 0
+        for i in range(1, len(seq)):
+            if seq[i - 1] == '..' and seq[i] == '..':
+                ret += 1
+        return ret
+    for y in range(height):
+        for x in range(width):
+            if arrow[y][x] == '..':
+                continue
+            if arrow[y][x][0] == '^':
+                related_cells = [arrow[y2][x] for y2 in range(0, y)]
+            elif arrow[y][x][0] == 'v':
+                related_cells = [arrow[y2][x] for y2 in range(y + 1, height)]
+            elif arrow[y][x][0] == '<':
+                related_cells = [arrow[y][x2] for x2 in range(0, x)]
+            elif arrow[y][x][0] == '>':
+                related_cells = [arrow[y][x2] for x2 in range(x + 1, width)]
+            else:
+                continue
+            if max_lines(related_cells) - 1 <= int(arrow[y][x][1:]):
+                return True
+    return False
+
+
+def generate_castle_wall(height, width, disallow_trivial=False, verbose=False):
     arrow = [['..' for _ in range(width)] for _ in range(height)]
     inside = [[None for _ in range(width)] for _ in range(height)]
     score = 0
@@ -102,23 +127,17 @@ def generate_castle_wall(height, width):
             arrow[y][x] = a
             inside[y][x] = i
 
-            sat, grid_frame = solve_castle_wall(height, width, arrow, inside)
+            if disallow_trivial and trivial_decision(arrow):
+                sat = False
+            else:
+                sat, grid_frame = solve_castle_wall(height, width, arrow, inside)
             if not sat:
                 score_next = -1
                 update = False
             else:
                 raw_score = compute_score(grid_frame)
                 if raw_score == fully_solved_score:
-                    for y in range(height):
-                        for x in range(width):
-                            print(arrow[y][x], end=' ')
-                        print()
-                    for y in range(height):
-                        for x in range(width):
-                            print(inside[y][x], end=' ')
-                        print()
-                    print()
-                    return
+                    return arrow, inside
                 clue_score = 0
                 for y2 in range(height):
                     for x2 in range(width):
@@ -129,11 +148,13 @@ def generate_castle_wall(height, width):
                                 clue_score += 8
                         if inside[y2][x2] != None:
                             clue_score += 2
+                clue_score = max(0, clue_score - 20)
                 score_next = raw_score - clue_score
                 update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
 
             if update:
-                print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                if verbose:
+                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -141,10 +162,28 @@ def generate_castle_wall(height, width):
                 inside[y][x] = i_prev
 
         temperature *= 0.995
-    print('failed')
+    if verbose:
+        print('failed', file=sys.stderr)
+    return None
 
 
 if __name__ == '__main__':
     while True:
         height, width = map(int, sys.argv[1:])
-        generate_castle_wall(height, width)
+        problem = generate_castle_wall(height, width, verbose=True)
+        if problem is not None:
+            arrow, inside = problem
+            for y in range(height):
+                for x in range(width):
+                    if arrow[y][x] == '..':
+                        print('...', end=' ')
+                    else:
+                        if inside[y][x] is None:
+                            sgn = '?'
+                        elif inside[y][x]:
+                            sgn = 'i'
+                        else:
+                            sgn = 'o'
+                        print(arrow[y][x] + sgn, end=' ')
+                print()
+            print(flush=True)
