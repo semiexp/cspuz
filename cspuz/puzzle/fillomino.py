@@ -1,10 +1,8 @@
-import random
-import math
 import sys
 
 from cspuz import Solver, graph
-from cspuz.constraints import count_true
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_fillomino(height, width, problem):
@@ -22,62 +20,13 @@ def solve_fillomino(height, width, problem):
     return is_sat, size
 
 
-def compute_score(ans):
-    score = 0
-    for v in ans:
-        if v.sol is not None:
-            score += 1
-    return score
-
-
-def generate_fillomino(height, width, verbose=False):
-    problem = [[0 for _ in range(width)] for _ in range(height)]
-    score = 0
-    temperature = 3.0
-    fully_solved_score = height * width
-
-    for step in range(height * width * 10):
-        cand = []
-        for y in range(height):
-            for x in range(width):
-                flg = False
-                for n in range(0, 9):
-                    if problem[y][x] != n:
-                        cand.append((y, x, n))
-        random.shuffle(cand)
-
-        for y, x, n in cand:
-            n_prev = problem[y][x]
-            problem[y][x] = n
-
-            sat, answer = solve_fillomino(height, width, problem)
-            if not sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(answer)
-                if raw_score == fully_solved_score:
-                    return problem
-                clue_score = 0
-                for y2 in range(height):
-                    for x2 in range(width):
-                        if problem[y2][x2] != 0:
-                            clue_score += 3
-                score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                break
-            else:
-                problem[y][x] = n_prev
-
-        temperature *= 0.995
-    if verbose:
-        print('failed', file=sys.stderr)
-    return None
+def generate_fillomino(height, width, disallow_adjacent=False, symmetry=False, verbose=False):
+    generated = generate_problem(lambda problem: solve_fillomino(height, width, problem),
+                                 builder_pattern=ArrayBuilder2D(height, width, range(0, 9), default=0,
+                                                                disallow_adjacent=disallow_adjacent, symmetry=symmetry),
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=3),
+                                 verbose=verbose)
+    return generated
 
 
 def _main():
