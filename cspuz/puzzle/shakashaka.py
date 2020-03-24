@@ -5,6 +5,7 @@ import sys
 from cspuz import Solver
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_shakashaka(height, width, problem):
@@ -79,73 +80,13 @@ def solve_shakashaka(height, width, problem):
     return is_sat, answer
 
 
-def compute_score(ans):
-    score = 0
-    for v in ans:
-        if v.sol is not None:
-            score += 1
-    return score
-
-
 def generate_shakashaka(height, width, verbose=False):
-    problem = [[None for _ in range(width)] for _ in range(height)]
-    score = 0
-    temperature = 5.0
-    fully_solved_score = height * width
-
-    for step in range(height * width * 10):
-        cand = []
-        for y in range(height):
-            for x in range(width):
-                flg = False
-                for dy in range(-1, 2):
-                    for dx in range(-1, 2):
-                        y2 = y + dy
-                        x2 = x + dx
-                        if 0 <= y2 < height and 0 <= x2 < width and (y2, x2) != (y, x) and problem[y2][x2] is not None:
-                            flg = True
-                maxn = (1 if y > 0 else 0) + (1 if x > 0 else 0) + (1 if y < height - 1 else 0) + (1 if x < width - 1 else 0)
-                for n in [None, -1, 0, 1, 2, 3, 4]:
-                    if n is not None and n > maxn:
-                        continue
-                    if flg and n is not None:
-                        continue
-                    if problem[y][x] != n:
-                        cand.append((y, x, n))
-        random.shuffle(cand)
-
-        for y, x, n in cand:
-            n_prev = problem[y][x]
-            problem[y][x] = n
-
-            sat, answer = solve_shakashaka(height, width, problem)
-            if not sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(answer)
-                if raw_score == fully_solved_score:
-                    return problem
-                clue_score = 0
-                for y2 in range(height):
-                    for x2 in range(width):
-                        if problem[y2][x2] is not None:
-                            clue_score += 6
-                score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                break
-            else:
-                problem[y][x] = n_prev
-
-        temperature *= 0.995
-    if verbose:
-        print('failed', file=sys.stderr)
-    return None
+    generated = generate_problem(lambda problem: solve_shakashaka(height, width, problem),
+                                 builder_pattern=ArrayBuilder2D(height, width, [None, -1, 0, 1, 2, 3, 4],
+                                                                default=None, disallow_adjacent=True),
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default=None, weight=6),
+                                 verbose=verbose)
+    return generated
 
 
 def _main():
