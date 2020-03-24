@@ -26,10 +26,13 @@ def solve_shakashaka(height, width, problem):
         for x in range(width + 1):
             diagonals = []
             is_empty = []
+            is_white_angle = []
             if y > 0 and x > 0:
                 diagonals.append(answer[y - 1, x - 1] == 4)
                 diagonals.append(answer[y - 1, x - 1] == 2)
                 is_empty.append(answer[y - 1, x - 1] == 0 if problem[y - 1][x - 1] is None else False)
+                if problem[y - 1][x - 1] is None:
+                    is_white_angle.append((answer[y - 1, x - 1] == 0) | (answer[y - 1, x - 1] == 1))
             else:
                 diagonals += [False, False]
                 is_empty.append(False)
@@ -37,6 +40,8 @@ def solve_shakashaka(height, width, problem):
                 diagonals.append(answer[y, x - 1] == 1)
                 diagonals.append(answer[y, x - 1] == 3)
                 is_empty.append(answer[y, x - 1] == 0 if problem[y][x - 1] is None else False)
+                if problem[y][x - 1] is None:
+                    is_white_angle.append((answer[y, x - 1] == 0) | (answer[y, x - 1] == 2))
             else:
                 diagonals += [False, False]
                 is_empty.append(False)
@@ -44,6 +49,8 @@ def solve_shakashaka(height, width, problem):
                 diagonals.append(answer[y, x] == 2)
                 diagonals.append(answer[y, x] == 4)
                 is_empty.append(answer[y, x] == 0 if problem[y][x] is None else False)
+                if problem[y][x] is None:
+                    is_white_angle.append((answer[y, x] == 0) | (answer[y, x] == 3))
             else:
                 diagonals += [False, False]
                 is_empty.append(False)
@@ -51,6 +58,8 @@ def solve_shakashaka(height, width, problem):
                 diagonals.append(answer[y - 1, x] == 3)
                 diagonals.append(answer[y - 1, x] == 1)
                 is_empty.append(answer[y - 1, x] == 0 if problem[y - 1][x] is None else False)
+                if problem[y - 1][x] is None:
+                    is_white_angle.append((answer[y - 1, x] == 0) | (answer[y - 1, x] == 4))
             else:
                 diagonals += [False, False]
                 is_empty.append(False)
@@ -65,7 +74,7 @@ def solve_shakashaka(height, width, problem):
                     solver.ensure(diagonals[i].then(
                         diagonals[(i + 5) % 8] | (is_empty[(i + 5) % 8 // 2] & diagonals[(i + 3) % 8])
                     ))
-            solver.ensure(count_true(filter(lambda x: x is not False, is_empty)) != 3)
+            solver.ensure(count_true(is_white_angle) != 3)
     is_sat = solver.solve()
     return is_sat, answer
 
