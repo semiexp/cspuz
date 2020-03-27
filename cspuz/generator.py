@@ -4,6 +4,7 @@ import sys
 import copy
 
 from cspuz.constraints import IntVar, BoolVar, Array
+from cspuz.grid_frame import BoolGridFrame
 
 
 def default_score_calculator(*args):
@@ -12,7 +13,7 @@ def default_score_calculator(*args):
         if isinstance(arg, (IntVar, BoolVar)):
             if arg.sol is not None:
                 score += 1
-        elif isinstance(arg, Array):
+        elif isinstance(arg, (Array, BoolGridFrame)):
             for a in arg:
                 if a.sol is not None:
                     score += 1
@@ -24,7 +25,7 @@ def default_uniqueness_checker(*args):
         if isinstance(arg, (IntVar, BoolVar)):
             if arg.sol is None:
                 return False
-        elif isinstance(arg, Array):
+        elif isinstance(arg, (Array, BoolGridFrame)):
             for a in arg:
                 if a.sol is None:
                     return False
