@@ -45,8 +45,9 @@ def count_non_default_values(problem, default, weight=1):
 
 
 def generate_problem(solver,
-                     initial_problem,
-                     neighbor_generator,
+                     initial_problem=None,
+                     neighbor_generator=None,
+                     builder_pattern=None,
                      score=None,
                      clue_penalty=None,
                      uniqueness=None,
@@ -55,6 +56,13 @@ def generate_problem(solver,
                      temperature_decay=0.995,
                      max_steps=None,
                      verbose=False):
+    if builder_pattern is not None:
+        if initial_problem is not None or neighbor_generator is not None:
+            raise ValueError('initial_problem and neighbor_generator must not be specified if builder_pattern is specified')
+        initial_problem, neighbor_generator = build_neighbor_generator(builder_pattern)
+    else:
+        if initial_problem is None or neighbor_generator is None:
+            raise ValueError('initial_problem and neighbor_generator must be specified if builder_pattern is not specified')
     if score is None:
         score = default_score_calculator
     if uniqueness is None:
