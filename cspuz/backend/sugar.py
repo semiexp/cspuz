@@ -2,11 +2,10 @@
 CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 """
 
-import os
-import subprocess
-
 import cspuz
 from cspuz.constraints import Op, Expr, BoolVar, IntVar
+
+from ._subproc import run_subprocess
 
 
 OP_TO_OPNAME = {
@@ -80,10 +79,7 @@ class CSPSolver(object):
     def solve(self):
         csp_description = '\n'.join(self.converted_variables + self.converted_constraints)
         sugar_path = cspuz.config.backend_path or 'sugar'
-        result = subprocess.run([sugar_path, '/dev/stdin'],
-                                input=csp_description.encode('ascii'),
-                                stdout=subprocess.PIPE)
-        out = result.stdout.decode('utf-8').split('\n')
+        out = run_subprocess([sugar_path, '/dev/stdin'], csp_description, timeout=cspuz.config.solver_timeout)
         if 'UNSATISFIABLE' in out[0]:
             for v in self.variables:
                 v.sol = None

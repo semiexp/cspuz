@@ -12,6 +12,7 @@ class Config(object):
     def __init__(self, infer_from_env=True):
         self.default_backend = _get_default(infer_from_env, 'CSPUZ_DEFAULT_BACKEND', 'sugar')
         self.backend_path = _get_default(infer_from_env, 'CSPUZ_BACKEND_PATH', None)
+        self.solver_timeout = None
 
 
 config = Config()

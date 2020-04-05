@@ -1,9 +1,8 @@
-import os
-import subprocess
-
 import cspuz
 from cspuz.constraints import BoolVar, IntVar
 from cspuz.backend import sugar
+
+from ._subproc import run_subprocess
 
 
 class CSPSolver(sugar.CSPSolver):
@@ -23,10 +22,7 @@ class CSPSolver(sugar.CSPSolver):
         answer_keys_desc = '#' + ' '.join(answer_keys)
         csp_description = '\n'.join(self.converted_variables + self.converted_constraints + [answer_keys_desc])
         sugar_path = cspuz.config.backend_path or 'sugar'
-        result = subprocess.run([sugar_path, '/dev/stdin'],
-                                input=csp_description.encode('ascii'),
-                                stdout=subprocess.PIPE)
-        out = result.stdout.decode('utf-8').split('\n')
+        out = run_subprocess([sugar_path, '/dev/stdin'], csp_description, timeout=cspuz.config.solver_timeout)
         for v in self.variables:
             v.sol = None
 
