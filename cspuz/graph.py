@@ -148,7 +148,7 @@ def active_edges_acyclic(solver, is_active_edge, graph):
         solver.ensure(count_true(less_ranks) <= 1)
 
 
-def _division_connected(solver, division, num_regions, graph, roots=None):
+def _division_connected(solver, division, num_regions, graph, roots=None, allow_empty_group=False):
     n = graph.num_vertices
     m = len(graph)
 
@@ -164,7 +164,10 @@ def _division_connected(solver, division, num_regions, graph, roots=None):
                 solver.ensure(spanning_forest[e].then((division[i] == division[j]) & (rank[i] != rank[j])))
         solver.ensure(count_true(less_ranks) == is_root[i].cond(0, 1))
     for i in range(num_regions):
-        solver.ensure(count_true([r & (n == i) for r, n in zip(is_root, division)]) == 1)
+        if allow_empty_group:
+            solver.ensure(count_true([r & (n == i) for r, n in zip(is_root, division)]) <= 1)
+        else:
+            solver.ensure(count_true([r & (n == i) for r, n in zip(is_root, division)]) == 1)
     if roots is not None:
         for i, r in enumerate(roots):
             if r is not None:
@@ -172,7 +175,7 @@ def _division_connected(solver, division, num_regions, graph, roots=None):
                 solver.ensure(is_root[r])
 
 
-def division_connected(solver, division, num_regions, graph=None, roots=None):
+def division_connected(solver, division, num_regions, graph=None, roots=None, allow_empty_group=False):
     if graph is None:
         if not _check_array_shape(division, int, 2):
             raise TypeError('`division` should be a 2-D bool Array if graph is not specified')
@@ -187,9 +190,10 @@ def division_connected(solver, division, num_regions, graph=None, roots=None):
                 else:
                     y, x = a
                     roots_conv.append(y * width + x)
-        _division_connected(solver, division.flatten(), num_regions, _grid_graph(height, width), roots=roots_conv)
+        _division_connected(solver, division.flatten(), num_regions, _grid_graph(height, width), roots=roots_conv,
+                            allow_empty_group=allow_empty_group)
     else:
-        _division_connected(solver, division, num_regions, graph, roots=roots)
+        _division_connected(solver, division, num_regions, graph, roots=roots, allow_empty_group=allow_empty_group)
 
 
 def _division_connected_variable_groups(solver, graph, group_size=None):
