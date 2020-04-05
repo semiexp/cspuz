@@ -1,7 +1,10 @@
+import sys
+
 from cspuz import Solver, graph
 from cspuz.constraints import count_true
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, count_non_default_values, Choice
 
 
 def solve_yajilin(height, width, problem):
@@ -32,26 +35,61 @@ def solve_yajilin(height, width, problem):
                 solver.ensure(is_passed[y, x] != black_cell[y, x])
 
     is_sat = solver.solve()
-    return is_sat, grid_frame, is_passed
+    return is_sat, grid_frame, black_cell
+
+
+def generate_yajilin(height, width, verbose=False):
+    choices = []
+    for y in range(height):
+        row = []
+        for x in range(width):
+            c = ['..']
+            for i in range(0, (y + 3) // 2):
+                c.append('^{}'.format(i))
+            for i in range(0, (x + 3) // 2):
+                c.append('<{}'.format(i))
+            for i in range(0, (height - y + 2) // 2):
+                c.append('v{}'.format(i))
+            for i in range(0, (width - x + 2) // 2):
+                c.append('>{}'.format(i))
+            row.append(Choice(c, '..'))
+        choices.append(row)
+    generated = generate_problem(lambda problem: solve_yajilin(height, width, problem),
+                                 builder_pattern=choices,
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default='..', weight=16),
+                                 verbose=verbose)
+    return generated
+
+
+def _main():
+    if len(sys.argv) == 1:
+        # https://twitter.com/semiexp/status/1206956338556764161
+        height = 10
+        width = 10
+        problem = [
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', 'v0', '..', '..', '>2', '..', '..', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '^1', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', '^0', '..', '^3', '..', '..', '>1', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
+            ['..', '..', '..', '..', '..', '..', '..', '>0', '..', '..'],
+        ]
+        is_sat, is_line, black_cell = solve_yajilin(height, width, problem)
+        print('has answer:', is_sat)
+        if is_sat:
+            print(util.stringify_grid_frame(is_line))
+    else:
+        height, width = map(int, sys.argv[1:])
+        while True:
+            problem = generate_yajilin(height, width, verbose=True)
+            if problem is not None:
+                print(util.stringify_array(problem, str), flush=True)
+                print(flush=True)
 
 
 if __name__ == '__main__':
-    # https://twitter.com/semiexp/status/1206956338556764161
-    height = 10
-    width = 10
-    problem = [
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', 'v0', '..', '..', '>2', '..', '..', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '^1', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', '^0', '..', '^3', '..', '..', '>1', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '..', '..', '..'],
-        ['..', '..', '..', '..', '..', '..', '..', '>0', '..', '..'],
-    ]
-    is_sat, is_line, is_passed = solve_yajilin(height, width, problem)
-    print('has answer:', is_sat)
-    if is_sat:
-        print(util.stringify_grid_frame(is_line))
+    _main()
