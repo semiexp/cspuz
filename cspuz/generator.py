@@ -143,7 +143,12 @@ class ArrayBuilder2D(Builder):
         self.choice = list(choice)
         self.default = default
         self.non_default = [c for c in self.choice if c != self.default]
-        self.disallow_adjacent = disallow_adjacent
+        if disallow_adjacent is True:
+            self.disallow_adjacent = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        elif disallow_adjacent is False:
+            self.disallow_adjacent = []
+        else:
+            self.disallow_adjacent = disallow_adjacent
         self.symmetry = symmetry
 
     def initial(self):
@@ -153,22 +158,16 @@ class ArrayBuilder2D(Builder):
         ret = []
         for y in range(self.height):
             for x in range(self.width):
-                if self.disallow_adjacent:
-                    default_only = False
-                    if 0 < y and current[y - 1][x] != self.default:
+                default_only = False
+                for dy, dx in self.disallow_adjacent:
+                    y2 = y + dy
+                    x2 = x + dx
+                    if 0 <= y2 < self.height and 0 <= x2 < self.width and current[y2][x2] != self.default:
                         default_only = True
-                    if 0 < x and current[y][x - 1] != self.default:
-                        default_only = True
-                    if y < self.height - 1 and current[y + 1][x] != self.default:
-                        default_only = True
-                    if x < self.width - 1 and current[y][x + 1] != self.default:
-                        default_only = True
-                else:
-                    default_only = False
                 if self.symmetry:
                     y2 = self.height - 1 - y
                     x2 = self.width - 1 - x
-                    if abs(y2 - y) + abs(x2 - x) == 1:
+                    if (y2 - y, x2 - x) in self.disallow_adjacent:
                         default_only = True
                     if current[y][x] != self.default:
                         ret.append([(y, x, self.default), (y2, x2, self.default)])
