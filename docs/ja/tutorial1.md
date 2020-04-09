@@ -158,3 +158,6 @@ a < b | b < a + 3
 - 「`x` ならば `y`」を意味する `x.then(y)`
 - 論理値 `b` に対して，`x if b else y` に対応する `b.cond(x, y)`
 - 引数に与えた変数がすべて異なることを意味する `cspuz.alldifferent`
+- 引数に与えた変数すべてに対する and / or を意味する `cspuz.fold_and` および `cspuz.fold_or`
+  - Python 組み込みの `any` や `all` は使わないでください．
+- 引数に与えた変数のうち `true` のものを数える `cspuz.count_true`
