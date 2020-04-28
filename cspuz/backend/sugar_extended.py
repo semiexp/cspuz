@@ -22,7 +22,7 @@ class CSPSolver(sugar.CSPSolver):
         answer_keys_desc = '#' + ' '.join(answer_keys)
         csp_description = '\n'.join(self.converted_variables + self.converted_constraints + [answer_keys_desc])
         sugar_path = cspuz.config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'], csp_description, timeout=cspuz.config.solver_timeout)
+        out = run_subprocess([sugar_path, '/dev/stdin'], csp_description, timeout=cspuz.config.solver_timeout).split('\n')
         for v in self.variables:
             v.sol = None
 
