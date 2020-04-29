@@ -80,7 +80,7 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
     - `empty` representing the empty cell,
     - a str to be serialized as-is,
     - an int to be serialized in base-16, or
-    - a `list` of `str`s or `int`s.
+    - a `list` or 'tuple' of `str`s or `int`s.
     :param single_empty_marker: the number (in base-36) representing single empty cell in the serialization.
     :param empty: the value to represent empty cells.
     :param dim: the number of dimensions (1 or 2) of `array`. If `None` is specified, it is automatically inferred.
@@ -117,11 +117,13 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
                 contiguous_empty_cells = 0
             if isinstance(v, (str, int)):
                 res.append(_encode_int_or_str(v))
-            elif isinstance(v, list):
+            elif isinstance(v, (list, tuple)):
                 for w in v:
                     res.append(_encode_int_or_str(w))
             else:
                 raise TypeError('unsupported type for serialization')
+    if contiguous_empty_cells > 0:
+        res.append(_BASE36[contiguous_empty_cells - 1 + single_empty_index])
     return ''.join(res)
 
 
