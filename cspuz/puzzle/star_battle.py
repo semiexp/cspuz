@@ -149,27 +149,7 @@ def generate_star_battle(n, k, verbose=False):
 
 
 def problem_to_pzv_url(n, k, blocks):
-    def convert_binary_seq(s):
-        ret = ''
-        for i in range((len(s) + 4) // 5):
-            v = 0
-            for j in range(5):
-                if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2 ** (4 - j))
-            ret += np.base_repr(v, 32).lower()
-        return ret
-
-    s = []
-    for y in range(n):
-        for x in range(n - 1):
-            s.append(1 if blocks[y][x] != blocks[y][x + 1] else 0)
-    ret = convert_binary_seq(s)
-    s = []
-    for y in range(n - 1):
-        for x in range(n):
-            s.append(1 if blocks[y][x] != blocks[y + 1][x] else 0)
-    ret += convert_binary_seq(s)
-    return 'http://pzv.jp/p.html?starbattle/{}/{}/{}/{}'.format(n, n, k, ret)
+    return 'http://pzv.jp/p.html?starbattle/{}/{}/{}/{}'.format(n, n, k, util.encode_grid_segmentation(n, n, blocks))
 
 
 def _main():
