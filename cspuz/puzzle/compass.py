@@ -1,13 +1,13 @@
 import random
 import math
 import sys
-import time
 
 import svgwrite
 
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, Choice
 
 
 def solve_compass(height, width, problem):
@@ -83,13 +83,15 @@ def compute_score(division):
     return score
 
 
-def generate_compass(height, width, pos, prefer_large_blocks=False, encircling=False, timeout=7200.0, verbose=False):
-    problem = [[y, x, -1, -1, -1, -1] for y, x in pos]
-    score = 0
-    temperature = 5.0
-    fully_solved_score = height * width
-    start = time.time()
-
+def generate_compass(height, width, pos, prefer_large_blocks=False, encircling=False, verbose=False):
+    choice_base = Choice([-1] + list(range(1, 8)), -1)
+    pattern = []
+    for y, x in pos:
+        pattern.append([y, x,
+                        -1 if y < 2 else choice_base,
+                        -1 if x < 2 else choice_base,
+                        -1 if y >= height - 2 else choice_base,
+                        -1 if x >= width - 2 else choice_base])
     if prefer_large_blocks:
         flg = [random.random() < 0.9 for _ in range(len(pos))]
     else:
@@ -98,89 +100,31 @@ def generate_compass(height, width, pos, prefer_large_blocks=False, encircling=F
         circ = random.randint(0, len(pos) - 1)
     else:
         circ = -1
+    if prefer_large_blocks or encircling:
+        pretest = lambda problem: check_problem_constraints(height, width, problem, flg, circ)
+    else:
+        pretest = None
 
-    for step in range(height * width * 10):
-        cand = []
-        for i in range(len(pos)):
-            for j in range(4):
-                for n in range(-1, 8):
-                    if n == 0:
-                        continue
-                    if problem[i][j + 2] != n:
-                        cand.append((i, j, n))
-        random.shuffle(cand)
-
-        for i, j, n in cand:
-            if timeout is not None and time.time() - start >= timeout:
-                if verbose:
-                    print('timeout', file=sys.stderr)
-                return None
-            n_prev = problem[i][j + 2]
-            problem[i][j + 2] = n
-
-            if not check_problem_constraints(height, width, problem, flg, circ):
-                problem[i][j + 2] = n_prev
-                continue
-
-            sat, division = solve_compass(height, width, problem)
-            if not sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(division)
-                if raw_score == fully_solved_score:
-                    return problem
-                clue_score = 0
-                for i2 in range(len(pos)):
-                    for j2 in range(2, 6):
-                        if problem[i2][j2] >= 0:
-                            clue_score += 3
-                score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                break
-            else:
-                problem[i][j + 2] = n_prev
-        temperature *= 0.995
-    if verbose:
-        print('failed', file=sys.stderr)
-    return None
+    def penalty(problem):
+        ret = 0
+        for i in range(len(problem)):
+            for j in range(2, 6):
+                if problem[i][j] != -1:
+                    ret += 3
+        return ret
+    generated = generate_problem(lambda problem: solve_compass(height, width, problem),
+                                 builder_pattern=pattern,
+                                 clue_penalty=penalty,
+                                 pretest=pretest,
+                                 verbose=verbose)
+    return generated
 
 
-def emit_puzz_link_url(height, width, pos):
+def to_puzz_link_url(height, width, pos):
     problem = [[None for _ in range(width)] for _ in range(height)]
     for (y, x, u, l, d, r) in pos:
-        problem[y][x] = (u, l, d, r)
-    def convert_clue_value(v):
-        if v == -1:
-            return '.'
-        elif 0 <= v <= 15:
-            return format(v, 'x')
-        else:
-            return '-' + format(v, 'x')
-    ret = ''
-    contiguous_empty_cells = 0
-    for y in range(height):
-        for x in range(width):
-            if problem[y][x] is None:
-                if contiguous_empty_cells == 20:
-                    ret += 'z'
-                    contiguous_empty_cells = 1
-                else:
-                    contiguous_empty_cells += 1
-            else:
-                if contiguous_empty_cells > 0:
-                    ret += chr(ord('f') + contiguous_empty_cells)
-                    contiguous_empty_cells = 0
-                ret += convert_clue_value(problem[y][x][0]) + convert_clue_value(problem[y][x][2]) + \
-                       convert_clue_value(problem[y][x][1]) + convert_clue_value(problem[y][x][3])
-    if contiguous_empty_cells > 0:
-        ret += chr(ord('f') + contiguous_empty_cells)
-    return 'https://puzz.link/p?compass/{}/{}/{}'.format(width, height, ret)
+        problem[y][x] = tuple(map(lambda x: '.' if x == -1 else x, (u, d, l, r)))
+    return 'https://puzz.link/p?compass/{}/{}/{}'.format(width, height, util.encode_array(problem))
 
 
 def parse_puzz_link_url(url):
@@ -358,9 +302,9 @@ def _main():
         height, width, nlo, nhi = map(int, sys.argv[1:])
         while True:
             pos = generate_placement(height, width, nlo, nhi)
-            problem = generate_compass(height, width, pos, verbose=True)
+            problem = generate_compass(height, width, pos, prefer_large_blocks=True, verbose=True)
             if problem is not None:
-                print(emit_puzz_link_url(height, width, problem), flush=True)
+                print(to_puzz_link_url(height, width, problem), flush=True)
 
 
 if __name__ == '__main__':
