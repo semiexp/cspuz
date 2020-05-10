@@ -1,11 +1,9 @@
-import random
-import math
 import sys
-import itertools
 
 from cspuz import Solver
 from cspuz.constraints import fold_or, count_true
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_akari(height, width, problem):
@@ -85,105 +83,41 @@ def compute_score(ans):
     return score
 
 
-def generate_akari(height, width, no_adjacent_clue=False, initial_blocks=None, verbose=False):
-    problem = [[-2 for _ in range(width)] for _ in range(height)]
-    score = 0
-    temperature = 5.0
-    fully_solved_score = height * width
-
-    if initial_blocks is not None:
-        num_blocks = 0
-        while num_blocks < initial_blocks:
-            y = random.randint(0, height - 1)
-            x = random.randint(0, width - 1)
-            y2 = height - 1 - y
-            x2 = width - 1 - x
-            if no_adjacent_clue:
-                if y > 0 and problem[y - 1][x] != -2:
-                    continue
-                if y < height - 1 and problem[y + 1][x] != -2:
-                    continue
-                if x > 0 and problem[y][x - 1] != -2:
-                    continue
-                if x < width - 1 and problem[y][x + 1] != -2:
-                    continue
-                if abs(y2 - y) + abs(x2 - x) == 1:
-                    continue
-            if problem[y][x] != -2:
-                continue
-            problem[y][x] = -1
-            problem[y2][x2] = -1
-            if (y, x) == (y2, x2):
-                num_blocks += 1
-            else:
-                num_blocks += 2
-        score = -(num_blocks * 2)
-
-    for step in range(height * width * 10):
-        cand = []
+def generate_akari(height, width, no_easy=False, verbose=False):
+    def pretest(problem):
+        visited = [[False for _ in range(width)] for _ in range(height)]
+        def visit(y, x):
+            if not (0 <= y < height and 0 <= x < width and problem[y][x] == -2 and not visited[y][x]):
+                return
+            visited[y][x] = True
+            visit(y - 1, x)
+            visit(y + 1, x)
+            visit(y, x - 1)
+            visit(y, x + 1)
+        n_component = 0
         for y in range(height):
             for x in range(width):
-                if no_adjacent_clue:
-                    if y > 0 and problem[y - 1][x] != -2:
-                        continue
-                    if y < height - 1 and problem[y + 1][x] != -2:
-                        continue
-                    if x > 0 and problem[y][x - 1] != -2:
-                        continue
-                    if x < width - 1 and problem[y][x + 1] != -2:
-                        continue
+                if problem[y][x] == -2 and not visited[y][x]:
+                    n_component += 1
+                    visit(y, x)
+        if n_component != 1:
+            return False
+        if not no_easy:
+            return True
+        for y in range(height):
+            for x in range(width):
+                if problem[y][x] >= 0:
+                    n_adj = (1 if y > 0 and problem[y - 1][x] == -2 else 0) + (1 if x > 0 and problem[y][x - 1] == -2 else 0) + (1 if y < height - 1 and problem[y + 1][x] == -2 else 0) + (1 if x < width - 1 and problem[y][x + 1] == -2 else 0)
+                    if problem[y][x] >= n_adj - 1:
+                        return False
+        return True
 
-                y2, x2 = height - 1 - y, width - 1 - x
-                maxn = (1 if y2 > 0 and problem[y2 - 1][x2] == -2 else 0) +\
-                       (1 if y2 < height - 1 and problem[y2 + 1][x2] == -2 else 0) +\
-                       (1 if x2 > 0 and problem[y2][x2 - 1] == -2 else 0) +\
-                       (1 if x2 < width - 1 and problem[y2][x2 + 1] == -2 else 0)
-                if (y, x) < (y2, x2):
-                    for n1, n2 in [(-2, -2)] + list(itertools.product(range(-1, maxn + 1), range(-1, maxn + 1))):
-                        if (problem[y][x], problem[y2][x2]) != (n1, n2):
-                            cand.append([(y, x, n1), (y2, x2, n2)])
-                elif (y, x) == (y2, x2):
-                    for n in range(-2, maxn + 1):
-                        if problem[y][x] != n:
-                            cand.append([(y, x, n)])
-        random.shuffle(cand)
-
-        for update in cand:
-            restore = [(y, x, problem[y][x]) for y, x, _ in update]
-            for y, x, n in update:
-                problem[y][x] = n
-
-            sat, has_light = solve_akari(height, width, problem)
-            if not sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(has_light)
-                if raw_score == fully_solved_score:
-                    return problem
-                clue_score = 0
-                for y in range(height):
-                    for x in range(width):
-                        if problem[y][x] == -1:
-                            clue_score += 2
-                        elif problem[y][x] >= 0:
-                            clue_score += 8
-                score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                break
-            else:
-                for y, x, n in restore:
-                    problem[y][x] = n
-
-        temperature *= 0.995
-    if verbose:
-        print('failed', file=sys.stderr)
-    return None
+    pattern = [-2, -1, 1, 2] if no_easy else [-2, -1, 0, 1, 2, 3, 4]
+    generated = generate_problem(lambda problem: solve_akari(height, width, problem),
+                                 builder_pattern=ArrayBuilder2D(height, width, pattern, default=-2, symmetry=True),
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default=-2, weight=5),
+                                 pretest=pretest, verbose=verbose)
+    return generated
 
 
 def _main():
@@ -214,11 +148,13 @@ def _main():
     else:
         height, width = map(int, sys.argv[1:])
         while True:
-            problem = generate_akari(height, width, no_adjacent_clue=True, initial_blocks=6, verbose=True)
+            problem = generate_akari(height, width, verbose=True)
             if problem is not None:
                 print(util.stringify_array(problem, {
                     -2: '.', -1: '#', 0: '0', 1: '1', 2: '2', 3: '3', 4: '4'
                 }))
+                print('', flush=True)
+                break
 
 
 if __name__ == '__main__':
