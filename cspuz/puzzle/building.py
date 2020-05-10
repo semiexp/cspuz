@@ -1,10 +1,9 @@
-import random
-import math
 import sys
 
 from cspuz import Solver
 from cspuz.constraints import alldifferent, fold_and
 from cspuz.puzzle import util
+from cspuz.generator import Choice, generate_problem, build_neighbor_generator, count_non_default_values
 
 
 def solve_building(n, u, d, l, r):
@@ -37,63 +36,15 @@ def solve_building(n, u, d, l, r):
     return is_sat, answer
 
 
-def compute_score(nums):
-    score = 0
-    for v in nums:
-        if v.sol is not None:
-            score += 1
-    return score
-
-
 def generate_building(size, verbose=False):
-    problem = [[0 for _ in range(size)] for _ in range(4)]
-    score = 0
-    temperature = 3.0
-    fully_solved_score = size * size
-
-    for step in range(size * size * 10):
-        cand = []
-        for d in range(4):
-            for i in range(size):
-                for n in range(0, size):
-                    if n == 1:
-                        continue
-                    if problem[d][i] != n:
-                        cand.append((d, i, n))
-        random.shuffle(cand)
-
-        for d, i, n in cand:
-            n_prev = problem[d][i]
-            problem[d][i] = n
-
-            is_sat, answer = solve_building(size, *problem)
-            if not is_sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(answer)
-                if raw_score == fully_solved_score:
-                    return problem
-                clue_score = 0
-                for d2 in range(4):
-                    for i2 in range(size):
-                        if problem[d2][i2] >= 1:
-                            clue_score += 4
-                score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                break
-            else:
-                problem[d][i] = n_prev
-
-        temperature *= 0.995
-    if verbose:
-        print('failed', file=sys.stderr)
-    return None
+    initial, neighbor = build_neighbor_generator([[Choice(range(0, size + 1), default=0) for _ in range(size)] for _ in range(4)])
+    generated = generate_problem(lambda problem: solve_building(size, *problem),
+                                 initial,
+                                 neighbor,
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=3.0),
+                                 verbose=verbose)
+    if generated is not None:
+        return generated
 
 
 def _main():
