@@ -44,6 +44,7 @@ def generate_creek(height, width, no_easy=False, verbose=False):
     generated = generate_problem(lambda problem: solve_creek(height, width, problem),
                                  builder_pattern=pattern,
                                  clue_penalty=lambda problem: count_non_default_values(problem, default=-1, weight=3),
+                                 pretest=pretest,
                                  verbose=verbose)
     return generated
 
@@ -53,10 +54,10 @@ def _main():
         pass
     else:
         height, width = map(int, sys.argv[1:])
-        # cspuz.config.solver_timeout = 1800.0
+        cspuz.config.solver_timeout = 1200.0
         while True:
             try:
-                problem = generate_creek(height, width, verbose=True)
+                problem = generate_creek(height, width, no_easy=True, verbose=True)
                 if problem is not None:
                     print(util.stringify_array(problem, lambda x: '.' if x == -1 else str(x)), flush=True)
                     print(flush=True)
