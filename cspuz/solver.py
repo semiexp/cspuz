@@ -9,6 +9,8 @@ def _get_default_backend():
         return backend.sugar
     elif backend_name == 'sugar_extended':
         return backend.sugar_extended
+    elif backend_name == 'z3':
+        return backend.z3
     else:
         raise ValueError('invalid default backend {}'.format(backend_name))
 
