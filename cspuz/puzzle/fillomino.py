@@ -1,5 +1,7 @@
 import sys
+import subprocess
 
+import cspuz
 from cspuz import Solver, graph
 from cspuz.puzzle import util
 from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
@@ -54,12 +56,16 @@ def _main():
         if is_sat:
             print(util.stringify_array(ans, str))
     else:
+        cspuz.config.solver_timeout = 1200.0
         height, width = map(int, sys.argv[1:])
         while True:
-            problem = generate_fillomino(height, width, checkered=True, symmetry=True, verbose=True)
-            if problem is not None:
-                print(util.stringify_array(problem, lambda x: '.' if x == 0 else str(x)), flush=True)
-                print(flush=True)
+            try:
+                problem = generate_fillomino(height, width, disallow_adjacent=True, symmetry=True, verbose=True)
+                if problem is not None:
+                    print(util.stringify_array(problem, lambda x: '.' if x == 0 else str(x)), flush=True)
+                    print(flush=True)
+            except subprocess.TimeoutExpired:
+                print('timeout', file=sys.stderr)
 
 
 if __name__ == '__main__':
