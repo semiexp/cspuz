@@ -205,7 +205,7 @@ def _compute_score(has_star):
     return ret
 
 
-def generate_lits(height, width, verbose=False):
+def generate_lits(height, width, num_min_blocks=None, verbose=False):
     block = []
     for y in range(height):
         for x in range(width):
@@ -230,7 +230,7 @@ def generate_lits(height, width, verbose=False):
                 update = False
             else:
                 raw_score_next = _compute_score(is_black)
-                if raw_score_next == fully_solved_score:
+                if raw_score_next == fully_solved_score and (num_min_blocks is None or len(blocks_next) >= num_min_blocks):
                     return blocks_next
                 clue_score = -min(len(blocks_next), 20) * 5 # abs(len(blocks_next) - 12) * 4
                 for block in blocks:
