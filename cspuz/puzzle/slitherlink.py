@@ -1,11 +1,14 @@
 import random
 import math
 import sys
+import subprocess
 
+import cspuz
 from cspuz import Solver, graph
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_slitherlink(height, width, problem):
@@ -21,59 +24,24 @@ def solve_slitherlink(height, width, problem):
     return is_sat, grid_frame
 
 
-def compute_score(grid_frame):
-    score = 0
-    for e in grid_frame.all_edges():
-        if e.sol is not None:
-            score += 1
-    return score
-
-
-def generate_slitherlink(height, width, verbose=False):
-    problem = [[-1 for _ in range(width)] for _ in range(height)]
-    score = 0
-    n_clues = 0
-    temperature = 5.0
-    fully_solved_score = height * (width + 1) + (height + 1) * width
-
-    for step in range(height * width * 10):
-        cand = []
+def generate_slitherlink(height, width, symmetry=False, verbose=False):
+    def no_neighboring_zero(problem):
         for y in range(height):
             for x in range(width):
-                for n in [-1, 1, 2, 3]:
-                    if problem[y][x] != n:
-                        cand.append((y, x, n))
-        random.shuffle(cand)
+                if problem[y][x] == 0:
+                    for dy in range(-1, 2):
+                        for dx in range(-1, 2):
+                            y2 = y + dy
+                            x2 = x + dx
+                            if (dy, dx) != (0, 0) and 0 <= y2 < height and 0 <= x2 < width and problem[y2][x2] == 0:
+                                return False
+        return True
 
-        for y, x, n in cand:
-            n_prev = problem[y][x]
-            n_clues_next = n_clues + (1 if n >= 0 else 0) - (1 if n_prev >= 0 else 0)
-            problem[y][x] = n
-
-            sat, grid_frame = solve_slitherlink(height, width, problem)
-            if not sat:
-                score_next = -1
-                update = False
-            else:
-                raw_score = compute_score(grid_frame)
-                if raw_score == fully_solved_score:
-                    return problem
-                score_next = raw_score - 5.0 * n_clues_next
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
-
-            if update:
-                if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
-                score = score_next
-                n_clues = n_clues_next
-                break
-            else:
-                problem[y][x] = n_prev
-
-        temperature *= 0.995
-    if verbose:
-        print('failed')
-    return None
+    generated = generate_problem(lambda problem: solve_slitherlink(height, width, problem),
+                                 builder_pattern=ArrayBuilder2D(height, width, range(-1, 4), default=-1, symmetry=symmetry, disallow_adjacent=True),
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default=-1, weight=5),
+                                 pretest=no_neighboring_zero, verbose=verbose)
+    return generated
 
 
 def _main():
@@ -92,11 +60,16 @@ def _main():
         if is_sat:
             print(util.stringify_grid_frame(is_line))
     else:
+        cspuz.config.solver_timeout = 1800.0
         height, width = map(int, sys.argv[1:])
         while True:
-            problem = generate_slitherlink(height, width, verbose=True)
-            if problem is not None:
-                print(util.stringify_array(problem, { -1: '.', 0: '0', 1: '1', 2: '2', 3: '3' }))
+            try:
+                problem = generate_slitherlink(height, width, symmetry=True, verbose=True)
+                if problem is not None:
+                    print(util.stringify_array(problem, { -1: '.', 0: '0', 1: '1', 2: '2', 3: '3' }))
+                    print(flush=True)
+            except subprocess.TimeoutExpired:
+                print('timeout', file=sys.stderr)
 
 
 if __name__ == '__main__':
