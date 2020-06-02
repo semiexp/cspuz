@@ -1,5 +1,6 @@
-from cspuz.constraints import count_true, Array, IntVar, IntExpr, _compute_shape
+from cspuz.constraints import count_true, Array, IntVar, IntExpr, _compute_shape, BoolExpr, Op
 from cspuz.grid_frame import BoolGridFrame
+from cspuz.configuration import config
 
 
 def _check_array_shape(array, dtype, dim):
@@ -68,7 +69,15 @@ def _from_grid_frame(grid_frame):
     return edges, graph
 
 
-def _active_vertices_connected(solver, is_active, graph, acyclic=False):
+def _active_vertices_connected(solver, is_active, graph, acyclic=False, use_graph_primitive=None):
+    if use_graph_primitive is None:
+        use_graph_primitive = config.use_graph_primitive
+    if use_graph_primitive and not acyclic:
+        solver.ensure(BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+            [graph.num_vertices, len(graph)] + list(is_active) + sum([[x, y] for x, y in graph.edges], [])
+        ))
+        return
+
     n = graph.num_vertices
 
     ranks = solver.int_array(n, 0, n - 1)
@@ -86,14 +95,14 @@ def _active_vertices_connected(solver, is_active, graph, acyclic=False):
     solver.ensure(count_true(is_root) <= 1)
 
 
-def active_vertices_connected(solver, is_active, graph=None, acyclic=False):
+def active_vertices_connected(solver, is_active, graph=None, acyclic=False, use_graph_primitive=None):
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
             raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
         height, width = is_active.shape
-        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width), acyclic=acyclic)
+        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width), acyclic=acyclic, use_graph_primitive=use_graph_primitive)
     else:
-        _active_vertices_connected(solver, is_active, graph, acyclic=acyclic)
+        _active_vertices_connected(solver, is_active, graph, acyclic=acyclic, use_graph_primitive=use_graph_primitive)
 
 
 def active_vertices_not_adjacent(solver, is_active, graph=None):
@@ -148,9 +157,27 @@ def active_edges_acyclic(solver, is_active_edge, graph):
         solver.ensure(count_true(less_ranks) <= 1)
 
 
-def _division_connected(solver, division, num_regions, graph, roots=None, allow_empty_group=False):
+def _division_connected(solver, division, num_regions, graph, roots=None, allow_empty_group=False, use_graph_primitive=None):
+    if use_graph_primitive is None:
+        use_graph_primitive = config.use_graph_primitive
+
     n = graph.num_vertices
     m = len(graph)
+
+    if use_graph_primitive:
+        for i in range(num_regions):
+            region = solver.bool_array(n)
+            solver.ensure(region == (division == i))
+            _active_vertices_connected(solver, region, graph, use_graph_primitive=True)
+
+            if not allow_empty_group:
+                solver.ensure(count_true(region) >= 1)
+
+        if roots is not None:
+            for i, r in enumerate(roots):
+                if r is not None:
+                    solver.ensure(division[r] == i)
+        return
 
     rank = solver.int_array(n, 0, n - 1)
     is_root = solver.bool_array(n)
@@ -261,30 +288,51 @@ def division_connected_variable_groups(solver, graph=None, shape=None, group_siz
         return _division_connected_variable_groups(solver, graph, group_size=group_size)
 
 
-def _active_edges_single_cycle(solver, is_active_edge, graph):
+def _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitive=None):
+    if use_graph_primitive is None:
+        use_graph_primitive = config.use_graph_primitive
     n = graph.num_vertices
     m = len(graph)
 
     rank = solver.int_array(n, 0, n - 1)
     is_passed = solver.bool_array(n)
-    is_root = solver.bool_array(n)
 
-    for i in range(n):
-        degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
-        solver.ensure(degree == is_passed[i].cond(2, 0))
-        solver.ensure(is_passed[i].then(count_true(
-            [is_active_edge[e] & (rank[j] >= rank[i]) for j, e in graph.incident_edges[i]]
-        ) <= is_root[i].cond(2, 1)))
-    solver.ensure(count_true(is_root) == 1)
+    if use_graph_primitive:
+        for i in range(n):
+            degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+            solver.ensure(degree == is_passed[i].cond(2, 0))
+        edge_graph = set()
+        for v in range(n):
+            for i in range(len(graph.incident_edges[v])):
+                for j in range(i):
+                    x = graph.incident_edges[v][i][1]
+                    y = graph.incident_edges[v][j][1]
+                    if x < y:
+                        edge_graph.add((x, y))
+                    else:
+                        edge_graph.add((y, x))
+        solver.ensure(BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+            [len(graph), len(edge_graph)] + list(is_active_edge) + sum([[x, y] for x, y in edge_graph], [])
+        ))
+    else:
+        is_root = solver.bool_array(n)
+
+        for i in range(n):
+            degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+            solver.ensure(degree == is_passed[i].cond(2, 0))
+            solver.ensure(is_passed[i].then(count_true(
+                [is_active_edge[e] & (rank[j] >= rank[i]) for j, e in graph.incident_edges[i]]
+            ) <= is_root[i].cond(2, 1)))
+        solver.ensure(count_true(is_root) == 1)
     return is_passed
 
 
-def active_edges_single_cycle(solver, is_active_edge, graph=None):
+def active_edges_single_cycle(solver, is_active_edge, graph=None, use_graph_primitive=None):
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError('`is_active_edge` should be a BoolGridFrame if graph is not specified')
         edges, graph = _from_grid_frame(is_active_edge)
-        is_passed_flat = _active_edges_single_cycle(solver, edges, graph)
+        is_passed_flat = _active_edges_single_cycle(solver, edges, graph, use_graph_primitive=use_graph_primitive)
         return is_passed_flat.reshape((is_active_edge.height + 1, is_active_edge.width + 1))
     else:
-        return _active_edges_single_cycle(solver, is_active_edge, graph)
+        return _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive)

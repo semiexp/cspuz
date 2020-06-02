@@ -25,7 +25,8 @@ OP_TO_OPNAME = {
     Op.XOR: 'xor',
     Op.IMP: '=>',
     Op.IF: 'if',
-    Op.ALLDIFF: 'alldifferent'
+    Op.ALLDIFF: 'alldifferent',
+    Op.GRAPH_ACTIVE_VERTICES_CONNECTED: 'graph-active-vertices-connected'
 }
 
 

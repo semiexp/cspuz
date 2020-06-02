@@ -28,6 +28,7 @@ class Op(Enum):
     IMP = auto()  # bool (=>) bool : bool
     IF = auto()  # if (bool) { int } else { int } : int
     ALLDIFF = auto()  # alldifferent(int*) : bool
+    GRAPH_ACTIVE_VERTICES_CONNECTED = auto()
 
 
 def _make_expr(op, operands):
