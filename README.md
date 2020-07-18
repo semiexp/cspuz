@@ -20,6 +20,8 @@ You can change the default backend to sugar-ext by setting the `$CSPUZ_DEFAULT_B
 
 ##  Setup
 
+Before installing cspuz, you need to setup a backend CSP solver.
+
 ### z3 backend
 
 Installing z3 will be as easy as just running
@@ -53,3 +55,7 @@ Although it is not fully verified, it offers several performance advangates:
 
 `csugar` binary which will be produced by building csugar is designed to run in the same way as `sugar_ext.sh`.
 Therefore, you can set the `$CSPUZ_DEFAULT_BACKEND` to `sugar_extended` in order to use csugar.
+
+### Installing cspuz
+
+First clone this repository to whichever directory you like, and run `pip install .` in the directory in which you cloned it.
