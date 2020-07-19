@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from cspuz import Solver, graph
@@ -101,9 +102,20 @@ def _main():
         if is_sat:
             print(util.stringify_array(ans, { None: '.', True: '\\', False: '/'}))
     else:
-        height, width = map(int, sys.argv[1:])
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-h', '--height', type=int, required=True)
+        parser.add_argument('-w', '--width', type=int, required=True)
+        parser.add_argument('--no-easy', action='store_true')
+        parser.add_argument('--no-adjacent', action='store_true')
+        parser.add_argument('-v', '--verbose', action='store_true')
+        args = parser.parse_args()
+        height = args.height
+        width = args.width
+        no_easy = args.no_easy
+        no_adjacent = args.no_adjacent
+        verbose = args.verbose
         while True:
-            problem = generate_gokigen(height, width, verbose=True)
+            problem = generate_gokigen(height, width, no_easy=no_easy, no_adjacent=no_adjacent, verbose=verbose)
             if problem is not None:
                 print(util.stringify_array(problem, lambda x: '.' if x == -1 else str(x)), flush=True)
                 print(flush=True)
