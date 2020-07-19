@@ -1,3 +1,4 @@
+import argparse
 import random
 import sys
 import math
@@ -14,6 +15,8 @@ def solve_heyawake(height, width, problem):
     is_black = solver.bool_array((height, width))
     solver.add_answer_key(is_black)
     graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
+    # graph.active_vertices_not_adjacent(solver, is_black)
+    # graph.active_vertices_connected(solver, ~is_black, emit_primitive=True)
     for y0, x0, y1, x1, n in problem:
         if n >= 0:
             solver.ensure(count_true(is_black[y0:y1, x0:x1]) == n)
@@ -100,14 +103,22 @@ def num_max_black_cells(h, w):
             return (h * w + h + w - 2) // 3
 
 
-def enumerate_clue_update(problem):
+def enumerate_clue_update(problem, min_clue=None, max_clue=None, no_limit_clue=False):
     ret = []
     for i in range(len(problem)):
         y0, x0, y1, x1, n = problem[i]
         nmax = num_max_black_cells(y1 - y0, x1 - x0)
         for n2 in range(-1, nmax + 1):
-            if n2 != n and n2 != 0 and n2 != 1 and n2 <= 8 and n2 >= nmax // 2 and n2 != nmax:
-                ret.append(([i], [(y0, x0, y1, x1, n2)]))
+            if n2 == n:
+                continue
+            if n2 != -1:
+                if min_clue is not None and n2 < min_clue:
+                    continue
+                if max_clue is not None and max_clue < n2:
+                    continue
+                if no_limit_clue and n2 == nmax:
+                    continue
+            ret.append(([i], [(y0, x0, y1, x1, n2)]))
     return ret
 
 
@@ -132,7 +143,7 @@ def compute_clue_score(problem):
     return clue_score
 
 
-def generate_heyawake(height, width, n_max_rooms=None):
+def generate_heyawake(height, width, n_max_rooms=None, min_clue=None, max_clue=None, no_limit_clue=False, verbose=False):
     if n_max_rooms is None:
         n_max_rooms = height * width
     problem = [
@@ -155,7 +166,7 @@ def generate_heyawake(height, width, n_max_rooms=None):
                     break
 
     for step in range(height * width * 10):
-        cand = enumerate_division_update(problem) + enumerate_clue_update(problem)
+        cand = enumerate_division_update(problem) + enumerate_clue_update(problem, min_clue=min_clue, max_clue=max_clue, no_limit_clue=no_limit_clue)
         random.shuffle(cand)
 
         for elim, app in cand:
@@ -180,14 +191,16 @@ def generate_heyawake(height, width, n_max_rooms=None):
                 update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
 
             if update:
-                print('update: {} -> {} ({} {})'.format(score, score_next, raw_score, clue_score), file=sys.stderr)
+                if verbose:
+                    print('update: {} -> {} ({} {})'.format(score, score_next, raw_score, clue_score), file=sys.stderr)
                 problem = problem2
                 score = score_next
                 break
             else:
                 continue
         temperature *= 0.995
-    print('failed', file=sys.stderr)
+    if verbose:
+        print('failed', file=sys.stderr)
     return None
 
 
@@ -272,9 +285,25 @@ def _main():
                 False: '.'
             }))
     else:
-        height, width, n_rooms_low, n_rooms_high = map(int, sys.argv[1:])
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-h', '--height', type=int, required=True)
+        parser.add_argument('-w', '--width', type=int, required=True)
+        parser.add_argument('--max-rooms', type=int)
+        parser.add_argument('--min-clue', type=int)
+        parser.add_argument('--max-clue', type=int)
+        parser.add_argument('--no-limit-clue', action='store_true')
+        parser.add_argument('-v', '--verbose', action='store_true')
+
+        args = parser.parse_args()
+        height = args.height
+        width = args.width
         while True:
-            problem = generate_heyawake(height, width, n_max_rooms=random.randint(n_rooms_low, n_rooms_high))
+            problem = generate_heyawake(height, width,
+                                        n_max_rooms=args.max_rooms,
+                                        min_clue=args.min_clue,
+                                        max_clue=args.max_clue,
+                                        no_limit_clue=args.no_limit_clue,
+                                        verbose=args.verbose)
             if problem is not None:
                 url = problem_to_pzv_url(height, width, problem)
                 print(url, flush=True)
