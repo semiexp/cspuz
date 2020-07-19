@@ -1,7 +1,10 @@
+import argparse
 import random
 import math
 import sys
+import subprocess
 
+import cspuz
 from cspuz import Solver, BoolGridFrame, graph
 from cspuz.constraints import count_true
 
@@ -57,7 +60,9 @@ def compute_score(grid_frame):
     return score
 
 
-def trivial_decision(arrow):
+def trivial_decision(height, width, arrow, max_clue_gap):
+    if max_clue_gap == 0:
+        return False
     def max_lines(seq):
         ret = 0
         for i in range(1, len(seq)):
@@ -78,17 +83,22 @@ def trivial_decision(arrow):
                 related_cells = [arrow[y][x2] for x2 in range(x + 1, width)]
             else:
                 continue
-            if max_lines(related_cells) - 1 <= int(arrow[y][x][1:]):
+            if max_lines(related_cells) - max_clue_gap < int(arrow[y][x][1:]):
                 return True
     return False
 
 
-def generate_castle_wall(height, width, disallow_trivial=False, verbose=False):
+def generate_castle_wall(height, width, max_clue_gap=0, no_side_clue=False, verbose=False):
     arrow = [['..' for _ in range(width)] for _ in range(height)]
     inside = [[None for _ in range(width)] for _ in range(height)]
     score = 0
     temperature = 5.0
     fully_solved_score = height * (width - 1) + (height - 1) * width
+
+    if no_side_clue:
+        side_clue_set = [None]
+    else:
+        side_clue_set = [True, False, None]
 
     for step in range(height * width * 10):
         cand = []
@@ -100,14 +110,14 @@ def generate_castle_wall(height, width, disallow_trivial=False, verbose=False):
                         for dx in range(-2, 3):
                             y2 = y + dy
                             x2 = x + dx
-                            if abs(y2) + abs(x2) != 4 and (dy, dx) != (0, 0) and 0 <= y2 < height and 0 <= x2 < width and arrow[y2][x2] != '..':
+                            if abs(dy) + abs(dx) != 4 and (dy, dx) != (0, 0) and 0 <= y2 < height and 0 <= x2 < width and arrow[y2][x2] != '..':
                                 adj = True
                     if adj:
                         continue
                     if (y <= 1 and d == '^') or (y >= height - 2 and d == 'v') or (x <= 1 and d == '<') or (x >= width - 2 and d == '>'):
                         continue
                     for n in range(1, 10):
-                        for i in [True, False, None]:
+                        for i in side_clue_set:
                             a = d + str(n)
                             if d == '^' and n >= y:
                                 continue
@@ -127,7 +137,7 @@ def generate_castle_wall(height, width, disallow_trivial=False, verbose=False):
             arrow[y][x] = a
             inside[y][x] = i
 
-            if disallow_trivial and trivial_decision(arrow):
+            if trivial_decision(height, width, arrow, max_clue_gap=max_clue_gap):
                 sat = False
             else:
                 sat, grid_frame = solve_castle_wall(height, width, arrow, inside)
@@ -167,23 +177,46 @@ def generate_castle_wall(height, width, disallow_trivial=False, verbose=False):
     return None
 
 
+def _main():
+    if len(sys.argv) == 1:
+        pass
+    else:
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-h', '--height', type=int, required=True)
+        parser.add_argument('-w', '--width', type=int, required=True)
+        parser.add_argument('--max-clue-gap', type=int, default=0)
+        parser.add_argument('--no-side-clue', action='store_true')
+        parser.add_argument('-v', '--verbose', action='store_true')
+        args = parser.parse_args()
+
+        cspuz.config.solver_timeout = 600.0
+        height = args.height
+        width = args.width
+        max_clue_gap = args.max_clue_gap
+        no_side_clue = args.no_side_clue
+        verbose = args.verbose
+        while True:
+            try:
+                problem = generate_castle_wall(height, width, max_clue_gap=max_clue_gap, no_side_clue=no_side_clue, verbose=verbose)
+                if problem is not None:
+                    arrow, inside = problem
+                    for y in range(height):
+                        for x in range(width):
+                            if arrow[y][x] == '..':
+                                print('...', end=' ')
+                            else:
+                                if inside[y][x] is None:
+                                    sgn = '?'
+                                elif inside[y][x]:
+                                    sgn = 'i'
+                                else:
+                                    sgn = 'o'
+                                print(arrow[y][x] + sgn, end=' ')
+                        print()
+                    print(flush=True)
+            except subprocess.TimeoutExpired:
+                print('timeout', file=sys.stderr)
+
+
 if __name__ == '__main__':
-    while True:
-        height, width = map(int, sys.argv[1:])
-        problem = generate_castle_wall(height, width, verbose=True)
-        if problem is not None:
-            arrow, inside = problem
-            for y in range(height):
-                for x in range(width):
-                    if arrow[y][x] == '..':
-                        print('...', end=' ')
-                    else:
-                        if inside[y][x] is None:
-                            sgn = '?'
-                        elif inside[y][x]:
-                            sgn = 'i'
-                        else:
-                            sgn = 'o'
-                        print(arrow[y][x] + sgn, end=' ')
-                print()
-            print(flush=True)
+    _main()

@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from cspuz import Solver, graph
@@ -38,25 +39,25 @@ def solve_yajilin(height, width, problem):
     return is_sat, grid_frame, black_cell
 
 
-def generate_yajilin(height, width, verbose=False):
+def generate_yajilin(height, width, no_zero=False, no_max_clue=False, verbose=False):
     choices = []
     for y in range(height):
         row = []
         for x in range(width):
             c = ['..']
-            for i in range(0, (y + 3) // 2):
+            for i in range(1 if no_zero else 0, (y + 3) // 2 - (1 if no_max_clue else 0)):
                 c.append('^{}'.format(i))
-            for i in range(0, (x + 3) // 2):
+            for i in range(1 if no_zero else 0, (x + 3) // 2 - (1 if no_max_clue else 0)):
                 c.append('<{}'.format(i))
-            for i in range(0, (height - y + 2) // 2):
+            for i in range(1 if no_zero else 0, (height - y + 2) // 2 - (1 if no_max_clue else 0)):
                 c.append('v{}'.format(i))
-            for i in range(0, (width - x + 2) // 2):
+            for i in range(1 if no_zero else 0, (width - x + 2) // 2 - (1 if no_max_clue else 0)):
                 c.append('>{}'.format(i))
             row.append(Choice(c, '..'))
         choices.append(row)
     generated = generate_problem(lambda problem: solve_yajilin(height, width, problem),
                                  builder_pattern=choices,
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default='..', weight=16),
+                                 clue_penalty=lambda problem: count_non_default_values(problem, default='..', weight=20),
                                  verbose=verbose)
     return generated
 
@@ -83,9 +84,21 @@ def _main():
         if is_sat:
             print(util.stringify_grid_frame(is_line))
     else:
-        height, width = map(int, sys.argv[1:])
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-h', '--height', type=int, required=True)
+        parser.add_argument('-w', '--width', type=int, required=True)
+        parser.add_argument('--no-zero', action='store_true')
+        parser.add_argument('--no-max-clue', action='store_true')
+        parser.add_argument('-v', '--verbose', action='store_true')
+        args = parser.parse_args()
+
+        height = args.height
+        width = args.width
+        no_zero = args.no_zero
+        no_max_clue = args.no_max_clue
+        verbose = args.verbose
         while True:
-            problem = generate_yajilin(height, width, verbose=True)
+            problem = generate_yajilin(height, width, no_zero=no_zero, no_max_clue=no_max_clue, verbose=verbose)
             if problem is not None:
                 print(util.stringify_array(problem, str), flush=True)
                 print(flush=True)
