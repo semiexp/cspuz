@@ -148,3 +148,11 @@ def encode_grid_segmentation(height, width, block_id):
             s.append(1 if block_id[y][x] != block_id[y + 1][x] else 0)
     ret += convert_binary_seq(s)
     return ret
+
+
+def blocks_to_block_id(height, width, blocks):
+    ret = [[-1 for _ in range(width)] for _ in range(height)]
+    for i, block in enumerate(blocks):
+        for y, x in block:
+            ret[y][x] = i
+    return ret
