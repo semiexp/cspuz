@@ -56,6 +56,7 @@ def generate_problem(solver,
                      initial_temperature=5.0,
                      temperature_decay=0.995,
                      max_steps=None,
+                     solve_initial_problem=False,
                      verbose=False):
     if builder_pattern is not None:
         if initial_problem is not None or neighbor_generator is not None:
@@ -75,6 +76,17 @@ def generate_problem(solver,
 
     if max_steps is None:
         max_steps = 1000
+
+    if solve_initial_problem:
+        is_sat, *answer = solver(problem)
+        if not is_sat:
+            return None
+        score_base = score(*answer)
+        if clue_penalty is None:
+            score_penalty = 0
+        else:
+            score_penalty = clue_penalty(problem)
+        current_score = score_base - score_penalty
 
     for step in range(max_steps):
         for next_problem in neighbor_generator(problem):
