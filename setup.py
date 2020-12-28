@@ -6,5 +6,6 @@ setup(
     version='0.0.1',
     packages=['cspuz',
               'cspuz.backend',
-              'cspuz.puzzle']
+              'cspuz.puzzle',
+              'cspuz.generator']
 )
