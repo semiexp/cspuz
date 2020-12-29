@@ -269,7 +269,7 @@ def generate_slalom_initial_placement(height, width,
             else:
                 solver.ensure(~g1)
                 solver.ensure(~g2)
-    solver.ensure(count_true(short_gates) <= 0)
+
     for y in range(1, height - 1):
         for x in range(1, width - 1):
             solver.ensure(count_true(
