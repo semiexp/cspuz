@@ -294,7 +294,6 @@ def _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitiv
     n = graph.num_vertices
     m = len(graph)
 
-    rank = solver.int_array(n, 0, n - 1)
     is_passed = solver.bool_array(n)
 
     if use_graph_primitive:
@@ -315,6 +314,7 @@ def _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitiv
             [len(graph), len(edge_graph)] + list(is_active_edge) + sum([[x, y] for x, y in edge_graph], [])
         ))
     else:
+        rank = solver.int_array(n, 0, n - 1)
         is_root = solver.bool_array(n)
 
         for i in range(n):
