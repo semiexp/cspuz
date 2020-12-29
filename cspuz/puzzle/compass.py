@@ -1,3 +1,4 @@
+import argparse
 import random
 import math
 import sys
@@ -46,8 +47,8 @@ def check_problem_constraints(height, width, problem, flg, circ=-1):
     solver.add_answer_key(division)
     for i, (y, x, u, l, d, r) in enumerate(problem):
         solver.ensure(division[y, x] == i)
-        if flg is not None and flg[i]:
-            solver.ensure(count_true(division == i) >= 4)
+        if flg is not None and flg[i] is not None:
+            solver.ensure(count_true(division == i) >= flg[i])
         if u >= 0:
             solver.ensure(count_true(division[:y, :] == i) == u)
         if d >= 0:
@@ -83,8 +84,8 @@ def compute_score(division):
     return score
 
 
-def generate_compass(height, width, pos, prefer_large_blocks=False, encircling=False, verbose=False):
-    choice_base = Choice([-1] + list(range(1, 8)), -1)
+def generate_compass(height, width, pos, min_clue, max_clue, prefer_large_blocks=None, encircling=False, verbose=False):
+    choice_base = Choice([-1] + list(range(min_clue, max_clue + 1)), -1)
     pattern = []
     for y, x in pos:
         pattern.append([y, x,
@@ -92,8 +93,8 @@ def generate_compass(height, width, pos, prefer_large_blocks=False, encircling=F
                         -1 if x < 2 else choice_base,
                         -1 if y >= height - 2 else choice_base,
                         -1 if x >= width - 2 else choice_base])
-    if prefer_large_blocks:
-        flg = [random.random() < 0.9 for _ in range(len(pos))]
+    if prefer_large_blocks is not None:
+        flg = [prefer_large_blocks if random.random() < 0.9 else -1 for _ in range(len(pos))]
     else:
         flg = None
     if encircling:
@@ -154,7 +155,7 @@ def parse_puzz_link_url(url):
     return height, width, res
 
 
-def generate_placement(height, width, nlo, nhi):
+def generate_placement(height, width, nlo, nhi, symmetry=False):
     while True:
         has_clue = [[False for _ in range(width)] for _ in range(height)]
         n = random.randint(nlo, nhi) // 2 * 2
@@ -179,10 +180,12 @@ def generate_placement(height, width, nlo, nhi):
             if random.random() > math.exp(-score / 1.5):
                 continue
             has_clue[y][x] = True
-            has_clue[height - 1 - y][width - 1 - x] = True
             pos.append((y, x))
-            pos.append((height - 1 - y, width - 1 - x))
-            n -= 2
+            n -= 1
+            if symmetry:
+                has_clue[height - 1 - y][width - 1 - x] = True
+                pos.append((height - 1 - y, width - 1 - x))
+                n -= 1
         flg = False
         window = 4
         for y in range(height - window + 1):
@@ -299,10 +302,34 @@ def _main():
         if is_sat:
             print(util.stringify_array(ans, str))
     else:
-        height, width, nlo, nhi = map(int, sys.argv[1:])
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument('-h', '--height', type=int, required=True)
+        parser.add_argument('-w', '--width', type=int, required=True)
+        parser.add_argument('--min-num-blocks', type=int, required=True)
+        parser.add_argument('--max-num-blocks', type=int, required=True)
+        parser.add_argument('--min-clue', type=int, required=True)
+        parser.add_argument('--max-clue', type=int, required=True)
+        parser.add_argument('--prefer-large-blocks', type=int)
+        parser.add_argument('--encircling-block', action='store_true')
+        parser.add_argument('--symmetry', action='store_true')
+        parser.add_argument('-v', '--verbose', action='store_true')
+        args = parser.parse_args()
+
+        height = args.height
+        width = args.width
+        min_num_blocks = args.min_num_blocks
+        max_num_blocks = args.max_num_blocks
+        min_clue = args.min_clue or 1
+        max_clue = args.max_clue or height * width
+        prefer_large_blocks = args.prefer_large_blocks
+        enclircling_block = args.encircling_block
+        symmetry = args.symmetry
+        verbose = args.verbose
         while True:
-            pos = generate_placement(height, width, nlo, nhi)
-            problem = generate_compass(height, width, pos, prefer_large_blocks=True, verbose=True)
+            pos = generate_placement(height, width, min_num_blocks, max_num_blocks, symmetry=symmetry)
+            problem = generate_compass(height, width, pos, min_clue, max_clue,
+                                       prefer_large_blocks=prefer_large_blocks, encircling=enclircling_block,
+                                       verbose=verbose)
             if problem is not None:
                 print(to_puzz_link_url(height, width, problem), flush=True)
 
