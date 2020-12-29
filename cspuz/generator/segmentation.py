@@ -7,7 +7,8 @@ from cspuz.generator.builder import Builder
 
 class SegmentationBuilder2D(Builder):
     def __init__(self, height, width, min_num_blocks=None, max_num_blocks=None,
-                 min_block_size=None, max_block_size=None, allow_unmet_constraints_first=False):
+                 min_block_size=None, max_block_size=None, allow_unmet_constraints_first=False,
+                 initial_blocks=None):
         self.height = height
         self.width = width
         self.min_num_blocks = min_num_blocks or 1
@@ -15,13 +16,17 @@ class SegmentationBuilder2D(Builder):
         self.min_block_size = min_block_size or 1
         self.max_block_size = max_block_size or (height * width)
         self.allow_unmet_constraints_first = allow_unmet_constraints_first
+        self.initial_blocks = initial_blocks
 
     def initial(self):
-        block = []
-        for y in range(self.height):
-            for x in range(self.width):
-                block.append((y, x))
-        blocks = [block]
+        if self.initial_blocks is None:
+            block = []
+            for y in range(self.height):
+                for x in range(self.width):
+                    block.append((y, x))
+            blocks = [block]
+        else:
+            blocks = deepcopy(self.initial_blocks)
         if self.allow_unmet_constraints_first:
             return blocks
         while True:
@@ -54,7 +59,9 @@ class SegmentationBuilder2D(Builder):
             adjacent_pairs = set()
             for y in range(height):
                 for x in range(width):
-                    if y < height - 1 and block_id[y][x] != block_id[y + 1][x]:
+                    if block_id[y][x] == -1:
+                        continue
+                    if y < height - 1 and block_id[y][x] != block_id[y + 1][x] and block_id[y + 1][x] != -1:
                         i = block_id[y][x]
                         j = block_id[y + 1][x]
                         if len(current[i]) + len(current[j]) > self.max_block_size:
@@ -63,7 +70,7 @@ class SegmentationBuilder2D(Builder):
                             adjacent_pairs.add((i, j))
                         else:
                             adjacent_pairs.add((j, i))
-                    if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
+                    if x < width - 1 and block_id[y][x] != block_id[y][x + 1] and block_id[y][x + 1] != -1:
                         i = block_id[y][x]
                         j = block_id[y][x + 1]
                         if len(current[i]) + len(current[j]) > self.max_block_size:
@@ -90,6 +97,8 @@ class SegmentationBuilder2D(Builder):
                 if y < height - 1 and block_id[y][x] != block_id[y + 1][x]:
                     i = block_id[y][x]
                     j = block_id[y + 1][x]
+                    if i == -1 or j == -1:
+                        continue
                     if len(current[i]) > self.min_block_size and len(current[j]) < self.max_block_size and _is_connected(current[i], (y, x)):
                         ret.append(([i, j], [[p for p in current[i] if p != (y, x)], current[j] + [(y, x)]]))
                     if len(current[j]) > self.min_block_size and len(current[i]) < self.max_block_size and _is_connected(current[j], (y + 1, x)):
@@ -97,6 +106,8 @@ class SegmentationBuilder2D(Builder):
                 if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
                     i = block_id[y][x]
                     j = block_id[y][x + 1]
+                    if i == -1 or j == -1:
+                        continue
                     if len(current[i]) > self.min_block_size and len(current[j]) < self.max_block_size and _is_connected(current[i], (y, x)):
                         ret.append(([i, j], [[p for p in current[i] if p != (y, x)], current[j] + [(y, x)]]))
                     if len(current[j]) > self.min_block_size and len(current[i]) < self.max_block_size and _is_connected(current[j], (y, x + 1)):

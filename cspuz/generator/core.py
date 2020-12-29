@@ -17,6 +17,9 @@ def default_score_calculator(*args):
             for a in arg:
                 if a.sol is not None:
                     score += 1
+        elif isinstance(arg, list):
+            for a in arg:
+                score += default_score_calculator(a)
     return score
 
 
@@ -28,6 +31,10 @@ def default_uniqueness_checker(*args):
         elif isinstance(arg, (Array, BoolGridFrame)):
             for a in arg:
                 if a.sol is None:
+                    return False
+        elif isinstance(arg, list):
+            for a in arg:
+                if not default_uniqueness_checker(a):
                     return False
     return True
 
@@ -118,5 +125,6 @@ def generate_problem(solver,
                 current_score = next_score
                 break
         temperature *= temperature_decay
-    print('failed', file=sys.stderr)
+    if verbose:
+        print('failed', file=sys.stderr)
     return None
