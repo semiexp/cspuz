@@ -240,20 +240,29 @@ def alldifferent(*args):
         return True
 
 
+def cond(c, t, f):
+    if c is True:
+        return t
+    elif c is False:
+        return f
+    else:
+        return c.cond(t, f)
+
+
 def count_true(*args):
     res = None
     for arg in args:
         if hasattr(arg, '__iter__'):
             for x in arg:
                 if res is None:
-                    res = x.cond(1, 0)
+                    res = cond(x, 1, 0)
                 else:
-                    res = res + x.cond(1, 0)
+                    res = res + cond(x, 1, 0)
         else:
             if res is None:
-                res = arg.cond(1, 0)
+                res = cond(arg, 1, 0)
             else:
-                res = res + arg.cond(1, 0)
+                res = res + cond(arg, 1, 0)
     if res is None:
         return 0
     return res
