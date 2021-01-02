@@ -47,7 +47,7 @@ def check_problem_constraints(height, width, problem, flg, circ=-1):
     solver.add_answer_key(division)
     for i, (y, x, u, l, d, r) in enumerate(problem):
         solver.ensure(division[y, x] == i)
-        if flg is not None and flg[i] is not None:
+        if flg is not None and flg[i] is not None and flg[i] >= 0:
             solver.ensure(count_true(division == i) >= flg[i])
         if u >= 0:
             solver.ensure(count_true(division[:y, :] == i) == u)
