@@ -51,7 +51,7 @@ def _initial_blocks(n):
                     x2 = x + dx
                     if 0 <= y2 < n and 0 <= x2 < n and blocks[y2][x2] != -1:
                         cand.append((y, x, blocks[y2][x2]))
-        w = [sz[g] ** -4 for _, _, g in cand]
+        w = [sz[g]**-4 for _, _, g in cand]
         p = np.array(w) / sum(w)
         i = np.random.choice(np.arange(len(cand)), p=p)
         y, x, g = cand[i]
@@ -64,7 +64,8 @@ def _is_connected(n, blocks, g, excluded):
     visited = [[False for _ in range(n)] for _ in range(n)]
 
     def visit(y, x):
-        if not (0 <= y < n and 0 <= x < n) or (y, x) == excluded or visited[y][x] or blocks[y][x] != g:
+        if not (0 <= y < n and 0 <= x < n) or (
+                y, x) == excluded or visited[y][x] or blocks[y][x] != g:
             return
         visited[y][x] = True
         visit(y - 1, x)
@@ -132,11 +133,13 @@ def generate_star_battle(n, k, verbose=False):
                 score_next = _compute_score(has_star)
                 if score_next == fully_solved_score:
                     return blocks
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
+                update = (score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature))
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                    print('update: {} -> {}'.format(score, score_next),
+                          file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -149,7 +152,8 @@ def generate_star_battle(n, k, verbose=False):
 
 
 def problem_to_pzv_url(n, k, blocks):
-    return 'http://pzv.jp/p.html?starbattle/{}/{}/{}/{}'.format(n, n, k, util.encode_grid_segmentation(n, n, blocks))
+    return 'http://pzv.jp/p.html?starbattle/{}/{}/{}/{}'.format(
+        n, n, k, util.encode_grid_segmentation(n, n, blocks))
 
 
 def _main():
@@ -165,7 +169,12 @@ def _main():
         ], 1)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(has_star, {None: '?', True: '*', False: '.'}))
+            print(
+                util.stringify_array(has_star, {
+                    None: '?',
+                    True: '*',
+                    False: '.'
+                }))
     else:
         n, k = map(int, sys.argv[1:])
         while True:

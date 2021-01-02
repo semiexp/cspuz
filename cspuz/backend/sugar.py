@@ -7,7 +7,6 @@ from cspuz.constraints import Op, Expr, BoolVar, IntVar
 
 from ._subproc import run_subprocess
 
-
 OP_TO_OPNAME = {
     Op.NEG: '-',
     Op.ADD: '+',
@@ -52,10 +51,8 @@ def _convert_expr(e):
     elif isinstance(e, IntVar):
         return 'i{}'.format(e.id)
     else:
-        return '({} {})'.format(
-            OP_TO_OPNAME[e.op],
-            ' '.join(map(_convert_expr, e.operands))
-        )
+        return '({} {})'.format(OP_TO_OPNAME[e.op],
+                                ' '.join(map(_convert_expr, e.operands)))
 
 
 class CSPSolver(object):
@@ -78,9 +75,12 @@ class CSPSolver(object):
             self.converted_constraints.append(_convert_expr(constraint))
 
     def solve(self):
-        csp_description = '\n'.join(self.converted_variables + self.converted_constraints)
+        csp_description = '\n'.join(self.converted_variables +
+                                    self.converted_constraints)
         sugar_path = cspuz.config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'], csp_description, timeout=cspuz.config.solver_timeout).split('\n')
+        out = run_subprocess([sugar_path, '/dev/stdin'],
+                             csp_description,
+                             timeout=cspuz.config.solver_timeout).split('\n')
         if 'UNSATISFIABLE' in out[0]:
             for v in self.variables:
                 v.sol = None

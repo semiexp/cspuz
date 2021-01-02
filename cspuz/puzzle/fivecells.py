@@ -24,22 +24,33 @@ def solve_fivecells(height, width, problem):
                 if x < width - 1 and problem[y][x + 1] >= -1:
                     g.add_edge(vertex_id[y][x], vertex_id[y][x + 1])
     solver = Solver()
-    group_id = graph.division_connected_variable_groups(solver, graph=g, group_size=5)
+    group_id = graph.division_connected_variable_groups(solver,
+                                                        graph=g,
+                                                        group_size=5)
     is_invalid = False
     for y in range(height):
         for x in range(width):
             if problem[y][x] >= 0:
                 borders = []
                 if y > 0 and problem[y - 1][x] >= -1:
-                    borders.append(group_id[vertex_id[y][x]] != group_id[vertex_id[y - 1][x]])
+                    borders.append(
+                        group_id[vertex_id[y][x]] != group_id[vertex_id[y -
+                                                                        1][x]])
                 if y < height - 1 and problem[y + 1][x] >= -1:
-                    borders.append(group_id[vertex_id[y][x]] != group_id[vertex_id[y + 1][x]])
+                    borders.append(
+                        group_id[vertex_id[y][x]] != group_id[vertex_id[y +
+                                                                        1][x]])
                 if x > 0 and problem[y][x - 1] >= -1:
-                    borders.append(group_id[vertex_id[y][x]] != group_id[vertex_id[y][x - 1]])
+                    borders.append(
+                        group_id[vertex_id[y][x]] != group_id[vertex_id[y][x -
+                                                                           1]])
                 if x < width - 1 and problem[y][x + 1] >= -1:
-                    borders.append(group_id[vertex_id[y][x]] != group_id[vertex_id[y][x + 1]])
+                    borders.append(
+                        group_id[vertex_id[y][x]] != group_id[vertex_id[y][x +
+                                                                           1]])
                 always_border = 4 - len(borders)
-                solver.ensure(count_true(borders) == problem[y][x] - always_border)
+                solver.ensure(
+                    count_true(borders) == problem[y][x] - always_border)
                 if problem[y][x] - always_border < 0:
                     is_invalid = True
 
@@ -105,11 +116,13 @@ def generate_fivecells(height, width, verbose=False):
                         if problem[y2][x2] >= 0:
                             clue_score += 8
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
+                update = (score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature))
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                    print('update: {} -> {}'.format(score, score_next),
+                          file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -127,12 +140,12 @@ def _main():
         height = 5
         width = 5
         problem = [
-            [-1,  2,  3, -1, -1],
-            [-1, -1, -1, -1, -1],
-            [-1, -1,  2,  1, -1],
-            [-1,  3, -1, -1, -1],
-            [-1, -1, -1, -1,  3],
-        ]
+            [-1,  2,  3, -1, -1],  # noqa: E201
+            [-1, -1, -1, -1, -1],  # noqa: E201
+            [-1, -1,  2,  1, -1],  # noqa: E201
+            [-1,  3, -1, -1, -1],  # noqa: E201
+            [-1, -1, -1, -1,  3],  # noqa: E201
+        ]  # yapf: disable
         is_sat, is_border = solve_fivecells(height, width, problem)
         print('has answer:', is_sat)
         for i, x in enumerate(is_border):
@@ -143,8 +156,14 @@ def _main():
             problem = generate_fivecells(height, width, verbose=True)
             if problem is not None:
                 print(util.stringify_array(problem, {
-                    -2: '#', -1: '.', 0: '0', 1: '1', 2: '2', 3: '3'
-                }) + '\n', flush=True)
+                    -2: '#',
+                    -1: '.',
+                    0: '0',
+                    1: '1',
+                    2: '2',
+                    3: '3'
+                }) + '\n',
+                      flush=True)
 
 
 if __name__ == '__main__':

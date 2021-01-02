@@ -15,7 +15,8 @@ def _convert_expr(e, variables_dict):
     if isinstance(e, (BoolVar, IntVar)):
         return variables_dict[e.id]
     else:
-        operands = list(map(lambda x: _convert_expr(x, variables_dict), e.operands))
+        operands = list(
+            map(lambda x: _convert_expr(x, variables_dict), e.operands))
         if e.op == Op.NEG:
             return -operands[0]
         elif e.op == Op.ADD:
@@ -73,9 +74,11 @@ class CSPSolver(object):
 
     def add_constraint(self, constraint):
         if isinstance(constraint, list):
-            self.converted_constraints += map(lambda e: _convert_expr(e, self.variables_dict), constraint)
+            self.converted_constraints += map(
+                lambda e: _convert_expr(e, self.variables_dict), constraint)
         else:
-            self.converted_constraints.append(_convert_expr(constraint, self.variables_dict))
+            self.converted_constraints.append(
+                _convert_expr(constraint, self.variables_dict))
 
     def solve(self):
         if not Z3_AVAILABLE:

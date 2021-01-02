@@ -104,7 +104,8 @@ class Solver(object):
                 break
 
             for i in range(n_var):
-                if self.is_answer_key[i] and answer[i] is not None and answer[i] != self.variables[i].sol:
+                if self.is_answer_key[i] and answer[
+                        i] is not None and answer[i] != self.variables[i].sol:
                     answer[i] = None
 
         for i in range(n_var):

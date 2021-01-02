@@ -4,9 +4,13 @@ import functools
 
 def check_dtype(obj, dtype):
     if dtype is int:
-        return isinstance(obj, (int, IntVar, IntExpr)) or (isinstance(obj, Array) and obj.dtype is int)
+        return isinstance(obj,
+                          (int, IntVar, IntExpr)) or (isinstance(obj, Array)
+                                                      and obj.dtype is int)
     elif dtype is bool:
-        return isinstance(obj, (bool, BoolVar, BoolExpr)) or (isinstance(obj, Array) and obj.dtype is bool)
+        return isinstance(
+            obj, (bool, BoolVar, BoolExpr)) or (isinstance(obj, Array)
+                                                and obj.dtype is bool)
 
 
 class Op(Enum):
@@ -42,7 +46,10 @@ def _make_expr(op, operands):
             if shapes[0] != shapes[i]:
                 raise TypeError('operands have non-uniform shapes')
     # type checking
-    if op in [Op.NEG, Op.ADD, Op.SUB, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT, Op.ALLDIFF]:
+    if op in [
+            Op.NEG, Op.ADD, Op.SUB, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT,
+            Op.ALLDIFF
+    ]:
         # operand type: int
         if not all(map(lambda o: check_dtype(o, int), operands)):
             return NotImplemented
@@ -51,7 +58,8 @@ def _make_expr(op, operands):
         if not all(map(lambda o: check_dtype(o, bool), operands)):
             return NotImplemented
     elif op == Op.IF:
-        if not (check_dtype(operands[0], bool) and check_dtype(operands[1], int) and check_dtype(operands[2], int)):
+        if not (check_dtype(operands[0], bool) and check_dtype(
+                operands[1], int) and check_dtype(operands[2], int)):
             return NotImplemented
 
     if len(shapes) == 0:
@@ -98,14 +106,18 @@ class BoolExpr(Expr):
     def cond(self, t, f):
         res = _make_expr(Op.IF, [self, t, f])
         if res is NotImplemented:
-            raise TypeError('unsupported argument type(s) for operator `cond`: \'{}\' and \'{}\''.format(
-                type(t).__name__, type(f).__name__))
+            raise TypeError(
+                'unsupported argument type(s) for operator `cond`: '
+                '\'{}\' and \'{}\''.format(type(t).__name__,
+                                           type(f).__name__))
         return res
 
     def then(self, other):
         res = _make_expr(Op.IMP, [self, other])
         if res is NotImplemented:
-            raise TypeError('unsupported argument type(s) for operator `then`: \'{}\''.format(type(other).__name__))
+            raise TypeError(
+                'unsupported argument type(s) for operator `then`: \'{}\''.
+                format(type(other).__name__))
         return res
 
     def __invert__(self):
@@ -204,7 +216,8 @@ class BoolVars(object):
         if len(self.vars) == 0:
             return 0
         else:
-            return functools.reduce(lambda x, y: x + y, map(lambda x: x.cond(1, 0), self.vars))
+            return functools.reduce(lambda x, y: x + y,
+                                    map(lambda x: x.cond(1, 0), self.vars))
 
     def __iter__(self):
         return iter(self.vars)
@@ -309,12 +322,14 @@ def fold_and(*args):
 
 
 def _compute_shape(data):
-    if hasattr(data, '__len__') and hasattr(data, '__iter__') and hasattr(data, '__getitem__'):
+    if hasattr(data, '__len__') and hasattr(data, '__iter__') and hasattr(
+            data, '__getitem__'):
         h = len(data)
         if h == 0:
             return 0,
         row = data[0]
-        if hasattr(row, '__len__') and hasattr(row, '__iter__') and hasattr(data, '__getitem__'):
+        if hasattr(row, '__len__') and hasattr(row, '__iter__') and hasattr(
+                data, '__getitem__'):
             w = len(row)
             for i in range(1, h):
                 if len(data[i]) != w:
@@ -345,7 +360,9 @@ def _parse_range(r, size):
         else:
             r2 = r
         if not 0 <= r2 < size:
-            raise IndexError('index {} is out of bounds for the axis with size {}'.format(r, size))
+            raise IndexError(
+                'index {} is out of bounds for the axis with size {}'.format(
+                    r, size))
         lo = r2
         hi = r2 + 1
         point = True
@@ -355,7 +372,7 @@ def _parse_range(r, size):
 class Array(object):
     def __init__(self, data, shape=None, dtype=None):
         if isinstance(shape, int):
-            shape = (shape,)
+            shape = (shape, )
         if shape is not None:
             self.data = data
             self.shape = shape
@@ -387,7 +404,7 @@ class Array(object):
             self.dtype = dtype
 
     def flatten(self):
-        return Array(self.data, shape=(len(self.data),), dtype=self.dtype)
+        return Array(self.data, shape=(len(self.data), ), dtype=self.dtype)
 
     def reshape(self, shape):
         if isinstance(shape, int):
@@ -414,7 +431,9 @@ class Array(object):
                 ret_data = []
                 for i in range(lo, hi):
                     ret_data.append(self.data[i])
-                return Array(ret_data, shape=(max(0, hi - lo),), dtype=self.dtype)
+                return Array(ret_data,
+                             shape=(max(0, hi - lo), ),
+                             dtype=self.dtype)
         else:
             h, w = self.shape
             if isinstance(item, tuple) and len(item) == 2:
@@ -433,11 +452,17 @@ class Array(object):
                     for j in range(xlo, xhi):
                         ret_data.append(self.data[i * w + j])
                 if ypt and not xpt:
-                    return Array(ret_data, shape=(max(0, xhi - xlo), ), dtype=self.dtype)
+                    return Array(ret_data,
+                                 shape=(max(0, xhi - xlo), ),
+                                 dtype=self.dtype)
                 elif not ypt and xpt:
-                    return Array(ret_data, shape=(max(0, yhi - ylo), ), dtype=self.dtype)
+                    return Array(ret_data,
+                                 shape=(max(0, yhi - ylo), ),
+                                 dtype=self.dtype)
                 else:
-                    return Array(ret_data, shape=(max(0, yhi - ylo), max(0, xhi - xlo)), dtype=self.dtype)
+                    return Array(ret_data,
+                                 shape=(max(0, yhi - ylo), max(0, xhi - xlo)),
+                                 dtype=self.dtype)
 
     def __iter__(self):
         return iter(self.data)
@@ -459,7 +484,7 @@ class Array(object):
             ret.append(self[y, x - 1])
         if x < width - 1:
             ret.append(self[y, x + 1])
-        return Array(ret, shape=(len(ret),), dtype=self.dtype)
+        return Array(ret, shape=(len(ret), ), dtype=self.dtype)
 
     def four_neighbor_indices(self, *p):
         if len(self.shape) != 2:
@@ -483,14 +508,18 @@ class Array(object):
     def cond(self, t, f):
         res = _make_expr(Op.IF, [self, t, f])
         if res is NotImplemented:
-            raise TypeError('unsupported argument type(s) for operator `cond`: \'{}\' and \'{}\''.format(
-                type(t).__name__, type(f).__name__))
+            raise TypeError(
+                'unsupported argument type(s) for operator `cond`: '
+                '\'{}\' and \'{}\''.format(type(t).__name__,
+                                           type(f).__name__))
         return res
 
     def then(self, other):
         res = _make_expr(Op.IMP, [self, other])
         if res is NotImplemented:
-            raise TypeError('unsupported argument type(s) for operator `then`: \'{}\''.format(type(other).__name__))
+            raise TypeError(
+                'unsupported argument type(s) for operator `then`: \'{}\''.
+                format(type(other).__name__))
         return res
 
     def __invert__(self):

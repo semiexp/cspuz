@@ -40,13 +40,21 @@ def solve_gokigen(height, width, problem):
     return is_sat, edge_type
 
 
-def generate_gokigen(height, width, no_easy=False, no_adjacent=False, verbose=False):
+def generate_gokigen(height,
+                     width,
+                     no_easy=False,
+                     no_adjacent=False,
+                     verbose=False):
     pattern = []
     for y in range(height + 1):
         row = []
         for x in range(width + 1):
-            lim = (1 if y in (0, height) else 2) * (1 if x in (0, width) else 2)
-            row.append(Choice([-1] + list(range(1 if no_easy else 0, lim if no_easy else (lim + 1))), default=-1))
+            lim = (1 if y in (0, height) else 2) * (1 if x in (0,
+                                                               width) else 2)
+            row.append(
+                Choice([-1] + list(
+                    range(1 if no_easy else 0, lim if no_easy else (lim + 1))),
+                       default=-1))
         pattern.append(row)
 
     def pretest(problem):
@@ -61,24 +69,30 @@ def generate_gokigen(height, width, no_easy=False, no_adjacent=False, verbose=Fa
                             return False
                 if no_easy:
                     if y < height:
-                        if problem[y][x] in (1, 3) and problem[y + 1][x] in (1, 3):
+                        if problem[y][x] in (1, 3) and problem[y +
+                                                               1][x] in (1, 3):
                             return False
                     if x < width:
-                        if problem[y][x] in (1, 3) and problem[y][x + 1] in (1, 3):
+                        if problem[y][x] in (1, 3) and problem[y][x +
+                                                                  1] in (1, 3):
                             return False
                     if y < height - 1:
-                        if problem[y][x] != -1 and problem[y + 1][x] != -1 and problem[y + 2][x] != -1:
+                        if problem[y][x] != -1 and problem[
+                                y + 1][x] != -1 and problem[y + 2][x] != -1:
                             return False
                     if x < width - 1:
-                        if problem[y][x] != -1 and problem[y][x + 1] != -1 and problem[y][x + 2] != -1:
+                        if problem[y][x] != -1 and problem[y][
+                                x + 1] != -1 and problem[y][x + 2] != -1:
                             return False
         return True
 
-    generated = generate_problem(lambda problem: solve_gokigen(height, width, problem),
-                                 builder_pattern=pattern,
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default=-1, weight=2),
-                                 pretest=pretest,
-                                 verbose=verbose)
+    generated = generate_problem(
+        lambda problem: solve_gokigen(height, width, problem),
+        builder_pattern=pattern,
+        clue_penalty=lambda problem: count_non_default_values(
+            problem, default=-1, weight=2),
+        pretest=pretest,
+        verbose=verbose)
     return generated
 
 
@@ -88,19 +102,24 @@ def _main():
         height = 7
         width = 7
         problem = [
-            [-1, -1, -1, -1, -1, -1, -1, -1],
-            [-1,  3, -1,  2,  3, -1,  3, -1],
-            [-1, -1,  1, -1, -1,  1, -1, -1],
-            [-1, -1, -1, -1,  3,  2, -1, -1],
-            [-1,  3, -1,  3,  2, -1,  3, -1],
-            [-1, -1,  1, -1, -1,  1, -1, -1],
-            [-1,  3, -1, -1,  3, -1,  3, -1],
-            [-1, -1, -1, -1, -1, -1, -1, -1],
-        ]
+            [-1, -1, -1, -1, -1, -1, -1, -1],  # noqa: E201
+            [-1,  3, -1,  2,  3, -1,  3, -1],  # noqa: E201
+            [-1, -1,  1, -1, -1,  1, -1, -1],  # noqa: E201
+            [-1, -1, -1, -1,  3,  2, -1, -1],  # noqa: E201
+            [-1,  3, -1,  3,  2, -1,  3, -1],  # noqa: E201
+            [-1, -1,  1, -1, -1,  1, -1, -1],  # noqa: E201
+            [-1,  3, -1, -1,  3, -1,  3, -1],  # noqa: E201
+            [-1, -1, -1, -1, -1, -1, -1, -1],  # noqa: E201
+        ]  # yapf: disable
         is_sat, ans = solve_gokigen(height, width, problem)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(ans, { None: '.', True: '\\', False: '/'}))
+            print(
+                util.stringify_array(ans, {
+                    None: '.',
+                    True: '\\',
+                    False: '/'
+                }))
     else:
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('-h', '--height', type=int, required=True)
@@ -115,9 +134,15 @@ def _main():
         no_adjacent = args.no_adjacent
         verbose = args.verbose
         while True:
-            problem = generate_gokigen(height, width, no_easy=no_easy, no_adjacent=no_adjacent, verbose=verbose)
+            problem = generate_gokigen(height,
+                                       width,
+                                       no_easy=no_easy,
+                                       no_adjacent=no_adjacent,
+                                       verbose=verbose)
             if problem is not None:
-                print(util.stringify_array(problem, lambda x: '.' if x == -1 else str(x)), flush=True)
+                print(util.stringify_array(
+                    problem, lambda x: '.' if x == -1 else str(x)),
+                      flush=True)
                 print(flush=True)
 
 

@@ -37,24 +37,18 @@ def enumerate_division_update(problem):
         y0, x0, y1, x1, n = problem[i]
         if y1 - y0 >= 2:
             for y in range(y0 + 1, y1):
-                #if x1 - x0 == 1 and (y - y0 == 1 or y1 - y == 1):
-                #    continue
-                #if y - y0 == 1 or y1 - y == 1:
-                #    continue
-                ret.append(([i], [
-                    (y0, x0, y, x1, -1),
-                    (y, x0, y1, x1, -1)
-                ]))
+                # if x1 - x0 == 1 and (y - y0 == 1 or y1 - y == 1):
+                #     continue
+                # if y - y0 == 1 or y1 - y == 1:
+                #     continue
+                ret.append(([i], [(y0, x0, y, x1, -1), (y, x0, y1, x1, -1)]))
         if x1 - x0 >= 2:
             for x in range(x0 + 1, x1):
-                #if y1 - y0 == 1 and (x - x0 == 1 and x1 - x == 1):
-                #    continue
-                #if x - x0 == 1 or x1 - x == 1:
-                #    continue
-                ret.append(([i], [
-                    (y0, x0, y1, x, -1),
-                    (y0, x, y1, x1, -1)
-                ]))
+                # if y1 - y0 == 1 and (x - x0 == 1 and x1 - x == 1):
+                #     continue
+                # if x - x0 == 1 or x1 - x == 1:
+                #     continue
+                ret.append(([i], [(y0, x0, y1, x, -1), (y0, x, y1, x1, -1)]))
     for i in range(len(problem)):
         for j in range(i):
             y0a, x0a, y1a, x1a, na = problem[i]
@@ -86,7 +80,7 @@ def num_thin_blocks(problem):
 
 
 def num_max_black_cells(h, w):
-    # Formula: https://web.archive.org/web/20181106095427/http://www.geocities.co.jp/HeartLand-Poplar/2112/heyawake_mx/
+    # Formula: https://web.archive.org/web/20181106095427/http://www.geocities.co.jp/HeartLand-Poplar/2112/heyawake_mx/  # noqa: E501
     if h == 1 or w == 1:
         return (h * w + 1) // 2
     elif h == 3 or w == 3:
@@ -103,7 +97,10 @@ def num_max_black_cells(h, w):
             return (h * w + h + w - 2) // 3
 
 
-def enumerate_clue_update(problem, min_clue=None, max_clue=None, no_limit_clue=False):
+def enumerate_clue_update(problem,
+                          min_clue=None,
+                          max_clue=None,
+                          no_limit_clue=False):
     ret = []
     for i in range(len(problem)):
         y0, x0, y1, x1, n = problem[i]
@@ -134,7 +131,7 @@ def compute_clue_score(problem):
     clue_score = 0
     for y0, x0, y1, x1, n in problem:
         if n != -1:
-            clue_score += 5 # n * 2 + (y1 - y0) * (x1 - x0) * 0.2
+            clue_score += 5  # n * 2 + (y1 - y0) * (x1 - x0) * 0.2
         # 'thin' blocks are not preferred
         if y1 - y0 == 1:
             clue_score += 2
@@ -143,12 +140,16 @@ def compute_clue_score(problem):
     return clue_score
 
 
-def generate_heyawake(height, width, n_max_rooms=None, min_clue=None, max_clue=None, no_limit_clue=False, verbose=False):
+def generate_heyawake(height,
+                      width,
+                      n_max_rooms=None,
+                      min_clue=None,
+                      max_clue=None,
+                      no_limit_clue=False,
+                      verbose=False):
     if n_max_rooms is None:
         n_max_rooms = height * width
-    problem = [
-        (0, 0, height, width, -1)
-    ]
+    problem = [(0, 0, height, width, -1)]
     score = -compute_clue_score(problem)
     temperature = 5.0
     fully_solved_score = height * width
@@ -160,13 +161,18 @@ def generate_heyawake(height, width, n_max_rooms=None, min_clue=None, max_clue=N
         for elim, app in cand:
             num_rooms = len(problem) + len(app) - len(elim)
             if num_rooms <= n_max_rooms:
-                problem2 = [x for i, x in enumerate(problem) if i not in elim] + app
+                problem2 = [x for i, x in enumerate(problem) if i not in elim
+                            ] + app
                 if num_thin_blocks(problem2) <= 3:
                     problem = problem2
                     break
 
     for step in range(height * width * 10):
-        cand = enumerate_division_update(problem) + enumerate_clue_update(problem, min_clue=min_clue, max_clue=max_clue, no_limit_clue=no_limit_clue)
+        cand = enumerate_division_update(problem) + enumerate_clue_update(
+            problem,
+            min_clue=min_clue,
+            max_clue=max_clue,
+            no_limit_clue=no_limit_clue)
         random.shuffle(cand)
 
         for elim, app in cand:
@@ -188,11 +194,14 @@ def generate_heyawake(height, width, n_max_rooms=None, min_clue=None, max_clue=N
                     return problem2
                 clue_score = compute_clue_score(problem2)
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
+                update = (score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature))
 
             if update:
                 if verbose:
-                    print('update: {} -> {} ({} {})'.format(score, score_next, raw_score, clue_score), file=sys.stderr)
+                    print('update: {} -> {} ({} {})'.format(
+                        score, score_next, raw_score, clue_score),
+                          file=sys.stderr)
                 problem = problem2
                 score = score_next
                 break
@@ -211,7 +220,7 @@ def problem_to_pzv_url(height, width, problem):
             v = 0
             for j in range(5):
                 if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2 ** (4 - j))
+                    v += (2**(4 - j))
             ret += np.base_repr(v, 32).lower()
         return ret
 
@@ -263,27 +272,19 @@ def _main():
         # original example: http://pzv.jp/p.html?heyawake/6/6/aa66aapv0fu0g2i3k
         height = 6
         width = 6
-        problem = [
-            (0, 0, 1, 2, -1),
-            (0, 2, 2, 4, 2),
-            (0, 4, 1, 6, -1),
-            (1, 0, 2, 2, -1),
-            (1, 4, 3, 6, -1),
-            (2, 0, 4, 3, 3),
-            (2, 3, 4, 4, -1),
-            (3, 4, 4, 6, -1),
-            (4, 0, 6, 2, -1),
-            (4, 2, 6, 4, -1),
-            (4, 4, 6, 6, -1)
-        ]
+        problem = [(0, 0, 1, 2, -1), (0, 2, 2, 4, 2), (0, 4, 1, 6, -1),
+                   (1, 0, 2, 2, -1), (1, 4, 3, 6, -1), (2, 0, 4, 3, 3),
+                   (2, 3, 4, 4, -1), (3, 4, 4, 6, -1), (4, 0, 6, 2, -1),
+                   (4, 2, 6, 4, -1), (4, 4, 6, 6, -1)]
         is_sat, is_black = solve_heyawake(height, width, problem)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(is_black, {
-                None: '?',
-                True: '#',
-                False: '.'
-            }))
+            print(
+                util.stringify_array(is_black, {
+                    None: '?',
+                    True: '#',
+                    False: '.'
+                }))
     else:
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument('-h', '--height', type=int, required=True)
@@ -298,7 +299,8 @@ def _main():
         height = args.height
         width = args.width
         while True:
-            problem = generate_heyawake(height, width,
+            problem = generate_heyawake(height,
+                                        width,
                                         n_max_rooms=args.max_rooms,
                                         min_clue=args.min_clue,
                                         max_clue=args.max_clue,

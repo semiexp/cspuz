@@ -3,7 +3,8 @@ import sys
 from cspuz import Solver
 from cspuz.constraints import fold_or, count_true
 from cspuz.puzzle import util
-from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.generator import (generate_problem, count_non_default_values,
+                             ArrayBuilder2D)
 
 
 def solve_akari(height, width, problem):
@@ -69,7 +70,9 @@ def solve_akari(height, width, problem):
                         neighbors.append((y, x - 1))
                     if x < width - 1 and problem[y][x + 1] < -1:
                         neighbors.append((y, x + 1))
-                    solver.ensure(count_true([has_light[p] for p in neighbors]) == problem[y][x])
+                    solver.ensure(
+                        count_true([has_light[p]
+                                    for p in neighbors]) == problem[y][x])
 
     is_sat = solver.solve()
     return is_sat, has_light
@@ -86,14 +89,17 @@ def compute_score(ans):
 def generate_akari(height, width, no_easy=False, verbose=False):
     def pretest(problem):
         visited = [[False for _ in range(width)] for _ in range(height)]
+
         def visit(y, x):
-            if not (0 <= y < height and 0 <= x < width and problem[y][x] == -2 and not visited[y][x]):
+            if not (0 <= y < height and 0 <= x < width and problem[y][x] == -2
+                    and not visited[y][x]):
                 return
             visited[y][x] = True
             visit(y - 1, x)
             visit(y + 1, x)
             visit(y, x - 1)
             visit(y, x + 1)
+
         n_component = 0
         for y in range(height):
             for x in range(width):
@@ -107,52 +113,72 @@ def generate_akari(height, width, no_easy=False, verbose=False):
         for y in range(height):
             for x in range(width):
                 if problem[y][x] >= 0:
-                    n_adj = (1 if y > 0 and problem[y - 1][x] == -2 else 0) + (1 if x > 0 and problem[y][x - 1] == -2 else 0) + (1 if y < height - 1 and problem[y + 1][x] == -2 else 0) + (1 if x < width - 1 and problem[y][x + 1] == -2 else 0)
+                    n_adj = (1 if y > 0 and problem[y - 1][x] == -2 else 0) + (
+                        1 if x > 0 and problem[y][x - 1] == -2 else
+                        0) + (1 if y < height - 1 and problem[y + 1][x] == -2
+                              else 0) + (1 if x < width - 1
+                                         and problem[y][x + 1] == -2 else 0)
                     if problem[y][x] >= n_adj - 1:
                         return False
         return True
 
     pattern = [-2, -1, 1, 2] if no_easy else [-2, -1, 0, 1, 2, 3, 4]
-    generated = generate_problem(lambda problem: solve_akari(height, width, problem),
-                                 builder_pattern=ArrayBuilder2D(height, width, pattern, default=-2, symmetry=True),
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default=-2, weight=5),
-                                 pretest=pretest, verbose=verbose)
+    generated = generate_problem(
+        lambda problem: solve_akari(height, width, problem),
+        builder_pattern=ArrayBuilder2D(height,
+                                       width,
+                                       pattern,
+                                       default=-2,
+                                       symmetry=True),
+        clue_penalty=lambda problem: count_non_default_values(
+            problem, default=-2, weight=5),
+        pretest=pretest,
+        verbose=verbose)
     return generated
 
 
 def _main():
     if len(sys.argv) == 1:
-        # generated example: https://twitter.com/semiexp/status/1225770511080144896
+        # generated example
+        # https://twitter.com/semiexp/status/1225770511080144896
         height = 10
         width = 10
         problem = [
-            [-2, -2,  2, -2, -2, -2, -2, -2, -2, -2],
-            [-2, -2, -2, -2, -2, -2, -2, -2,  2, -2],
-            [-2, -2, -2, -2, -2, -2, -2, -1, -2, -2],
-            [-1, -2, -2, -2,  3, -2, -2, -2, -2, -2],
-            [-2, -2, -2, -2, -2, -1, -2, -2, -2, -1],
-            [ 2, -2, -2, -2,  2, -2, -2, -2, -2, -2],
-            [-2, -2, -2, -2, -2,  3, -2, -2, -2, -1],
-            [-2, -2, -1, -2, -2, -2, -2, -2, -2, -2],
-            [-2,  2, -2, -2, -2, -2, -2, -2, -2, -2],
-            [-2, -2, -2, -2, -2, -2, -2, -1, -2, -2],
-        ]
+            [-2, -2,  2, -2, -2, -2, -2, -2, -2, -2],  # noqa: E201
+            [-2, -2, -2, -2, -2, -2, -2, -2,  2, -2],  # noqa: E201
+            [-2, -2, -2, -2, -2, -2, -2, -1, -2, -2],  # noqa: E201
+            [-1, -2, -2, -2,  3, -2, -2, -2, -2, -2],  # noqa: E201
+            [-2, -2, -2, -2, -2, -1, -2, -2, -2, -1],  # noqa: E201
+            [ 2, -2, -2, -2,  2, -2, -2, -2, -2, -2],  # noqa: E201
+            [-2, -2, -2, -2, -2,  3, -2, -2, -2, -1],  # noqa: E201
+            [-2, -2, -1, -2, -2, -2, -2, -2, -2, -2],  # noqa: E201
+            [-2,  2, -2, -2, -2, -2, -2, -2, -2, -2],  # noqa: E201
+            [-2, -2, -2, -2, -2, -2, -2, -1, -2, -2],  # noqa: E201
+        ]  # yapf: disable
         is_sat, has_light = solve_akari(height, width, problem)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(has_light, {
-                True: 'O',
-                False: '.',
-                None: '?'
-            }))
+            print(
+                util.stringify_array(has_light, {
+                    True: 'O',
+                    False: '.',
+                    None: '?'
+                }))
     else:
         height, width = map(int, sys.argv[1:])
         while True:
             problem = generate_akari(height, width, verbose=True)
             if problem is not None:
-                print(util.stringify_array(problem, {
-                    -2: '.', -1: '#', 0: '0', 1: '1', 2: '2', 3: '3', 4: '4'
-                }))
+                print(
+                    util.stringify_array(problem, {
+                        -2: '.',
+                        -1: '#',
+                        0: '0',
+                        1: '1',
+                        2: '2',
+                        3: '3',
+                        4: '4'
+                    }))
                 print('', flush=True)
 
 

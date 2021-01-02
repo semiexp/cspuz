@@ -2,7 +2,8 @@ import sys
 
 from cspuz import Solver
 from cspuz.constraints import fold_or, count_true
-from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.generator import (generate_problem, count_non_default_values,
+                             ArrayBuilder2D)
 from cspuz.puzzle import util
 
 
@@ -14,7 +15,8 @@ def solve_doppelblock(n, clue_row, clue_column):
     def sequence_constraint(cells, v):
         s = 0
         for i in range(n):
-            s += (fold_or(cells[:i] == 0) & fold_or(cells[i+1:] == 0)).cond(cells[i], 0)
+            s += (fold_or(cells[:i] == 0) & fold_or(cells[i + 1:] == 0)).cond(
+                cells[i], 0)
         return s == v
 
     def occurrence_constraint(cells):
@@ -36,10 +38,14 @@ def solve_doppelblock(n, clue_row, clue_column):
 
 def generate_doppelblock(n, verbose=False):
     max_sum = (n - 2) * (n - 1) // 2
-    generated = generate_problem(lambda problem: solve_doppelblock(n, problem[0], problem[1]),
-                                 builder_pattern=ArrayBuilder2D(2, n, [-1] + list(range(0, max_sum + 1)), default=-1),
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default=-1, weight=10),
-                                 verbose=verbose)
+    generated = generate_problem(
+        lambda problem: solve_doppelblock(n, problem[0], problem[1]),
+        builder_pattern=ArrayBuilder2D(2,
+                                       n, [-1] + list(range(0, max_sum + 1)),
+                                       default=-1),
+        clue_penalty=lambda problem: count_non_default_values(
+            problem, default=-1, weight=10),
+        verbose=verbose)
     return generated
 
 

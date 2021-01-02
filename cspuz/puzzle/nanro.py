@@ -1,16 +1,14 @@
-import random
 import sys
-import math
-from copy import deepcopy
-from collections import defaultdict, deque
+from collections import defaultdict
 import subprocess
 
 import numpy as np
 
 import cspuz
 from cspuz import Solver, graph
-from cspuz.constraints import Array, count_true, fold_or, fold_and
-from cspuz.generator import generate_problem, ArrayBuilder2D, SegmentationBuilder2D, count_non_default_values
+from cspuz.constraints import count_true
+from cspuz.generator import (generate_problem, ArrayBuilder2D,
+                             SegmentationBuilder2D, count_non_default_values)
 
 
 def solve_nanro(height, width, blocks, num):
@@ -33,7 +31,8 @@ def solve_nanro(height, width, blocks, num):
 
     for i, block in enumerate(blocks):
         nonempty = solver.int_var(1, len(block))
-        solver.ensure(nonempty == count_true(answer[y][x] != 0 for y, x in block))
+        solver.ensure(nonempty == count_true(answer[y][x] != 0
+                                             for y, x in block))
         for y, x in block:
             solver.ensure((answer[y][x] == 0) | (answer[y][x] == nonempty))
     for y in range(height):
@@ -41,11 +40,15 @@ def solve_nanro(height, width, blocks, num):
             if num[y][x] > 0:
                 solver.ensure(answer[y][x] == num[y][x])
             if y < height - 1 and x < width - 1:
-                solver.ensure((answer[y][x] == 0) | (answer[y][x + 1] == 0) | (answer[y + 1][x] == 0) | (answer[y + 1][x + 1] == 0))
+                solver.ensure((answer[y][x] == 0) | (answer[y][x + 1] == 0)
+                              | (answer[y + 1][x] == 0)
+                              | (answer[y + 1][x + 1] == 0))
             if y < height - 1 and block_id[y][x] != block_id[y + 1][x]:
-                solver.ensure((answer[y][x] == 0) | (answer[y + 1][x] == 0) | (answer[y][x] != answer[y + 1][x]))
+                solver.ensure((answer[y][x] == 0) | (answer[y + 1][x] == 0)
+                              | (answer[y][x] != answer[y + 1][x]))
             if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
-                solver.ensure((answer[y][x] == 0) | (answer[y][x + 1] == 0) | (answer[y][x] != answer[y][x + 1]))
+                solver.ensure((answer[y][x] == 0) | (answer[y][x + 1] == 0)
+                              | (answer[y][x] != answer[y][x + 1]))
 
     is_sat = solver.solve()
     return is_sat, answer
@@ -81,7 +84,9 @@ def generate_nanro(height, width, max_block_size=8, verbose=False):
                 lim = len(block)
                 block_set = set(block)
                 for y, x in block_set:
-                    if (y + 1, x) in block_set and (y, x + 1) in block_set and (y + 1, x + 1) in block_set:
+                    if (y + 1, x) in block_set and (
+                            y, x + 1) in block_set and (y + 1,
+                                                        x + 1) in block_set:
                         lim -= 1
                 if n >= lim - 1:
                     return False
@@ -104,24 +109,39 @@ def generate_nanro(height, width, max_block_size=8, verbose=False):
             for y, x in block:
                 if num[y][x] != 2:
                     continue
-                if (y == 0 or (y - 1, x) in block) and (x == 0 or (y, x - 1) in block) and (y == height - 1 or (y + 1, x) in block) and (x == width - 1 or (y, x + 1) in block):
+                if (y == 0 or (y - 1, x)
+                        in block) and (x == 0 or (y, x - 1) in block) and (
+                            y == height - 1 or
+                            (y + 1, x) in block) and (x == width - 1 or
+                                                      (y, x + 1) in block):
                     return False
                 if len(block) >= 6:
                     return False
         return True
 
-    generated = generate_problem(lambda problem: solve_nanro(height, width, *problem),
-                                 builder_pattern=(
-                                     SegmentationBuilder2D(height, width, min_num_blocks=height * width // 6,
-                                                           max_num_blocks=None,
-                                                           min_block_size=2,
-                                                           max_block_size=max_block_size,
-                                                           allow_unmet_constraints_first=False),
-                                     ArrayBuilder2D(height, width, choice=[0] + list(range(2, 7)), default=0, disallow_adjacent=True),
-                                 ),
-                                 clue_penalty=lambda problem: count_non_default_values(problem[1], default=0, weight=6),
-                                 uniqueness=is_unique, score=score, solve_initial_problem=True, pretest=pretest,
-                                 verbose=verbose)
+    generated = generate_problem(
+        lambda problem: solve_nanro(height, width, *problem),
+        builder_pattern=(
+            SegmentationBuilder2D(height,
+                                  width,
+                                  min_num_blocks=height * width // 6,
+                                  max_num_blocks=None,
+                                  min_block_size=2,
+                                  max_block_size=max_block_size,
+                                  allow_unmet_constraints_first=False),
+            ArrayBuilder2D(height,
+                           width,
+                           choice=[0] + list(range(2, 7)),
+                           default=0,
+                           disallow_adjacent=True),
+        ),
+        clue_penalty=lambda problem: count_non_default_values(
+            problem[1], default=0, weight=6),
+        uniqueness=is_unique,
+        score=score,
+        solve_initial_problem=True,
+        pretest=pretest,
+        verbose=verbose)
     return generated
 
 
@@ -132,7 +152,7 @@ def problem_to_pzv_url(height, width, blocks, num):
             v = 0
             for j in range(5):
                 if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2 ** (4 - j))
+                    v += (2**(4 - j))
             ret += np.base_repr(v, 32).lower()
         return ret
 
@@ -162,7 +182,8 @@ def problem_to_pzv_url(height, width, blocks, num):
                     contiguous_empty_cells += 1
             else:
                 if contiguous_empty_cells > 0:
-                    ret += np.base_repr(contiguous_empty_cells + 15, 36).lower()
+                    ret += np.base_repr(contiguous_empty_cells + 15,
+                                        36).lower()
                     contiguous_empty_cells = 0
                 if num[y][x] < 16:
                     ret += np.base_repr(num[y][x], 16).lower()
@@ -180,14 +201,8 @@ def _main():
         height = 8
         width = 8
         b = [
-            '01112334',
-            '00022344',
-            '05522344',
-            '05552664',
-            '75888664',
-            '7579866a',
-            '7779bbba',
-            'ccccbdda'
+            '01112334', '00022344', '05522344', '05552664', '75888664',
+            '7579866a', '7779bbba', 'ccccbdda'
         ]
         blocks = defaultdict(list)
         for y in range(height):
@@ -227,7 +242,8 @@ def _main():
                 if gen is not None:
                     print(gen)
                     blocks, num = gen
-                    print(problem_to_pzv_url(height, width, blocks, num), flush=True)
+                    print(problem_to_pzv_url(height, width, blocks, num),
+                          flush=True)
             except subprocess.TimeoutExpired:
                 print('timeout', file=sys.stderr)
 

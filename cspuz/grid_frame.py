@@ -1,12 +1,12 @@
 import itertools
 
 from cspuz.constraints import Array, BoolVars
-from cspuz.grid import BoolGrid
 
 
 class BoolGridFrame(object):
     """
-    Frame of `height` * `width` grid, each of whose edges is associated with a bool variable.
+    Frame of `height` * `width` grid, each of whose edges is associated with
+    a bool variable.
     """
     def __init__(self, solver, height, width):
         self.solver = solver
@@ -39,7 +39,10 @@ class BoolGridFrame(object):
             y, x = p
         if not (0 <= y < self.height and 0 <= x < self.width):
             raise IndexError('index out of range')
-        return Array([self.horizontal[y, x], self.horizontal[y + 1, x], self.vertical[y, x], self.vertical[y, x + 1]])
+        return Array([
+            self.horizontal[y, x], self.horizontal[y + 1, x],
+            self.vertical[y, x], self.vertical[y, x + 1]
+        ])
 
     def single_loop(self):
         from cspuz import graph

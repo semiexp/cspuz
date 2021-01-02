@@ -17,16 +17,16 @@ def solve_compass(height, width, problem):
     division = solver.int_array((height, width), 0, len(problem) - 1)
     graph.division_connected(solver, division, len(problem), roots=roots)
     solver.add_answer_key(division)
-    for i, (y, x, u, l, d, r) in enumerate(problem):
+    for i, (y, x, up, lf, dw, rg) in enumerate(problem):
         solver.ensure(division[y, x] == i)
-        if u >= 0:
-            solver.ensure(count_true(division[:y, :] == i) == u)
-        if d >= 0:
-            solver.ensure(count_true(division[(y + 1):, :] == i) == d)
-        if l >= 0:
-            solver.ensure(count_true(division[:, :x] == i) == l)
-        if r >= 0:
-            solver.ensure(count_true(division[:, (x + 1):] == i) == r)
+        if up >= 0:
+            solver.ensure(count_true(division[:y, :] == i) == up)
+        if dw >= 0:
+            solver.ensure(count_true(division[(y + 1):, :] == i) == dw)
+        if lf >= 0:
+            solver.ensure(count_true(division[:, :x] == i) == lf)
+        if rg >= 0:
+            solver.ensure(count_true(division[:, (x + 1):] == i) == rg)
     is_sat = solver.solve()
 
     return is_sat, division
@@ -45,18 +45,18 @@ def check_problem_constraints(height, width, problem, flg, circ=-1):
     division = solver.int_array((height, width), 0, len(problem) - 1)
     graph.division_connected(solver, division, len(problem), roots=roots)
     solver.add_answer_key(division)
-    for i, (y, x, u, l, d, r) in enumerate(problem):
+    for i, (y, x, up, lf, dw, rg) in enumerate(problem):
         solver.ensure(division[y, x] == i)
         if flg is not None and flg[i] is not None and flg[i] >= 0:
             solver.ensure(count_true(division == i) >= flg[i])
-        if u >= 0:
-            solver.ensure(count_true(division[:y, :] == i) == u)
-        if d >= 0:
-            solver.ensure(count_true(division[(y + 1):, :] == i) == d)
-        if l >= 0:
-            solver.ensure(count_true(division[:, :x] == i) == l)
-        if r >= 0:
-            solver.ensure(count_true(division[:, (x + 1):] == i) == r)
+        if up >= 0:
+            solver.ensure(count_true(division[:y, :] == i) == up)
+        if dw >= 0:
+            solver.ensure(count_true(division[(y + 1):, :] == i) == dw)
+        if lf >= 0:
+            solver.ensure(count_true(division[:, :x] == i) == lf)
+        if rg >= 0:
+            solver.ensure(count_true(division[:, (x + 1):] == i) == rg)
 
     # encircling constraint
     if circ != -1:
@@ -65,10 +65,18 @@ def check_problem_constraints(height, width, problem, flg, circ=-1):
         solver.ensure(col[-1, :])
         solver.ensure(col[:, 0])
         solver.ensure(col[:, -1])
-        solver.ensure(((division[1:, :] != circ) & (division[:-1, :] != circ)).then(col[1:, :] == col[:-1, :]))
-        solver.ensure(((division[:, 1:] != circ) & (division[:, :-1] != circ)).then(col[:, 1:] == col[:, :-1]))
-        solver.ensure(((division[1:, 1:] != circ) & (division[:-1, :-1] != circ)).then(col[1:, 1:] == col[:-1, :-1]))
-        solver.ensure(((division[:-1, 1:] != circ) & (division[1:, :-1] != circ)).then(col[:-1, 1:] == col[1:, :-1]))
+        solver.ensure(
+            ((division[1:, :] != circ) &
+             (division[:-1, :] != circ)).then(col[1:, :] == col[:-1, :]))
+        solver.ensure(
+            ((division[:, 1:] != circ) &
+             (division[:, :-1] != circ)).then(col[:, 1:] == col[:, :-1]))
+        solver.ensure(
+            ((division[1:, 1:] != circ) &
+             (division[:-1, :-1] != circ)).then(col[1:, 1:] == col[:-1, :-1]))
+        solver.ensure(
+            ((division[:-1, 1:] != circ) &
+             (division[1:, :-1] != circ)).then(col[:-1, 1:] == col[1:, :-1]))
         solver.ensure(fold_or(col & (division != circ)))
         solver.ensure(fold_or((~col) & (division != circ)))
 
@@ -84,17 +92,27 @@ def compute_score(division):
     return score
 
 
-def generate_compass(height, width, pos, min_clue, max_clue, prefer_large_blocks=None, encircling=False, verbose=False):
+def generate_compass(height,
+                     width,
+                     pos,
+                     min_clue,
+                     max_clue,
+                     prefer_large_blocks=None,
+                     encircling=False,
+                     verbose=False):
     choice_base = Choice([-1] + list(range(min_clue, max_clue + 1)), -1)
     pattern = []
     for y, x in pos:
-        pattern.append([y, x,
-                        -1 if y < 2 else choice_base,
-                        -1 if x < 2 else choice_base,
-                        -1 if y >= height - 2 else choice_base,
-                        -1 if x >= width - 2 else choice_base])
+        pattern.append([
+            y, x, -1 if y < 2 else choice_base, -1 if x < 2 else choice_base,
+            -1 if y >= height - 2 else choice_base,
+            -1 if x >= width - 2 else choice_base
+        ])
     if prefer_large_blocks is not None:
-        flg = [prefer_large_blocks if random.random() < 0.9 else -1 for _ in range(len(pos))]
+        flg = [
+            prefer_large_blocks if random.random() < 0.9 else -1
+            for _ in range(len(pos))
+        ]
     else:
         flg = None
     if encircling:
@@ -102,7 +120,9 @@ def generate_compass(height, width, pos, min_clue, max_clue, prefer_large_blocks
     else:
         circ = -1
     if prefer_large_blocks or encircling:
-        pretest = lambda problem: check_problem_constraints(height, width, problem, flg, circ)
+
+        def pretest(problem):
+            return check_problem_constraints(height, width, problem, flg, circ)
     else:
         pretest = None
 
@@ -113,19 +133,23 @@ def generate_compass(height, width, pos, min_clue, max_clue, prefer_large_blocks
                 if problem[i][j] != -1:
                     ret += 3
         return ret
-    generated = generate_problem(lambda problem: solve_compass(height, width, problem),
-                                 builder_pattern=pattern,
-                                 clue_penalty=penalty,
-                                 pretest=pretest,
-                                 verbose=verbose)
+
+    generated = generate_problem(
+        lambda problem: solve_compass(height, width, problem),
+        builder_pattern=pattern,
+        clue_penalty=penalty,
+        pretest=pretest,
+        verbose=verbose)
     return generated
 
 
 def to_puzz_link_url(height, width, pos):
     problem = [[None for _ in range(width)] for _ in range(height)]
     for (y, x, u, l, d, r) in pos:
-        problem[y][x] = tuple(map(lambda x: '.' if x == -1 else x, (u, d, l, r)))
-    return 'https://puzz.link/p?compass/{}/{}/{}'.format(width, height, util.encode_array(problem))
+        problem[y][x] = tuple(
+            map(lambda x: '.' if x == -1 else x, (u, d, l, r)))
+    return 'https://puzz.link/p?compass/{}/{}/{}'.format(
+        width, height, util.encode_array(problem))
 
 
 def parse_puzz_link_url(url):
@@ -144,13 +168,14 @@ def parse_puzz_link_url(url):
             num = [-1, -1, -1, -1]
             for j in range(4):
                 if body[i] == '-':
-                    num[j] = int(body[i+1:i+3], 16)
+                    num[j] = int(body[i + 1:i + 3], 16)
                     i += 3
                 else:
                     if body[i] != '.':
                         num[j] = int(body[i], 16)
                     i += 1
-            res.append((pos // width, pos % width, num[0], num[2], num[1], num[3]))
+            res.append(
+                (pos // width, pos % width, num[0], num[2], num[1], num[3]))
             pos += 1
     return height, width, res
 
@@ -172,7 +197,8 @@ def generate_placement(height, width, nlo, nhi, symmetry=False):
                 for dx in range(-2, 3):
                     y2 = y + dy
                     x2 = x + dx
-                    if 0 <= y2 < height and 0 <= x2 < width and has_clue[y2][x2]:
+                    if 0 <= y2 < height and 0 <= x2 < width and has_clue[y2][
+                            x2]:
                         if abs(dy) + abs(dx) <= 2:
                             score += 1
                         else:
@@ -206,21 +232,16 @@ def emit_svg(height, width, problem):
     boundary = 5
     cell_size = 50
 
-    dwg = svgwrite.Drawing(size=(boundary * 2 + cell_size * width, boundary * 2 + cell_size * height))
+    dwg = svgwrite.Drawing(size=(boundary * 2 + cell_size * width,
+                                 boundary * 2 + cell_size * height))
 
     grid_style = {
         'stroke': 'gray',
         'stroke_width': 1,
         'stroke_dasharray': cell_size / 12
     }
-    border_style = {
-        'stroke': 'black',
-        'stroke_width': 4
-    }
-    compass_style = {
-        'stroke': 'black',
-        'stroke_width': 1
-    }
+    border_style = {'stroke': 'black', 'stroke_width': 4}
+    compass_style = {'stroke': 'black', 'stroke_width': 1}
     text_style_one = {
         'fill': 'black',
         'font_size': cell_size * 0.4,
@@ -239,64 +260,83 @@ def emit_svg(height, width, problem):
     }
     # grid
     for y in range(1, height):
-        dwg.add(dwg.line((boundary, boundary + y * cell_size),
-                         (boundary + width * cell_size, boundary + y * cell_size),
-                         **grid_style))
+        dwg.add(
+            dwg.line((boundary, boundary + y * cell_size),
+                     (boundary + width * cell_size, boundary + y * cell_size),
+                     **grid_style))
     for x in range(1, width):
-        dwg.add(dwg.line((boundary + x * cell_size, boundary),
-                         (boundary + x * cell_size, boundary + height * cell_size),
-                         **grid_style))
+        dwg.add(
+            dwg.line((boundary + x * cell_size, boundary),
+                     (boundary + x * cell_size, boundary + height * cell_size),
+                     **grid_style))
 
     # border
-    dwg.add(dwg.line((boundary - 2, boundary),
-                     (boundary + width * cell_size + 2, boundary),
-                     **border_style))
-    dwg.add(dwg.line((boundary - 2, boundary + height * cell_size),
-                     (boundary + width * cell_size + 2, boundary + height * cell_size),
-                     **border_style))
-    dwg.add(dwg.line((boundary, boundary - 2),
-                     (boundary, boundary + height * cell_size + 2),
-                     **border_style))
-    dwg.add(dwg.line((boundary + width * cell_size, boundary - 2),
-                     (boundary + width * cell_size, boundary + height * cell_size + 2),
-                     **border_style))
+    dwg.add(
+        dwg.line((boundary - 2, boundary),
+                 (boundary + width * cell_size + 2, boundary), **border_style))
+    dwg.add(
+        dwg.line(
+            (boundary - 2, boundary + height * cell_size),
+            (boundary + width * cell_size + 2, boundary + height * cell_size),
+            **border_style))
+    dwg.add(
+        dwg.line((boundary, boundary - 2),
+                 (boundary, boundary + height * cell_size + 2),
+                 **border_style))
+    dwg.add(
+        dwg.line(
+            (boundary + width * cell_size, boundary - 2),
+            (boundary + width * cell_size, boundary + height * cell_size + 2),
+            **border_style))
 
     # clues
-    for (y, x, u, l, d, r) in problem:
-        dwg.add(dwg.line((boundary + x * cell_size, boundary + y * cell_size),
-                         (boundary + (x + 1) * cell_size, boundary + (y + 1) * cell_size),
-                         **compass_style))
-        dwg.add(dwg.line((boundary + (x + 1) * cell_size, boundary + y * cell_size),
-                         (boundary + x * cell_size, boundary + (y + 1) * cell_size),
-                         **compass_style))
+    for (y, x, up, lf, dw, rg) in problem:
+        dwg.add(
+            dwg.line((boundary + x * cell_size, boundary + y * cell_size),
+                     (boundary + (x + 1) * cell_size, boundary +
+                      (y + 1) * cell_size), **compass_style))
+        dwg.add(
+            dwg.line(
+                (boundary + (x + 1) * cell_size, boundary + y * cell_size),
+                (boundary + x * cell_size, boundary + (y + 1) * cell_size),
+                **compass_style))
         center_y = boundary + (y + 0.5) * cell_size
         center_x = boundary + (x + 0.5) * cell_size
-        if u >= 0:
-            dwg.add(dwg.text(str(u), x=[center_x], y=[center_y - cell_size * 0.27],
-                             **(text_style_two if u >= 10 else text_style_one)))
-        if l >= 0:
-            dwg.add(dwg.text(str(l), x=[center_x - cell_size * 0.3], y=[center_y],
-                             **(text_style_two if l >= 10 else text_style_one)))
-        if d >= 0:
-            dwg.add(dwg.text(str(d), x=[center_x], y=[center_y + cell_size * 0.3],
-                             **(text_style_two if d >= 10 else text_style_one)))
-        if r >= 0:
-            dwg.add(dwg.text(str(r), x=[center_x + cell_size * 0.3], y=[center_y],
-                             **(text_style_two if r >= 10 else text_style_one)))
+        if up >= 0:
+            dwg.add(
+                dwg.text(str(up),
+                         x=[center_x],
+                         y=[center_y - cell_size * 0.27],
+                         **(text_style_two if up >= 10 else text_style_one)))
+        if lf >= 0:
+            dwg.add(
+                dwg.text(str(lf),
+                         x=[center_x - cell_size * 0.3],
+                         y=[center_y],
+                         **(text_style_two if lf >= 10 else text_style_one)))
+        if dw >= 0:
+            dwg.add(
+                dwg.text(str(dw),
+                         x=[center_x],
+                         y=[center_y + cell_size * 0.3],
+                         **(text_style_two if dw >= 10 else text_style_one)))
+        if rg >= 0:
+            dwg.add(
+                dwg.text(str(rg),
+                         x=[center_x + cell_size * 0.3],
+                         y=[center_y],
+                         **(text_style_two if rg >= 10 else text_style_one)))
     return dwg
 
 
 def _main():
     if len(sys.argv) == 1:
-        # generated example: https://puzz.link/p?compass/5/5/m..1.i25.1g53..i1..1m
+        # generated example
+        # https://puzz.link/p?compass/5/5/m..1.i25.1g53..i1..1m
         height = 5
         width = 5
-        problem = [
-            (1, 2, -1, 1, -1, -1),
-            (2, 1, 2, -1, 5, 1),
-            (2, 3, 5, -1, 3, -1),
-            (3, 2, 1, -1, -1, 1)
-        ]
+        problem = [(1, 2, -1, 1, -1, -1), (2, 1, 2, -1, 5, 1),
+                   (2, 3, 5, -1, 3, -1), (3, 2, 1, -1, -1, 1)]
         is_sat, ans = solve_compass(height, width, problem)
         print('has answer:', is_sat)
         if is_sat:
@@ -326,9 +366,18 @@ def _main():
         symmetry = args.symmetry
         verbose = args.verbose
         while True:
-            pos = generate_placement(height, width, min_num_blocks, max_num_blocks, symmetry=symmetry)
-            problem = generate_compass(height, width, pos, min_clue, max_clue,
-                                       prefer_large_blocks=prefer_large_blocks, encircling=enclircling_block,
+            pos = generate_placement(height,
+                                     width,
+                                     min_num_blocks,
+                                     max_num_blocks,
+                                     symmetry=symmetry)
+            problem = generate_compass(height,
+                                       width,
+                                       pos,
+                                       min_clue,
+                                       max_clue,
+                                       prefer_large_blocks=prefer_large_blocks,
+                                       encircling=enclircling_block,
                                        verbose=verbose)
             if problem is not None:
                 print(to_puzz_link_url(height, width, problem), flush=True)

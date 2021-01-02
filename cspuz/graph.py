@@ -1,10 +1,12 @@
-from cspuz.constraints import count_true, Array, IntVar, IntExpr, _compute_shape, BoolExpr, Op
+from cspuz.constraints import (count_true, Array, IntVar, IntExpr,
+                               _compute_shape, BoolExpr, Op)
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.configuration import config
 
 
 def _check_array_shape(array, dtype, dim):
-    return isinstance(array, Array) and array.dtype is dtype and len(array.shape) == dim
+    return isinstance(array, Array) and array.dtype is dtype and len(
+        array.shape) == dim
 
 
 def _get_array_shape_2d(array):
@@ -69,13 +71,18 @@ def _from_grid_frame(grid_frame):
     return edges, graph
 
 
-def _active_vertices_connected(solver, is_active, graph, acyclic=False, use_graph_primitive=None):
+def _active_vertices_connected(solver,
+                               is_active,
+                               graph,
+                               acyclic=False,
+                               use_graph_primitive=None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     if use_graph_primitive and not acyclic:
-        solver.ensure(BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
-            [graph.num_vertices, len(graph)] + list(is_active) + sum([[x, y] for x, y in graph.edges], [])
-        ))
+        solver.ensure(
+            BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+                     [graph.num_vertices, len(graph)] + list(is_active) +
+                     sum([[x, y] for x, y in graph.edges], [])))
         return
 
     n = graph.num_vertices
@@ -84,31 +91,50 @@ def _active_vertices_connected(solver, is_active, graph, acyclic=False, use_grap
     is_root = solver.bool_array(n)
 
     for i in range(n):
-        less_ranks = [((ranks[j] < ranks[i]) & is_active[j]) for j, _ in graph.incident_edges[i]]
+        less_ranks = [((ranks[j] < ranks[i]) & is_active[j])
+                      for j, _ in graph.incident_edges[i]]
         if acyclic:
             for j, _ in graph.incident_edges[i]:
                 if i < j:
                     solver.ensure(ranks[j] != ranks[i])
-            solver.ensure(is_active[i].then(count_true(less_ranks + [is_root[i]]) == 1))
+            solver.ensure(
+                is_active[i].then(count_true(less_ranks + [is_root[i]]) == 1))
         else:
-            solver.ensure(is_active[i].then(count_true(less_ranks + [is_root[i]]) >= 1))
+            solver.ensure(
+                is_active[i].then(count_true(less_ranks + [is_root[i]]) >= 1))
     solver.ensure(count_true(is_root) <= 1)
 
 
-def active_vertices_connected(solver, is_active, graph=None, acyclic=False, use_graph_primitive=None):
+def active_vertices_connected(solver,
+                              is_active,
+                              graph=None,
+                              acyclic=False,
+                              use_graph_primitive=None):
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
-            raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
+            raise TypeError(
+                '`is_active` should be a 2-D bool Array if graph is not '
+                'specified')
         height, width = is_active.shape
-        _active_vertices_connected(solver, is_active.flatten(), _grid_graph(height, width), acyclic=acyclic, use_graph_primitive=use_graph_primitive)
+        _active_vertices_connected(solver,
+                                   is_active.flatten(),
+                                   _grid_graph(height, width),
+                                   acyclic=acyclic,
+                                   use_graph_primitive=use_graph_primitive)
     else:
-        _active_vertices_connected(solver, is_active, graph, acyclic=acyclic, use_graph_primitive=use_graph_primitive)
+        _active_vertices_connected(solver,
+                                   is_active,
+                                   graph,
+                                   acyclic=acyclic,
+                                   use_graph_primitive=use_graph_primitive)
 
 
 def active_vertices_not_adjacent(solver, is_active, graph=None):
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
-            raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
+            raise TypeError(
+                '`is_active` should be a 2-D bool Array if graph is not '
+                'specified')
         solver.ensure(~(is_active[1:, :] & is_active[:-1, :]))
         solver.ensure(~(is_active[:, 1:] & is_active[:, :-1]))
     else:
@@ -116,10 +142,14 @@ def active_vertices_not_adjacent(solver, is_active, graph=None):
             solver.ensure(~(is_active[i] & is_active[j]))
 
 
-def active_vertices_not_adjacent_and_not_segmenting(solver, is_active, graph=None):
+def active_vertices_not_adjacent_and_not_segmenting(solver,
+                                                    is_active,
+                                                    graph=None):
     if graph is None:
         if not _check_array_shape(is_active, bool, 2):
-            raise TypeError('`is_active` should be a 2-D bool Array if graph is not specified')
+            raise TypeError(
+                '`is_active` should be a 2-D bool Array if graph is not '
+                'specified')
         active_vertices_not_adjacent(solver, is_active)
         height, width = is_active.shape
         ranks = solver.int_array((height, width), 0, (height * width - 1) // 2)
@@ -132,15 +162,18 @@ def active_vertices_not_adjacent_and_not_segmenting(solver, is_active, graph=Non
                         y2 = y + dy
                         x2 = x + dx
                         if 0 <= y2 < height and 0 <= x2 < width:
-                            less_ranks.append((ranks[y2, x2] < ranks[y, x]) & is_active[y2, x2])
+                            less_ranks.append((ranks[y2, x2] < ranks[y, x])
+                                              & is_active[y2, x2])
                             if (y2, x2) < (y, x):
                                 solver.ensure(ranks[y2, x2] != ranks[y, x])
                         else:
                             nonzero = True
-                solver.ensure(is_active[y, x].then(count_true(less_ranks) <= (0 if nonzero else 1)))
+                solver.ensure(is_active[y, x].then(
+                    count_true(less_ranks) <= (0 if nonzero else 1)))
     else:
         active_vertices_not_adjacent(solver, is_active, graph)
-        active_vertices_connected(solver, ~is_active, graph)  # TODO: is_active may not be an Array
+        active_vertices_connected(solver, ~is_active,
+                                  graph)  # TODO: is_active may not be an Array
 
 
 def active_edges_acyclic(solver, is_active_edge, graph):
@@ -157,7 +190,13 @@ def active_edges_acyclic(solver, is_active_edge, graph):
         solver.ensure(count_true(less_ranks) <= 1)
 
 
-def _division_connected(solver, division, num_regions, graph, roots=None, allow_empty_group=False, use_graph_primitive=None):
+def _division_connected(solver,
+                        division,
+                        num_regions,
+                        graph,
+                        roots=None,
+                        allow_empty_group=False,
+                        use_graph_primitive=None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
 
@@ -168,7 +207,10 @@ def _division_connected(solver, division, num_regions, graph, roots=None, allow_
         for i in range(num_regions):
             region = solver.bool_array(n)
             solver.ensure(region == (division == i))
-            _active_vertices_connected(solver, region, graph, use_graph_primitive=True)
+            _active_vertices_connected(solver,
+                                       region,
+                                       graph,
+                                       use_graph_primitive=True)
 
             if not allow_empty_group:
                 solver.ensure(count_true(region) >= 1)
@@ -188,13 +230,19 @@ def _division_connected(solver, division, num_regions, graph, roots=None, allow_
         for j, e in graph.incident_edges[i]:
             less_ranks.append(spanning_forest[e] & (rank[i] > rank[j]))
             if i < j:
-                solver.ensure(spanning_forest[e].then((division[i] == division[j]) & (rank[i] != rank[j])))
+                solver.ensure(
+                    spanning_forest[e].then((division[i] == division[j])
+                                            & (rank[i] != rank[j])))
         solver.ensure(count_true(less_ranks) == is_root[i].cond(0, 1))
     for i in range(num_regions):
         if allow_empty_group:
-            solver.ensure(count_true([r & (n == i) for r, n in zip(is_root, division)]) <= 1)
+            solver.ensure(
+                count_true([r & (n == i)
+                            for r, n in zip(is_root, division)]) <= 1)
         else:
-            solver.ensure(count_true([r & (n == i) for r, n in zip(is_root, division)]) == 1)
+            solver.ensure(
+                count_true([r & (n == i)
+                            for r, n in zip(is_root, division)]) == 1)
     if roots is not None:
         for i, r in enumerate(roots):
             if r is not None:
@@ -202,10 +250,17 @@ def _division_connected(solver, division, num_regions, graph, roots=None, allow_
                 solver.ensure(is_root[r])
 
 
-def division_connected(solver, division, num_regions, graph=None, roots=None, allow_empty_group=False):
+def division_connected(solver,
+                       division,
+                       num_regions,
+                       graph=None,
+                       roots=None,
+                       allow_empty_group=False):
     if graph is None:
         if not _check_array_shape(division, int, 2):
-            raise TypeError('`division` should be a 2-D bool Array if graph is not specified')
+            raise TypeError(
+                '`division` should be a 2-D bool Array if graph is not '
+                'specified')
         height, width = division.shape
         if roots is None:
             roots_conv = None
@@ -217,10 +272,19 @@ def division_connected(solver, division, num_regions, graph=None, roots=None, al
                 else:
                     y, x = a
                     roots_conv.append(y * width + x)
-        _division_connected(solver, division.flatten(), num_regions, _grid_graph(height, width), roots=roots_conv,
+        _division_connected(solver,
+                            division.flatten(),
+                            num_regions,
+                            _grid_graph(height, width),
+                            roots=roots_conv,
                             allow_empty_group=allow_empty_group)
     else:
-        _division_connected(solver, division, num_regions, graph, roots=roots, allow_empty_group=allow_empty_group)
+        _division_connected(solver,
+                            division,
+                            num_regions,
+                            graph,
+                            roots=roots,
+                            allow_empty_group=allow_empty_group)
 
 
 def _division_connected_variable_groups(solver, graph, group_size=None):
@@ -237,9 +301,11 @@ def _division_connected_variable_groups(solver, graph, group_size=None):
         solver.ensure(is_root[i].then(group_id[i] == i))
         for j, e in graph.incident_edges[i]:
             solver.ensure(is_active_edge[e].then(rank[j] != rank[i]))
-        solver.ensure(count_true(
-            [is_active_edge[e] & (rank[j] < rank[i]) for j, e in graph.incident_edges[i]]
-        ) == is_root[i].cond(0, 1))
+        solver.ensure(
+            count_true([
+                is_active_edge[e] & (rank[j] < rank[i])
+                for j, e in graph.incident_edges[i]
+            ]) == is_root[i].cond(0, 1))
     for i, (u, v) in enumerate(graph):
         solver.ensure(is_active_edge[i].then(group_id[u] == group_id[v]))
     if group_size is not None:
@@ -248,9 +314,11 @@ def _division_connected_variable_groups(solver, graph, group_size=None):
         solver.ensure(downstream_size <= total_size)
         solver.ensure(is_root.then(downstream_size == total_size))
         for i in range(n):
-            solver.ensure(sum(
-                [(is_active_edge[e] & (rank[j] > rank[i])).cond(downstream_size[j], 0) for j, e in graph.incident_edges[i]]
-            ) + 1 == downstream_size[i])
+            solver.ensure(
+                sum([(is_active_edge[e]
+                      & (rank[j] > rank[i])).cond(downstream_size[j], 0)
+                     for j, e in graph.incident_edges[i]]) +
+                1 == downstream_size[i])
 
             if isinstance(group_size, (int, IntVar, IntExpr)):
                 s = group_size
@@ -266,7 +334,10 @@ def _division_connected_variable_groups(solver, graph, group_size=None):
     return group_id
 
 
-def division_connected_variable_groups(solver, graph=None, shape=None, group_size=None):
+def division_connected_variable_groups(solver,
+                                       graph=None,
+                                       shape=None,
+                                       group_size=None):
     if graph is None:
         if shape is None:
             shape = _get_array_shape_2d(group_size)
@@ -280,25 +351,33 @@ def division_connected_variable_groups(solver, graph=None, shape=None, group_siz
             group_size_converted = sum(group_size, [])  # TODO: error checking
         height, width = shape
         group_id_flat = _division_connected_variable_groups(
-            solver, _grid_graph(height, width), group_size=group_size_converted)
+            solver,
+            _grid_graph(height, width),
+            group_size=group_size_converted)
         return group_id_flat.reshape(shape)
     else:
         if shape is not None:
-            raise ValueError('`graph` and `shape` cannot be specified at the same time')
-        return _division_connected_variable_groups(solver, graph, group_size=group_size)
+            raise ValueError(
+                '`graph` and `shape` cannot be specified at the same time')
+        return _division_connected_variable_groups(solver,
+                                                   graph,
+                                                   group_size=group_size)
 
 
-def _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitive=None):
+def _active_edges_single_cycle(solver,
+                               is_active_edge,
+                               graph,
+                               use_graph_primitive=None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     n = graph.num_vertices
-    m = len(graph)
 
     is_passed = solver.bool_array(n)
 
     if use_graph_primitive:
         for i in range(n):
-            degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+            degree = count_true(
+                [is_active_edge[e] for j, e in graph.incident_edges[i]])
             solver.ensure(degree == is_passed[i].cond(2, 0))
         edge_graph = set()
         for v in range(n):
@@ -310,29 +389,44 @@ def _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitiv
                         edge_graph.add((x, y))
                     else:
                         edge_graph.add((y, x))
-        solver.ensure(BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
-            [len(graph), len(edge_graph)] + list(is_active_edge) + sum([[x, y] for x, y in edge_graph], [])
-        ))
+        solver.ensure(
+            BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+                     [len(graph), len(edge_graph)] + list(is_active_edge) +
+                     sum([[x, y] for x, y in edge_graph], [])))
     else:
         rank = solver.int_array(n, 0, n - 1)
         is_root = solver.bool_array(n)
 
         for i in range(n):
-            degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+            degree = count_true(
+                [is_active_edge[e] for j, e in graph.incident_edges[i]])
             solver.ensure(degree == is_passed[i].cond(2, 0))
-            solver.ensure(is_passed[i].then(count_true(
-                [is_active_edge[e] & (rank[j] >= rank[i]) for j, e in graph.incident_edges[i]]
-            ) <= is_root[i].cond(2, 1)))
+            solver.ensure(is_passed[i].then(
+                count_true([
+                    is_active_edge[e] & (rank[j] >= rank[i])
+                    for j, e in graph.incident_edges[i]
+                ]) <= is_root[i].cond(2, 1)))
         solver.ensure(count_true(is_root) == 1)
     return is_passed
 
 
-def active_edges_single_cycle(solver, is_active_edge, graph=None, use_graph_primitive=None):
+def active_edges_single_cycle(solver,
+                              is_active_edge,
+                              graph=None,
+                              use_graph_primitive=None):
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
-            raise TypeError('`is_active_edge` should be a BoolGridFrame if graph is not specified')
+            raise TypeError(
+                '`is_active_edge` should be a BoolGridFrame if graph is not '
+                'specified')
         edges, graph = _from_grid_frame(is_active_edge)
-        is_passed_flat = _active_edges_single_cycle(solver, edges, graph, use_graph_primitive=use_graph_primitive)
-        return is_passed_flat.reshape((is_active_edge.height + 1, is_active_edge.width + 1))
+        is_passed_flat = _active_edges_single_cycle(
+            solver, edges, graph, use_graph_primitive=use_graph_primitive)
+        return is_passed_flat.reshape(
+            (is_active_edge.height + 1, is_active_edge.width + 1))
     else:
-        return _active_edges_single_cycle(solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive)
+        return _active_edges_single_cycle(
+            solver,
+            is_active_edge,
+            graph,
+            use_graph_primitive=use_graph_primitive)

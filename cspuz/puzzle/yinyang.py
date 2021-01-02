@@ -5,7 +5,8 @@ import cspuz
 from cspuz import Solver, graph
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
-from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.generator import (generate_problem, count_non_default_values,
+                             ArrayBuilder2D)
 
 
 def solve_yinyang(height, width, problem):
@@ -15,12 +16,16 @@ def solve_yinyang(height, width, problem):
 
     graph.active_vertices_connected(solver, is_black)
     graph.active_vertices_connected(solver, ~is_black)
-    solver.ensure(is_black[:-1, :-1] | is_black[:-1, 1:] | is_black[1:, :-1] | is_black[1:, 1:])
-    solver.ensure(~(is_black[:-1, :-1] & is_black[:-1, 1:] & is_black[1:, :-1] & is_black[1:, 1:]))
+    solver.ensure(is_black[:-1, :-1] | is_black[:-1, 1:] | is_black[1:, :-1]
+                  | is_black[1:, 1:])
+    solver.ensure(~(is_black[:-1, :-1] & is_black[:-1, 1:] & is_black[1:, :-1]
+                    & is_black[1:, 1:]))
 
     # auxiliary constraint
-    solver.ensure(~(is_black[:-1, :-1] & is_black[1:, 1:] & ~is_black[1:, :-1] & ~is_black[:-1, 1:]))
-    solver.ensure(~(~is_black[:-1, :-1] & ~is_black[1:, 1:] & is_black[1:, :-1] & is_black[:-1, 1:]))
+    solver.ensure(~(is_black[:-1, :-1] & is_black[1:, 1:] & ~is_black[1:, :-1]
+                    & ~is_black[:-1, 1:]))
+    solver.ensure(~(~is_black[:-1, :-1] & ~is_black[1:, 1:] & is_black[1:, :-1]
+                    & is_black[:-1, 1:]))
 
     circ = []
     for y in range(height):
@@ -47,7 +52,11 @@ def solve_yinyang(height, width, problem):
     return is_sat, is_black
 
 
-def generate_yinyang(height, width, disallow_adjacent=False, no_clue_on_circumference=False, verbose=False):
+def generate_yinyang(height,
+                     width,
+                     disallow_adjacent=False,
+                     no_clue_on_circumference=False,
+                     verbose=False):
     def pretest(problem):
         for y in range(height):
             if problem[y][0] != 0 or problem[y][-1] != 0:
@@ -56,12 +65,18 @@ def generate_yinyang(height, width, disallow_adjacent=False, no_clue_on_circumfe
             if problem[0][x] != 0 or problem[-1][x] != 0:
                 return False
         return True
-    generated = generate_problem(lambda problem: solve_yinyang(height, width, problem),
-                                 builder_pattern=ArrayBuilder2D(height, width, range(0, 3), default=0,
-                                                                disallow_adjacent=disallow_adjacent),
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=5),
-                                 pretest=pretest if no_clue_on_circumference else None,
-                                 verbose=verbose)
+
+    generated = generate_problem(
+        lambda problem: solve_yinyang(height, width, problem),
+        builder_pattern=ArrayBuilder2D(height,
+                                       width,
+                                       range(0, 3),
+                                       default=0,
+                                       disallow_adjacent=disallow_adjacent),
+        clue_penalty=lambda problem: count_non_default_values(
+            problem, default=0, weight=5),
+        pretest=pretest if no_clue_on_circumference else None,
+        verbose=verbose)
     return generated
 
 
@@ -81,19 +96,28 @@ def _main():
         is_sat, is_black = solve_yinyang(height, width, problem)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(is_black, {
-                None: '?',
-                True: '#',
-                False: 'o'
-            }))
+            print(
+                util.stringify_array(is_black, {
+                    None: '?',
+                    True: '#',
+                    False: 'o'
+                }))
     else:
         cspuz.config.solver_timeout = 1200.0
         height, width = map(int, sys.argv[1:])
         while True:
             try:
-                problem = generate_yinyang(height, width, disallow_adjacent=False, verbose=True)
+                problem = generate_yinyang(height,
+                                           width,
+                                           disallow_adjacent=False,
+                                           verbose=True)
                 if problem is not None:
-                    print(util.stringify_array(problem, {0: '.', 1: 'o', 2: '#'}), flush=True)
+                    print(util.stringify_array(problem, {
+                        0: '.',
+                        1: 'o',
+                        2: '#'
+                    }),
+                          flush=True)
                     print(flush=True)
             except subprocess.TimeoutExpired:
                 print('timeout', file=sys.stderr)

@@ -8,7 +8,11 @@ class GridDivision(object):
         self.height = height
         self.width = width
         self.num_regions = num_regions
-        self.region_id = IntGrid(solver, height, width, low=0, high=num_regions - 1)
+        self.region_id = IntGrid(solver,
+                                 height,
+                                 width,
+                                 low=0,
+                                 high=num_regions - 1)
 
         self._add_constraints(roots)
 
@@ -35,20 +39,23 @@ class GridDivision(object):
                     neighbors.append((y, x - 1))
                 if x < width - 1:
                     neighbors.append((y, x + 1))
-                solver.ensure(sum([
-                    (spanning_forest[y + y2, x + x2] & (rank[y, x] > rank[y2, x2])).cond(1, 0) for y2, x2 in neighbors
-                ]) == is_root[y, x].cond(0, 1))
+                solver.ensure(
+                    sum([(spanning_forest[y + y2, x + x2]
+                          & (rank[y, x] > rank[y2, x2])).cond(1, 0)
+                         for y2, x2 in neighbors]) == is_root[y, x].cond(0, 1))
 
                 if y > 0:
                     solver.ensure(spanning_forest[y * 2 - 1, x * 2].then(
-                        (region_id[y, x] == region_id[y - 1, x]) & (rank[y, x] != rank[y - 1, x]))
-                    )
+                        (region_id[y, x] == region_id[y - 1, x])
+                        & (rank[y, x] != rank[y - 1, x])))
                 if x > 0:
                     solver.ensure(spanning_forest[y * 2, x * 2 - 1].then(
-                        (region_id[y, x] == region_id[y, x - 1]) & (rank[y, x] != rank[y, x - 1]))
-                    )
+                        (region_id[y, x] == region_id[y, x - 1])
+                        & (rank[y, x] != rank[y, x - 1])))
         for i in range(self.num_regions):
-            solver.ensure(sum([(r & (n == i)).cond(1, 0) for r, n in zip(is_root[:, :], region_id[:, :])]) == 1)
+            solver.ensure(
+                sum([(r & (n == i)).cond(1, 0)
+                     for r, n in zip(is_root[:, :], region_id[:, :])]) == 1)
 
         if roots is not None:
             for i, (y, x) in enumerate(roots):

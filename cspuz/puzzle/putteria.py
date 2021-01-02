@@ -1,12 +1,10 @@
 import sys
-import random
-from collections import deque, defaultdict
-import math
 
-from cspuz import Solver, graph
+from cspuz import Solver
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
-from cspuz.generator import generate_problem, ArrayBuilder2D, SegmentationBuilder2D
+from cspuz.generator import generate_problem, SegmentationBuilder2D
+
 
 def solve_putteria(height, width, blocks):
     solver = Solver()
@@ -37,14 +35,23 @@ def solve_putteria(height, width, blocks):
     return is_sat, has_number
 
 
-def generate_putteria(height, width, min_blocks=13, max_blocks=22, max_block_size=8, verbose=False):
-    generated = generate_problem(lambda problem: solve_putteria(height, width, problem),
-                                 builder_pattern=SegmentationBuilder2D(height, width, min_num_blocks=min_blocks,
-                                                                       max_num_blocks=max_blocks,
-                                                                       min_block_size=3,
-                                                                       max_block_size=max_block_size,
-                                                                       allow_unmet_constraints_first=True),
-                                 verbose=verbose)
+def generate_putteria(height,
+                      width,
+                      min_blocks=13,
+                      max_blocks=22,
+                      max_block_size=8,
+                      verbose=False):
+    generated = generate_problem(
+        lambda problem: solve_putteria(height, width, problem),
+        builder_pattern=SegmentationBuilder2D(
+            height,
+            width,
+            min_num_blocks=min_blocks,
+            max_num_blocks=max_blocks,
+            min_block_size=3,
+            max_block_size=max_block_size,
+            allow_unmet_constraints_first=True),
+        verbose=verbose)
     return generated
 
 
@@ -52,10 +59,15 @@ def _main():
     if len(sys.argv) == 1:
         pass
     else:
-        height, width, min_blocks, max_blocks, max_block_size = map(int, sys.argv[1:])
+        height, width, min_blocks, max_blocks, max_block_size = map(
+            int, sys.argv[1:])
         while True:
-            gen = generate_putteria(height, width, min_blocks=min_blocks, max_blocks=max_blocks,
-                                    max_block_size=max_block_size, verbose=True)
+            gen = generate_putteria(height,
+                                    width,
+                                    min_blocks=min_blocks,
+                                    max_blocks=max_blocks,
+                                    max_block_size=max_block_size,
+                                    verbose=True)
             print(gen, file=sys.stderr)
             if gen is not None:
                 block_id = [[-1 for _ in range(width)] for _ in range(height)]

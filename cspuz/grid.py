@@ -32,8 +32,9 @@ class BoolGrid(object):
 
         if isinstance(y, int) and isinstance(x, int):
             if not (0 <= y < self.height and 0 <= x < self.width):
-                raise ValueError('position ({}, {}) is out of range of a {} * {} grid'.format(
-                    y, x, self.height, self.width))
+                raise ValueError(
+                    'position ({}, {}) is out of range of a {} * {} grid'.
+                    format(y, x, self.height, self.width))
             return self.variables[y * self.width + x]
         ylo, yhi = parse_range(y, self.height)
         xlo, xhi = parse_range(x, self.width)
@@ -61,8 +62,10 @@ class BoolGrid(object):
         solver = self.solver
         height = self.height
         width = self.width
-        ranks = [[solver.int_var(0, height * width - 1) for _ in range(width)] for _ in range(height)]
-        is_root = [[solver.bool_var() for _ in range(width)] for _ in range(height)]
+        ranks = [[solver.int_var(0, height * width - 1) for _ in range(width)]
+                 for _ in range(height)]
+        is_root = [[solver.bool_var() for _ in range(width)]
+                   for _ in range(height)]
 
         root_count = None
         for y in range(height):
@@ -76,10 +79,13 @@ class BoolGrid(object):
                     neighbors.append((y, x - 1))
                 if x < width - 1:
                     neighbors.append((y, x + 1))
-                less_ranks = [((ranks[y2][x2] < ranks[y][x]) & ~self[y2, x2]).cond(1, 0) for y2, x2 in neighbors]
+                less_ranks = [
+                    ((ranks[y2][x2] < ranks[y][x]) & ~self[y2, x2]).cond(1, 0)
+                    for y2, x2 in neighbors
+                ]
                 solver.ensure((~self[y, x]).then(
-                    functools.reduce(lambda a, b: a + b, less_ranks, is_root[y][x].cond(1, 0)) >= 1
-                ))
+                    functools.reduce(lambda a, b: a + b, less_ranks, is_root[y]
+                                     [x].cond(1, 0)) >= 1))
 
                 if root_count is None:
                     root_count = is_root[y][x].cond(1, 0)
@@ -94,7 +100,9 @@ class BoolGrid(object):
         height = self.height
         width = self.width
 
-        ranks = [[solver.int_var(0, (height * width - 1) // 2) for _ in range(width)] for _ in range(height)]
+        ranks = [[
+            solver.int_var(0, (height * width - 1) // 2) for _ in range(width)
+        ] for _ in range(height)]
         for y in range(height):
             for x in range(width):
                 less_ranks = []
@@ -104,16 +112,24 @@ class BoolGrid(object):
                         y2 = y + dy
                         x2 = x + dx
                         if 0 <= y2 < height and 0 <= x2 < width:
-                            less_ranks.append(((ranks[y2][x2] < ranks[y][x]) & self[y2, x2]).cond(1, 0))
+                            less_ranks.append(((ranks[y2][x2] < ranks[y][x])
+                                               & self[y2, x2]).cond(1, 0))
                             if (y2, x2) < (y, x):
                                 solver.ensure(ranks[y2][x2] != ranks[y][x])
                         else:
                             nonzero = True
-                solver.ensure(self[y, x].then(sum(less_ranks) <= (0 if nonzero else 1)))
+                solver.ensure(
+                    self[y, x].then(sum(less_ranks) <= (0 if nonzero else 1)))
 
 
 class IntGrid(object):
-    def __init__(self, solver, height, width, low=None, high=None, variables=None):
+    def __init__(self,
+                 solver,
+                 height,
+                 width,
+                 low=None,
+                 high=None,
+                 variables=None):
         self.solver = solver
         self.height = height
         self.width = width
@@ -122,15 +138,18 @@ class IntGrid(object):
         else:
             if low is None or high is None:
                 raise ValueError('range of int variables should be specified')
-            self.variables = [solver.int_var(low, high) for _ in range(height * width)]
+            self.variables = [
+                solver.int_var(low, high) for _ in range(height * width)
+            ]
 
     def __getitem__(self, pos):
         y, x = pos
 
         if isinstance(y, int) and isinstance(x, int):
             if not (0 <= y < self.height and 0 <= x < self.width):
-                raise ValueError('position ({}, {}) is out of range of a {} * {} grid'.format(
-                    y, x, self.height, self.width))
+                raise ValueError(
+                    'position ({}, {}) is out of range of a {} * {} grid'.
+                    format(y, x, self.height, self.width))
             return self.variables[y * self.width + x]
         ylo, yhi = parse_range(y, self.height)
         xlo, xhi = parse_range(x, self.width)

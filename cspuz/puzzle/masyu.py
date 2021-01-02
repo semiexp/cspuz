@@ -5,7 +5,8 @@ import cspuz
 from cspuz import Solver, graph
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.puzzle import util
-from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.generator import (generate_problem, count_non_default_values,
+                             ArrayBuilder2D)
 
 
 def solve_masyu(height, width, problem):
@@ -30,8 +31,13 @@ def solve_masyu(height, width, problem):
     for y in range(height):
         for x in range(width):
             if problem[y][x] == 1:
-                solver.ensure((get_edge(y * 2, x * 2 - 1) & get_edge(y * 2, x * 2 + 1) & (get_edge(y * 2, x * 2 - 3, True) | get_edge(y * 2, x * 2 + 3, True)))
-                            | (get_edge(y * 2 - 1, x * 2) & get_edge(y * 2 + 1, x * 2) & (get_edge(y * 2 - 3, x * 2, True) | get_edge(y * 2 + 3, x * 2, True))))
+                solver.ensure(
+                    (get_edge(y * 2, x * 2 - 1) & get_edge(y * 2, x * 2 + 1)
+                     & (get_edge(y * 2, x * 2 - 3, True)
+                        | get_edge(y * 2, x * 2 + 3, True)))
+                    | (get_edge(y * 2 - 1, x * 2) & get_edge(y * 2 + 1, x * 2)
+                       & (get_edge(y * 2 - 3, x * 2, True)
+                          | get_edge(y * 2 + 3, x * 2, True))))
             elif problem[y][x] == 2:
                 dirs = [
                     get_edge(y * 2, x * 2 - 1) & get_edge(y * 2, x * 2 - 3),
@@ -46,10 +52,15 @@ def solve_masyu(height, width, problem):
 
 
 def generate_masyu(height, width, symmetry=False, verbose=False):
-    generated = generate_problem(lambda problem: solve_masyu(height, width, problem),
-                                 builder_pattern=ArrayBuilder2D(height, width, [0, 1, 2], default=0, symmetry=symmetry),
-                                 clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=10),
-                                 verbose=verbose)
+    generated = generate_problem(
+        lambda problem: solve_masyu(height, width, problem),
+        builder_pattern=ArrayBuilder2D(height,
+                                       width, [0, 1, 2],
+                                       default=0,
+                                       symmetry=symmetry),
+        clue_penalty=lambda problem: count_non_default_values(
+            problem, default=0, weight=10),
+        verbose=verbose)
     return generated
 
 
@@ -79,9 +90,17 @@ def _main():
         height, width = map(int, sys.argv[1:])
         while True:
             try:
-                problem = generate_masyu(height, width, symmetry=False, verbose=False)
+                problem = generate_masyu(height,
+                                         width,
+                                         symmetry=False,
+                                         verbose=False)
                 if problem is not None:
-                    print(util.stringify_array(problem, {0: '.', 1: 'O', 2: '#'}))
+                    print(
+                        util.stringify_array(problem, {
+                            0: '.',
+                            1: 'O',
+                            2: '#'
+                        }))
                     print(flush=True)
             except subprocess.TimeoutExpired:
                 print('timeout', file=sys.stderr)

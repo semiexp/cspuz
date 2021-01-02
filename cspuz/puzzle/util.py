@@ -3,17 +3,20 @@ from cspuz import Array
 
 def stringify_array(array, symbol_map=None):
     if isinstance(array, Array):
-        height, width = array.shape
+        height, _ = array.shape
     else:
         height = len(array)
-        width = len(array[0])
     rows = []
 
     for y in range(height):
         if isinstance(symbol_map, dict):
-            row = [symbol_map[v.sol if hasattr(v, 'sol') else v] for v in array[y]]
+            row = [
+                symbol_map[v.sol if hasattr(v, 'sol') else v] for v in array[y]
+            ]
         elif symbol_map is not None:
-            row = [symbol_map(v.sol if hasattr(v, 'sol') else v) for v in array[y]]
+            row = [
+                symbol_map(v.sol if hasattr(v, 'sol') else v) for v in array[y]
+            ]
         else:
             row = [v.sol if hasattr(v, 'sol') else v for v in array[y]]
         rows.append(' '.join(row))
@@ -21,17 +24,9 @@ def stringify_array(array, symbol_map=None):
     return '\n'.join(rows)
 
 
-_VERTICAL_EDGE = {
-    None: ' ',
-    True: '|',
-    False: 'x'
-}
+_VERTICAL_EDGE = {None: ' ', True: '|', False: 'x'}
 
-_HORIZONTAL_EDGE = {
-    None: ' ',
-    True: '-',
-    False: 'x'
-}
+_HORIZONTAL_EDGE = {None: ' ', True: '-', False: 'x'}
 
 
 def stringify_grid_frame(grid_frame):
@@ -81,9 +76,11 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
     - a str to be serialized as-is,
     - an int to be serialized in base-16, or
     - a `list` or 'tuple' of `str`s or `int`s.
-    :param single_empty_marker: the number (in base-36) representing single empty cell in the serialization.
+    :param single_empty_marker: the number (in base-36) representing
+    single empty cell in the serialization.
     :param empty: the value to represent empty cells.
-    :param dim: the number of dimensions (1 or 2) of `array`. If `None` is specified, it is automatically inferred.
+    :param dim: the number of dimensions (1 or 2) of `array`. If `None`
+    is specified, it is automatically inferred.
     :return: a str representing the serialization of `array`.
     """
     single_empty_index = _BASE36.index(single_empty_marker)
@@ -113,7 +110,8 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
                 contiguous_empty_cells = 1
         else:
             if contiguous_empty_cells > 0:
-                res.append(_BASE36[contiguous_empty_cells - 1 + single_empty_index])
+                res.append(_BASE36[contiguous_empty_cells - 1 +
+                                   single_empty_index])
                 contiguous_empty_cells = 0
             if isinstance(v, (str, int)):
                 res.append(_encode_int_or_str(v))
@@ -134,9 +132,10 @@ def encode_grid_segmentation(height, width, block_id):
             v = 0
             for j in range(5):
                 if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2 ** (4 - j))
+                    v += (2**(4 - j))
             ret += _BASE36[v]
         return ret
+
     s = []
     for y in range(height):
         for x in range(width - 1):

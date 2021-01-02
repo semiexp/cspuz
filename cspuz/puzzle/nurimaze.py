@@ -5,18 +5,21 @@ import sys
 import numpy as np
 
 from cspuz import Solver, graph
-from cspuz.constraints import count_true, fold_or, fold_and
+from cspuz.constraints import count_true
 from cspuz.puzzle import util
 
 
-def solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+def solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start,
+                   goal):
     solver = Solver()
     is_white = solver.bool_array((height, width))
     graph.active_vertices_connected(solver, is_white, acyclic=True)
     solver.add_answer_key(is_white)
 
-    solver.ensure(is_white[:-1, :-1] | is_white[:-1, 1:] | is_white[1:, :-1] | is_white[1:, 1:])
-    solver.ensure(~(is_white[:-1, :-1] & is_white[:-1, 1:] & is_white[1:, :-1] & is_white[1:, 1:]))
+    solver.ensure(is_white[:-1, :-1] | is_white[:-1, 1:] | is_white[1:, :-1]
+                  | is_white[1:, 1:])
+    solver.ensure(~(is_white[:-1, :-1] & is_white[:-1, 1:] & is_white[1:, :-1]
+                    & is_white[1:, 1:]))
     path = solver.bool_array((height, width))
     solver.ensure(path.then(is_white))
     for y in range(height):
@@ -29,7 +32,9 @@ def solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, g
                 solver.ensure(path[y, x])
                 solver.ensure(count_true(path.four_neighbors(y, x)) == 1)
             else:
-                solver.ensure(path[y, x].then(count_true(path.four_neighbors(y, x)) == 2))
+                solver.ensure(
+                    path[y,
+                         x].then(count_true(path.four_neighbors(y, x)) == 2))
             if mark[y][x] != 0:
                 solver.ensure(is_white[y, x])
             if mark[y][x] == 1:  # pass
@@ -49,17 +54,22 @@ def compute_score(ans):
     return score
 
 
-def check_isolatedness(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+def check_isolatedness(height, width, wall_vertical, wall_horizontal, mark,
+                       start, goal):
     for y in range(height):
         for x in range(width):
             if mark[y][x] != 0 or (y, x) == start or (y, x) == goal:
-                if y > 0 and (mark[y - 1][x] != 0 or wall_horizontal[y - 1][x] == 0):
+                if y > 0 and (mark[y - 1][x] != 0
+                              or wall_horizontal[y - 1][x] == 0):
                     return False
-                if y < height - 1 and (mark[y + 1][x] != 0 or wall_horizontal[y][x] == 0):
+                if y < height - 1 and (mark[y + 1][x] != 0
+                                       or wall_horizontal[y][x] == 0):
                     return False
-                if x > 0 and (mark[y][x - 1] != 0 or wall_vertical[y][x - 1] == 0):
+                if x > 0 and (mark[y][x - 1] != 0
+                              or wall_vertical[y][x - 1] == 0):
                     return False
-                if x < width - 1 and (mark[y][x + 1] != 0 or wall_vertical[y][x] == 0):
+                if x < width - 1 and (mark[y][x + 1] != 0
+                                      or wall_vertical[y][x] == 0):
                     return False
     return True
 
@@ -120,10 +130,14 @@ def generate_nurimaze(height, width, verbose=False, isolated_clues=False):
                 n_prev = goal
                 goal = val[0]
 
-            if isolated_clues and not check_isolatedness(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+            if isolated_clues and not check_isolatedness(
+                    height, width, wall_vertical, wall_horizontal, mark, start,
+                    goal):
                 sat, is_white = False, None
             else:
-                sat, is_white = solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, goal)
+                sat, is_white = solve_nurimaze(height, width, wall_vertical,
+                                               wall_horizontal, mark, start,
+                                               goal)
             if not sat:
                 score_next = -1
                 update = False
@@ -131,11 +145,11 @@ def generate_nurimaze(height, width, verbose=False, isolated_clues=False):
                 raw_score = compute_score(is_white)
                 if raw_score == fully_solved_score:
                     print(wall_vertical, wall_horizontal, mark, start, goal)
-                    #print(util.stringify_array(is_white, {
-                    #    None: '?',
-                    #    True: '.',
-                    #    False: '#'
-                    #}))
+                    # print(util.stringify_array(is_white, {
+                    #     None: '?',
+                    #     True: '.',
+                    #     False: '#'
+                    # }))
                     return wall_vertical, wall_horizontal, mark, start, goal
                 clue_score = 0
                 for y2 in range(height):
@@ -148,11 +162,13 @@ def generate_nurimaze(height, width, verbose=False, isolated_clues=False):
                             clue_score += 5
 
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
+                update = (score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature))
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                    print('update: {} -> {}'.format(score, score_next),
+                          file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -175,14 +191,15 @@ def generate_nurimaze(height, width, verbose=False, isolated_clues=False):
     return None
 
 
-def problem_to_pzv_url(height, width, wall_vertical, wall_horizontal, mark, start, goal):
+def problem_to_pzv_url(height, width, wall_vertical, wall_horizontal, mark,
+                       start, goal):
     def convert_binary_seq(s):
         ret = ''
         for i in range((len(s) + 4) // 5):
             v = 0
             for j in range(5):
                 if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2 ** (4 - j))
+                    v += (2**(4 - j))
             ret += np.base_repr(v, 32).lower()
         return ret
 
@@ -229,51 +246,47 @@ def _main():
         # https://twitter.com/semiexp/status/1229769178623574026
         height = 10
         width = 10
-        wall_vertical = [
-            [0, 1, 1, 1, 0, 1, 0, 1, 1],
-            [1, 0, 0, 1, 0, 1, 1, 0, 1],
-            [1, 0, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [0, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 0, 0, 1, 0, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 0, 1],
-            [1, 0, 1, 1, 1, 0, 1, 0, 1]
-        ]
-        wall_horizontal = [
-            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 0, 0, 1, 1],
-            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
-            [1, 1, 0, 1, 1, 1, 1, 1, 1, 0]
-        ]
-        mark = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 2, 0, 0, 0, 0, 2, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-        ]
+        wall_vertical = [[0, 1, 1, 1, 0, 1, 0, 1, 1],
+                         [1, 0, 0, 1, 0, 1, 1, 0, 1],
+                         [1, 0, 1, 1, 1, 1, 1, 1, 1],
+                         [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                         [0, 1, 1, 1, 1, 0, 1, 1, 1],
+                         [1, 1, 0, 0, 1, 0, 1, 1, 1],
+                         [1, 1, 1, 1, 1, 1, 1, 1, 1],
+                         [0, 1, 1, 1, 1, 1, 1, 1, 1],
+                         [1, 1, 1, 1, 1, 1, 1, 0, 1],
+                         [1, 0, 1, 1, 1, 0, 1, 0, 1]]
+        wall_horizontal = [[1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+                           [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1, 1, 0, 0, 1, 1],
+                           [0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+                           [1, 1, 0, 1, 1, 1, 1, 1, 1, 0]]
+        mark = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 2, 0, 0, 0, 0, 2, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]  # yapf: disable
         start = (6, 5)
         goal = (7, 8)
-        is_sat, is_white = solve_nurimaze(height, width, wall_vertical, wall_horizontal, mark, start, goal)
+        is_sat, is_white = solve_nurimaze(height, width, wall_vertical,
+                                          wall_horizontal, mark, start, goal)
         print('has answer:', is_sat)
         if is_sat:
-            print(util.stringify_array(is_white, {
-                None: '?',
-                True: '.',
-                False: '#'
-            }))
+            print(
+                util.stringify_array(is_white, {
+                    None: '?',
+                    True: '.',
+                    False: '#'
+                }))
     else:
         height, width = map(int, sys.argv[1:])
         while True:
@@ -300,18 +313,22 @@ def _main():
                                 c = 'X'
                             print(c, end='')
                         elif y % 2 == 0 and x % 2 == 1:
-                            if y == 0 or y == height * 2 or wall_horizontal[y // 2 - 1][x // 2] == 1:
+                            if y == 0 or y == height * 2 or wall_horizontal[
+                                    y // 2 - 1][x // 2] == 1:
                                 print('-', end='')
                             else:
                                 print(' ', end='')
                         elif y % 2 == 1 and x % 2 == 0:
-                            if x == 0 or x == width * 2 or wall_vertical[y // 2][x // 2 - 1] == 1:
+                            if x == 0 or x == width * 2 or wall_vertical[
+                                    y // 2][x // 2 - 1] == 1:
                                 print('|', end='')
                             else:
                                 print(' ', end='')
                     print()
                 print()
-                print(problem_to_pzv_url(height, width, wall_vertical, wall_horizontal, mark, start, goal), flush=True)
+                print(problem_to_pzv_url(height, width, wall_vertical,
+                                         wall_horizontal, mark, start, goal),
+                      flush=True)
 
 
 if __name__ == '__main__':

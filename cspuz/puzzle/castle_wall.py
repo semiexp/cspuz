@@ -40,7 +40,8 @@ def solve_castle_wall(height, width, arrow, inside):
             if y == 0:
                 solver.ensure(is_inside[y, x] == grid_frame[0, x * 2 + 1])
             else:
-                solver.ensure(is_inside[y, x] == (is_inside[y - 1, x] != grid_frame[y * 2, x * 2 + 1]))
+                solver.ensure(is_inside[y, x] == (
+                    is_inside[y - 1, x] != grid_frame[y * 2, x * 2 + 1]))
     for y in range(height):
         for x in range(width):
             if inside[y][x] is True:
@@ -63,12 +64,14 @@ def compute_score(grid_frame):
 def trivial_decision(height, width, arrow, max_clue_gap):
     if max_clue_gap == 0:
         return False
+
     def max_lines(seq):
         ret = 0
         for i in range(1, len(seq)):
             if seq[i - 1] == '..' and seq[i] == '..':
                 ret += 1
         return ret
+
     for y in range(height):
         for x in range(width):
             if arrow[y][x] == '..':
@@ -88,7 +91,11 @@ def trivial_decision(height, width, arrow, max_clue_gap):
     return False
 
 
-def generate_castle_wall(height, width, max_clue_gap=0, no_side_clue=False, verbose=False):
+def generate_castle_wall(height,
+                         width,
+                         max_clue_gap=0,
+                         no_side_clue=False,
+                         verbose=False):
     arrow = [['..' for _ in range(width)] for _ in range(height)]
     inside = [[None for _ in range(width)] for _ in range(height)]
     score = 0
@@ -110,11 +117,18 @@ def generate_castle_wall(height, width, max_clue_gap=0, no_side_clue=False, verb
                         for dx in range(-2, 3):
                             y2 = y + dy
                             x2 = x + dx
-                            if abs(dy) + abs(dx) != 4 and (dy, dx) != (0, 0) and 0 <= y2 < height and 0 <= x2 < width and arrow[y2][x2] != '..':
+                            if abs(dy) + abs(dx) != 4 and (dy, dx) != (
+                                    0, 0
+                            ) and 0 <= y2 < height and 0 <= x2 < width and \
+                                    arrow[y2][x2] != '..':
                                 adj = True
                     if adj:
                         continue
-                    if (y <= 1 and d == '^') or (y >= height - 2 and d == 'v') or (x <= 1 and d == '<') or (x >= width - 2 and d == '>'):
+                    if (y <= 1 and d == '^') or (
+                            y >= height - 2
+                            and d == 'v') or (x <= 1
+                                              and d == '<') or (x >= width - 2
+                                                                and d == '>'):
                         continue
                     for n in range(1, 10):
                         for i in side_clue_set:
@@ -137,10 +151,14 @@ def generate_castle_wall(height, width, max_clue_gap=0, no_side_clue=False, verb
             arrow[y][x] = a
             inside[y][x] = i
 
-            if trivial_decision(height, width, arrow, max_clue_gap=max_clue_gap):
+            if trivial_decision(height,
+                                width,
+                                arrow,
+                                max_clue_gap=max_clue_gap):
                 sat = False
             else:
-                sat, grid_frame = solve_castle_wall(height, width, arrow, inside)
+                sat, grid_frame = solve_castle_wall(height, width, arrow,
+                                                    inside)
             if not sat:
                 score_next = -1
                 update = False
@@ -156,15 +174,17 @@ def generate_castle_wall(height, width, max_clue_gap=0, no_side_clue=False, verb
                                 clue_score += 5
                             else:
                                 clue_score += 8
-                        if inside[y2][x2] != None:
+                        if inside[y2][x2] is not None:
                             clue_score += 2
                 clue_score = max(0, clue_score - 20)
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp((score_next - score) / temperature))
+                update = (score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature))
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next), file=sys.stderr)
+                    print('update: {} -> {}'.format(score, score_next),
+                          file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -197,7 +217,11 @@ def _main():
         verbose = args.verbose
         while True:
             try:
-                problem = generate_castle_wall(height, width, max_clue_gap=max_clue_gap, no_side_clue=no_side_clue, verbose=verbose)
+                problem = generate_castle_wall(height,
+                                               width,
+                                               max_clue_gap=max_clue_gap,
+                                               no_side_clue=no_side_clue,
+                                               verbose=verbose)
                 if problem is not None:
                     arrow, inside = problem
                     for y in range(height):
