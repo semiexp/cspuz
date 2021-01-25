@@ -44,14 +44,18 @@ class Solver(object):
         return v
 
     @overload
-    def bool_array(self, shape: Union[int, Tuple[int]]) -> BoolArray1D: ...
+    def bool_array(self, shape: Union[int, Tuple[int]]) -> BoolArray1D:
+        ...
 
     @overload
-    def bool_array(self, shape: Tuple[int, int]) -> BoolArray2D: ...
+    def bool_array(self, shape: Tuple[int, int]) -> BoolArray2D:
+        ...
 
-    def bool_array(self, shape: Union[int, Tuple[int], Tuple[int, int]]) -> Union[BoolArray1D, BoolArray2D]:
+    def bool_array(
+        self, shape: Union[int, Tuple[int], Tuple[int, int]]
+    ) -> Union[BoolArray1D, BoolArray2D]:
         if isinstance(shape, int):
-            shape = (shape,)
+            shape = (shape, )
         size = functools.reduce(lambda x, y: x * y, shape, 1)
         vars = [self.bool_var() for _ in range(size)]
 
@@ -61,17 +65,22 @@ class Solver(object):
             return BoolArray2D(vars, cast(Tuple[int, int], shape))
 
     @overload
-    def int_array(self, shape: Union[int, Tuple[int]], lo: int, hi: int) -> IntArray1D: ...
+    def int_array(self, shape: Union[int, Tuple[int]], lo: int,
+                  hi: int) -> IntArray1D:
+        ...
 
     @overload
-    def int_array(self, shape: Tuple[int, int], lo: int, hi: int) -> IntArray2D: ...
+    def int_array(self, shape: Tuple[int, int], lo: int,
+                  hi: int) -> IntArray2D:
+        ...
 
-    def int_array(self, shape: Union[int, Tuple[int], Tuple[int, int]], lo: int, hi: int) -> Union[IntArray1D, IntArray2D]:
+    def int_array(self, shape: Union[int, Tuple[int], Tuple[int, int]],
+                  lo: int, hi: int) -> Union[IntArray1D, IntArray2D]:
         if lo > hi:
             raise ValueError('\'hi\' must be at least \'lo\'')
 
         if isinstance(shape, int):
-            shape = (shape,)
+            shape = (shape, )
         size = functools.reduce(lambda x, y: x * y, shape, 1)
         vars = [self.int_var(lo, hi) for _ in range(size)]
 
@@ -85,14 +94,16 @@ class Solver(object):
             if isinstance(x, (BoolExpr, bool)):
                 self.constraints.append(x)
             else:
-                raise TypeError('each element in \'constraint\' must be BoolExpr-like')
+                raise TypeError(
+                    'each element in \'constraint\' must be BoolExpr-like')
 
     def add_answer_key(self, *variable: Any):
         for x in flatten_iterator(*variable):
             if isinstance(x, (BoolVar, IntVar)):
                 self.is_answer_key[x.id] = True
             else:
-                raise TypeError('each element in \'variable\' must be BoolVar or IntVar')
+                raise TypeError(
+                    'each element in \'variable\' must be BoolVar or IntVar')
 
     def find_answer(self, backend: ModuleType = None) -> bool:
         if backend is None:

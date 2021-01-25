@@ -1,8 +1,10 @@
 from enum import Enum, auto
-from typing import Any, List, Literal, Optional, Sequence, TYPE_CHECKING, Union, cast, overload
+from typing import (Any, List, Literal, Optional, Sequence, TYPE_CHECKING,
+                    Union, cast, overload)
 
 if TYPE_CHECKING:
     from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D
+
 
 class Op(Enum):
     VAR = auto()
@@ -28,7 +30,8 @@ class Op(Enum):
     GRAPH_ACTIVE_VERTICES_CONNECTED = auto()
 
 
-BoolOp = Literal[Op.BOOL_CONSTANT, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT, Op.NOT, Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP, Op.ALLDIFF]
+BoolOp = Literal[Op.BOOL_CONSTANT, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT,
+                 Op.NOT, Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP, Op.ALLDIFF]
 IntOp = Literal[Op.INT_CONSTANT, Op.NEG, Op.ADD, Op.SUB, Op.IF]
 
 ExprLike = Union['Expr', int, bool]
@@ -37,7 +40,10 @@ IntExprLike = Union['IntExpr', int]
 
 
 def is_bool_op(op: Op) -> bool:
-    return op in [Op.BOOL_CONSTANT, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT, Op.NOT, Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP, Op.ALLDIFF]
+    return op in [
+        Op.BOOL_CONSTANT, Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT, Op.NOT,
+        Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP, Op.ALLDIFF
+    ]
 
 
 def is_int_op(op: Op) -> bool:
@@ -87,7 +93,9 @@ def _make_int_expr(op: IntOp, operands: List[ExprLike]) -> 'IntExpr':
         if len(operands) != 1 or not _is_int_expr_like(operands[0]):
             return NotImplemented
     elif op == Op.IF:
-        if len(operands) != 3 or not (_is_bool_expr_like(operands[0]) and _is_int_expr_like(operands[1]) and _is_int_expr_like(operands[2])):
+        if len(operands) != 3 or not (_is_bool_expr_like(operands[0])
+                                      and _is_int_expr_like(operands[1])
+                                      and _is_int_expr_like(operands[2])):
             return NotImplemented
     else:
         raise ValueError(f'operator {op} does not return an int value')
@@ -109,23 +117,36 @@ class BoolExpr(Expr):
         super().__init__(op, operands)
 
     @overload
-    def cond(self, t: IntExprLike, f: IntExprLike) -> 'IntExpr': ...
+    def cond(self, t: IntExprLike, f: IntExprLike) -> 'IntExpr':
+        ...
 
     @overload
-    def cond(self, t: 'IntArray1D', f: Union[IntExprLike, 'IntArray1D']) -> 'IntArray1D': ...
+    def cond(self, t: 'IntArray1D', f: Union[IntExprLike,
+                                             'IntArray1D']) -> 'IntArray1D':
+        ...
 
     @overload
-    def cond(self, t: 'IntArray2D', f: Union[IntExprLike, 'IntArray2D']) -> 'IntArray2D': ...
+    def cond(self, t: 'IntArray2D', f: Union[IntExprLike,
+                                             'IntArray2D']) -> 'IntArray2D':
+        ...
 
     @overload
-    def cond(self, t: IntExprLike, f: 'IntArray1D') -> 'IntArray1D': ...
+    def cond(self, t: IntExprLike, f: 'IntArray1D') -> 'IntArray1D':
+        ...
 
     @overload
-    def cond(self, t: IntExprLike, f: 'IntArray2D') -> 'IntArray2D': ...
+    def cond(self, t: IntExprLike, f: 'IntArray2D') -> 'IntArray2D':
+        ...
 
-    def cond(self, t: Union[IntExprLike, 'IntArray1D', 'IntArray2D'], f: Union[IntExprLike, 'IntArray1D', 'IntArray2D']) -> Union['IntExpr', 'IntArray1D', 'IntArray2D']:
+    def cond(
+        self, t: Union[IntExprLike, 'IntArray1D',
+                       'IntArray2D'], f: Union[IntExprLike, 'IntArray1D',
+                                               'IntArray2D']
+    ) -> Union['IntExpr', 'IntArray1D', 'IntArray2D']:
         if _is_int_expr_like(t) and _is_bool_expr_like(f):
-            res = _make_int_expr(Op.IF, [self, cast(IntExprLike, t), cast(IntExprLike, f)])
+            res = _make_int_expr(
+                Op.IF, [self, cast(IntExprLike, t),
+                        cast(IntExprLike, f)])
             if res is not NotImplemented:
                 return res
         else:
@@ -135,21 +156,26 @@ class BoolExpr(Expr):
             if res is not NotImplemented:
                 return res
 
-        raise TypeError(
-            'unsupported argument type(s) for operator \'cond\': '
-            '\'{}\' and \'{}\''.format(type(t).__name__,
-                                       type(f).__name__))
+        raise TypeError('unsupported argument type(s) for operator \'cond\': '
+                        '\'{}\' and \'{}\''.format(
+                            type(t).__name__,
+                            type(f).__name__))
 
     @overload
-    def then(self, other: BoolExprLike) -> 'BoolExpr': ...
+    def then(self, other: BoolExprLike) -> 'BoolExpr':
+        ...
 
     @overload
-    def then(self, other: 'BoolArray1D') -> 'BoolArray1D': ...
+    def then(self, other: 'BoolArray1D') -> 'BoolArray1D':
+        ...
 
     @overload
-    def then(self, other: 'BoolArray2D') -> 'BoolArray2D': ...
+    def then(self, other: 'BoolArray2D') -> 'BoolArray2D':
+        ...
 
-    def then(self, other: Union[BoolExprLike, 'BoolArray1D', 'BoolArray2D']) -> Union['BoolExpr', 'BoolArray1D', 'BoolArray2D']:
+    def then(
+        self, other: Union[BoolExprLike, 'BoolArray1D', 'BoolArray2D']
+    ) -> Union['BoolExpr', 'BoolArray1D', 'BoolArray2D']:
         if _is_bool_expr_like(other):
             res = _make_bool_expr(Op.IMP, [self, cast(BoolExprLike, other)])
             if res is not NotImplemented:
@@ -161,8 +187,8 @@ class BoolExpr(Expr):
                 return res2
 
         raise TypeError(
-            'unsupported argument type(s) for operator `then`: \'{}\''.
-            format(type(other).__name__))
+            'unsupported argument type(s) for operator `then`: \'{}\''.format(
+                type(other).__name__))
 
     def __invert__(self) -> 'BoolExpr':
         return _make_bool_expr(Op.NOT, [self])

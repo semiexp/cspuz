@@ -20,7 +20,8 @@ def solve_firefly(height, width, problem):
     line_ul = BoolGridFrame(solver, height - 1, width - 1)
     line_dr = BoolGridFrame(solver, height - 1, width - 1)
     solver.ensure(
-        BoolArray1D(list(has_line)) == (BoolArray1D(list(line_ul)) | BoolArray1D(list(line_dr))))
+        BoolArray1D(list(has_line)) == (BoolArray1D(list(line_ul))
+                                        | BoolArray1D(list(line_dr))))
     solver.ensure(~(BoolArray1D(list(line_ul)) & BoolArray1D(list(line_dr))))
 
     # unicyclic (= connected)

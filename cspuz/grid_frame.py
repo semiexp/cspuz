@@ -29,19 +29,24 @@ class BoolGridFrame:
             raise IndexError('index does not specify a loop edge')
 
     def all_edges(self) -> BoolArray1D:
-        return BoolArray1D(list(itertools.chain(self.horizontal, self.vertical)))
+        return BoolArray1D(
+            list(itertools.chain(self.horizontal, self.vertical)))
 
     def __iter__(self) -> Iterator[BoolExpr]:
         return itertools.chain(self.horizontal, self.vertical)
 
-    def cell_neighbors(self, y: Union[int, Tuple[int, int]], x: Optional[int] = None) -> BoolArray1D:
+    def cell_neighbors(self,
+                       y: Union[int, Tuple[int, int]],
+                       x: Optional[int] = None) -> BoolArray1D:
         if x is None:
             if isinstance(y, int):
-                raise TypeError('two integers must be provided to \'cell_neighbors\'')
+                raise TypeError(
+                    'two integers must be provided to \'cell_neighbors\'')
             y2, x2 = y
         else:
             if x is None or isinstance(y, tuple):
-                raise TypeError('two integers must be provided to \'cell_neighbors\'')
+                raise TypeError(
+                    'two integers must be provided to \'cell_neighbors\'')
             y2 = y
             x2 = x
         if not (0 <= y2 < self.height and 0 <= x2 < self.width):

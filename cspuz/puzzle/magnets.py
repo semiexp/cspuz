@@ -18,9 +18,11 @@ def solve_magnets(height, width, to_right, to_down, cond_row, cond_col):
     for y in range(height):
         for x in range(width):
             if to_right[y][x]:
-                solver.ensure((plus[y, x] == minus[y, x + 1]) & (minus[y, x] == plus[y, x + 1]))
+                solver.ensure((plus[y, x] == minus[y, x + 1])
+                              & (minus[y, x] == plus[y, x + 1]))
             if to_down[y][x]:
-                solver.ensure((plus[y, x] == minus[y + 1, x]) & (minus[y, x] == plus[y + 1, x]))
+                solver.ensure((plus[y, x] == minus[y + 1, x])
+                              & (minus[y, x] == plus[y + 1, x]))
     solver.ensure(~(plus[:-1, :] & plus[1:, :]))
     solver.ensure(~(minus[:-1, :] & minus[1:, :]))
     solver.ensure(~(plus[:, :-1] & plus[:, 1:]))
@@ -390,11 +392,11 @@ def _main():
         to_right, to_down, cond_row, cond_col = generate_magnets(
             height, width, no_easy_constraints=True, verbose=True)
         print(
-             stringify_magnets_problem(height, width, to_right, to_down,
-                                       cond_row, cond_col))
-        #print(
-        #    emit_svg(height, width, to_right, to_down, cond_row,
-        #             cond_col).tostring())
+            stringify_magnets_problem(height, width, to_right, to_down,
+                                      cond_row, cond_col))
+        # print(
+        #     emit_svg(height, width, to_right, to_down, cond_row,
+        #              cond_col).tostring())
         print(flush=True)
 
 
