@@ -131,6 +131,8 @@ def generate_castle_wall(height,
                                                                 and d == '>'):
                         continue
                     for n in range(1, 10):
+                        if min_clue is not None and n < min_clue:
+                            continue
                         for i in side_clue_set:
                             a = d + str(n)
                             if d == '^' and n >= y:
@@ -205,6 +207,7 @@ def _main():
         parser.add_argument('-h', '--height', type=int, required=True)
         parser.add_argument('-w', '--width', type=int, required=True)
         parser.add_argument('--max-clue-gap', type=int, default=0)
+        parser.add_argument('--min-clue', type=int)
         parser.add_argument('--no-side-clue', action='store_true')
         parser.add_argument('-v', '--verbose', action='store_true')
         args = parser.parse_args()
@@ -213,6 +216,7 @@ def _main():
         height = args.height
         width = args.width
         max_clue_gap = args.max_clue_gap
+        min_clue = args.min_clue
         no_side_clue = args.no_side_clue
         verbose = args.verbose
         while True:

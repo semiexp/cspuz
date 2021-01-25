@@ -1,9 +1,11 @@
 import itertools
+from typing import Iterator, Optional, Tuple, Union
 
-from cspuz.constraints import Array, BoolVars
+from .array import BoolArray1D
+from .expr import BoolExpr
 
 
-class BoolGridFrame(object):
+class BoolGridFrame:
     """
     Frame of `height` * `width` grid, each of whose edges is associated with
     a bool variable.
@@ -15,7 +17,7 @@ class BoolGridFrame(object):
         self.horizontal = solver.bool_array((height + 1, width))
         self.vertical = solver.bool_array((height, width + 1))
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Tuple[int, int]) -> BoolExpr:
         y, x = item
         if not (0 <= y <= self.height * 2 and 0 <= x <= self.width * 2):
             raise IndexError('index out of range')
@@ -26,24 +28,29 @@ class BoolGridFrame(object):
         else:
             raise IndexError('index does not specify a loop edge')
 
-    def all_edges(self):
-        return BoolVars(list(itertools.chain(self.horizontal, self.vertical)))
+    def all_edges(self) -> BoolArray1D:
+        return BoolArray1D(list(itertools.chain(self.horizontal, self.vertical)))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[BoolExpr]:
         return itertools.chain(self.horizontal, self.vertical)
 
-    def cell_neighbors(self, *p):
-        if len(p) == 1:
-            y, x = p[0]
+    def cell_neighbors(self, y: Union[int, Tuple[int, int]], x: Optional[int] = None) -> BoolArray1D:
+        if x is None:
+            if isinstance(y, int):
+                raise TypeError('two integers must be provided to \'cell_neighbors\'')
+            y2, x2 = y
         else:
-            y, x = p
-        if not (0 <= y < self.height and 0 <= x < self.width):
+            if x is None or isinstance(y, tuple):
+                raise TypeError('two integers must be provided to \'cell_neighbors\'')
+            y2 = y
+            x2 = x
+        if not (0 <= y2 < self.height and 0 <= x2 < self.width):
             raise IndexError('index out of range')
-        return Array([
-            self.horizontal[y, x], self.horizontal[y + 1, x],
-            self.vertical[y, x], self.vertical[y, x + 1]
+        return BoolArray1D([
+            self.horizontal[y2, x2], self.horizontal[y2 + 1, x2],
+            self.vertical[y2, x2], self.vertical[y2, x2 + 1]
         ])
 
     def single_loop(self):
-        from cspuz import graph
+        from . import graph
         return graph.active_edges_single_cycle(self.solver, self)

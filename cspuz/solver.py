@@ -1,10 +1,16 @@
-import cspuz
-from cspuz import backend
-from cspuz.constraints import BoolVar, IntVar, BoolVars, Array
+import functools
+from types import ModuleType
+from typing import Any, List, Tuple, Union, cast, overload
+
+from . import backend
+from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D
+from .configuration import config
+from .expr import BoolExpr, BoolExprLike, BoolVar, IntVar, Op
+from .constraints import flatten_iterator
 
 
-def _get_default_backend():
-    backend_name = cspuz.config.default_backend
+def _get_default_backend() -> ModuleType:
+    backend_name = config.default_backend
     if backend_name == 'sugar':
         return backend.sugar
     elif backend_name == 'sugar_extended':
@@ -16,69 +22,89 @@ def _get_default_backend():
 
 
 class Solver(object):
+    variables: List[Union[BoolVar, IntVar]]
+    is_answer_key: List[bool]
+    constraints: List[BoolExprLike]
+
     def __init__(self):
         self.variables = []
         self.is_answer_key = []
         self.constraints = []
 
-    def bool_var(self):
+    def bool_var(self) -> BoolVar:
         v = BoolVar(len(self.variables))
         self.variables.append(v)
         self.is_answer_key.append(False)
         return v
 
-    def int_var(self, lo, hi):
+    def int_var(self, lo, hi) -> IntVar:
         v = IntVar(len(self.variables), lo, hi)
         self.variables.append(v)
         self.is_answer_key.append(False)
         return v
 
-    def bool_array(self, shape):
+    @overload
+    def bool_array(self, shape: Union[int, Tuple[int]]) -> BoolArray1D: ...
+
+    @overload
+    def bool_array(self, shape: Tuple[int, int]) -> BoolArray2D: ...
+
+    def bool_array(self, shape: Union[int, Tuple[int], Tuple[int, int]]) -> Union[BoolArray1D, BoolArray2D]:
         if isinstance(shape, int):
-            size = shape
-        elif len(shape) == 1:
-            size, = shape
-        else:
-            h, w = shape
-            size = h * w
+            shape = (shape,)
+        size = functools.reduce(lambda x, y: x * y, shape, 1)
         vars = [self.bool_var() for _ in range(size)]
-        return Array(vars, shape=shape, dtype=bool)
 
-    def int_array(self, shape, lo, hi):
+        if len(shape) == 1:
+            return BoolArray1D(vars)
+        else:
+            return BoolArray2D(vars, cast(Tuple[int, int], shape))
+
+    @overload
+    def int_array(self, shape: Union[int, Tuple[int]], lo: int, hi: int) -> IntArray1D: ...
+
+    @overload
+    def int_array(self, shape: Tuple[int, int], lo: int, hi: int) -> IntArray2D: ...
+
+    def int_array(self, shape: Union[int, Tuple[int], Tuple[int, int]], lo: int, hi: int) -> Union[IntArray1D, IntArray2D]:
+        if lo > hi:
+            raise ValueError('\'hi\' must be at least \'lo\'')
+
         if isinstance(shape, int):
-            size = shape
-        elif len(shape) == 1:
-            size, = shape
-        else:
-            h, w = shape
-            size = h * w
+            shape = (shape,)
+        size = functools.reduce(lambda x, y: x * y, shape, 1)
         vars = [self.int_var(lo, hi) for _ in range(size)]
-        return Array(vars, shape=shape, dtype=int)
 
-    def ensure(self, constraint):
-        if hasattr(constraint, '__iter__'):
-            self.constraints += constraint
+        if len(shape) == 1:
+            return IntArray1D(vars)
         else:
-            self.constraints.append(constraint)
+            return IntArray2D(vars, cast(Tuple[int, int], shape))
 
-    def add_answer_key(self, variable):
-        if hasattr(variable, '__iter__'):
-            for v in variable:
-                self.is_answer_key[v.id] = True
-        else:
-            self.is_answer_key[variable.id] = True
+    def ensure(self, *constraint: Any):
+        for x in flatten_iterator(*constraint):
+            if isinstance(x, (BoolExpr, bool)):
+                self.constraints.append(x)
+            else:
+                raise TypeError('each element in \'constraint\' must be BoolExpr-like')
 
-    def find_answer(self, backend=None):
+    def add_answer_key(self, *variable: Any):
+        for x in flatten_iterator(*variable):
+            if isinstance(x, (BoolVar, IntVar)):
+                self.is_answer_key[x.id] = True
+            else:
+                raise TypeError('each element in \'variable\' must be BoolVar or IntVar')
+
+    def find_answer(self, backend: ModuleType = None) -> bool:
         if backend is None:
             backend = _get_default_backend()
-        csp_solver = backend.CSPSolver(self.variables)
+        csp_solver = backend.CSPSolver(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
         return csp_solver.solve()
 
-    def solve(self, backend=None):
+    def solve(self, backend: ModuleType = None) -> bool:
         if backend is None:
             backend = _get_default_backend()
-        csp_solver = backend.CSPSolver(self.variables)
+        csp_solver = backend.CSPSolver(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
 
         if hasattr(csp_solver, 'solve_irrefutably'):
@@ -89,7 +115,7 @@ class Solver(object):
             return False
 
         n_var = len(self.variables)
-        answer = [None] * n_var
+        answer: List[Union[None, bool, int]] = [None] * n_var
         for i in range(n_var):
             if self.is_answer_key[i]:
                 answer[i] = self.variables[i].sol
@@ -97,9 +123,10 @@ class Solver(object):
         while True:
             difference_cond = []
             for i in range(n_var):
-                if self.is_answer_key[i] and answer[i] is not None:
-                    difference_cond.append(self.variables[i] != answer[i])
-            csp_solver.add_constraint(BoolVars(difference_cond).fold_or())
+                a = answer[i]
+                if self.is_answer_key[i] and a is not None:
+                    difference_cond.append(self.variables[i] != a)
+            csp_solver.add_constraint(BoolExpr(Op.OR, difference_cond))
             if not csp_solver.solve():
                 break
 

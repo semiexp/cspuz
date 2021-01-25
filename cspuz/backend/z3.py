@@ -1,10 +1,10 @@
 try:
-    import z3
+    import z3  # type: ignore
     Z3_AVAILABLE = True
 except ImportError:
     Z3_AVAILABLE = False
 
-from cspuz.constraints import Op, Expr, BoolVar, IntVar
+from ..expr import Op, Expr, BoolVar, IntVar
 
 
 def _convert_expr(e, variables_dict):

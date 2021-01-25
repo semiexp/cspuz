@@ -1,13 +1,9 @@
-from cspuz.solver import Solver
-from cspuz.grid import BoolGrid, IntGrid, latin_square
-from cspuz.grid_frame import BoolGridFrame
-from cspuz.grid_division import GridDivision
-from cspuz.constraints import (BoolVars, IntVars, Array, alldifferent,
-                               count_true, cond, fold_or, fold_and)
-from cspuz.configuration import config
+from .solver import Solver
+from .constraints import (alldifferent, count_true, cond, fold_and, fold_or)
+from .configuration import config
+from .grid_frame import BoolGridFrame
 
 __all__ = [
-    'Solver', 'BoolGrid', 'IntGrid', 'latin_square', 'BoolGridFrame',
-    'GridDivision', 'BoolVars', 'IntVars', 'Array', 'alldifferent',
-    'count_true', 'cond', 'fold_or', 'fold_and', 'config'
+    'Solver', 'alldifferent', 'count_true', 'cond', 'fold_and', 'fold_or',
+    'config', 'BoolGridFrame'
 ]

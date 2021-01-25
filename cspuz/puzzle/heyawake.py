@@ -14,9 +14,9 @@ def solve_heyawake(height, width, problem):
     solver = Solver()
     is_black = solver.bool_array((height, width))
     solver.add_answer_key(is_black)
-    graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
-    # graph.active_vertices_not_adjacent(solver, is_black)
-    # graph.active_vertices_connected(solver, ~is_black, emit_primitive=True)
+    #graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
+    graph.active_vertices_not_adjacent(solver, is_black)
+    graph.active_vertices_connected(solver, ~is_black)
     for y0, x0, y1, x1, n in problem:
         if n >= 0:
             solver.ensure(count_true(is_black[y0:y1, x0:x1]) == n)
@@ -31,9 +31,36 @@ def solve_heyawake(height, width, problem):
     return is_sat, is_black
 
 
+def pretest(height, width, problem):
+    solver = Solver()
+    is_black = solver.bool_array((height, width))
+    solver.add_answer_key(is_black)
+    #graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
+    graph.active_vertices_not_adjacent(solver, is_black)
+    graph.active_vertices_connected(solver, ~is_black)
+    for y0, x0, y1, x1, n in problem:
+        if n >= 0:
+            solver.ensure(count_true(is_black[y0:y1, x0:x1]) == n)
+        if 0 < y0 and y1 < height:
+            for x in range(x0, x1):
+                solver.ensure(fold_or(is_black[(y0 - 1):(y1 + 1), x]))
+        if 0 < x0 and x1 < width:
+            for y in range(y0, y1):
+                solver.ensure(fold_or(is_black[y, (x0 - 1):(x1 + 1)]))
+    solver.ensure(is_black[2, 3])
+    solver.ensure(is_black[2, 6])
+    solver.ensure(is_black[5, 3])
+    solver.ensure(is_black[5, 6])
+    solver.ensure(is_black[3, 4])
+    solver.ensure(is_black[4, 5])
+    return solver.find_answer()
+
+
 def enumerate_division_update(problem):
     ret = []
     for i in range(len(problem)):
+        if i == 0:
+            continue
         y0, x0, y1, x1, n = problem[i]
         if y1 - y0 >= 2:
             for y in range(y0 + 1, y1):
@@ -50,7 +77,11 @@ def enumerate_division_update(problem):
                 #     continue
                 ret.append(([i], [(y0, x0, y1, x, -1), (y0, x, y1, x1, -1)]))
     for i in range(len(problem)):
+        if i == 0:
+            continue
         for j in range(i):
+            if j == 0:
+                continue
             y0a, x0a, y1a, x1a, na = problem[i]
             y0b, x0b, y1b, x1b, nb = problem[j]
             if y0a == y0b and y1a == y1b and (x1a == x0b or x1b == x0a):
@@ -103,6 +134,8 @@ def enumerate_clue_update(problem,
                           no_limit_clue=False):
     ret = []
     for i in range(len(problem)):
+        if i == 0:
+            continue
         y0, x0, y1, x1, n = problem[i]
         nmax = num_max_black_cells(y1 - y0, x1 - x0)
         for n2 in range(-1, nmax + 1):
@@ -182,7 +215,9 @@ def generate_heyawake(height,
             problem2 = [x for i, x in enumerate(problem) if i not in elim]
             problem2 += app
 
-            if num_thin_blocks(problem2) > 3:
+            if num_thin_blocks(problem2) > 5:
+                continue
+            if not pretest(height, width, problem2):
                 continue
             sat, is_black = solve_heyawake(height, width, problem2)
             if not sat:
@@ -208,7 +243,7 @@ def generate_heyawake(height,
             else:
                 continue
         temperature *= 0.995
-    if verbose:
+    if verbose or True:
         print('failed', file=sys.stderr)
     return None
 
