@@ -235,7 +235,7 @@ def _elementwise(
 
     # shape check
     for operand in operands:
-        if isinstance(operand, Array1D):
+        if isinstance(operand, (Array1D, Array2D)):
             if operand.shape is not None and operand.shape != shape:
                 raise ValueError(
                     f'shape mismatch: {shape} and {operand.shape}')
