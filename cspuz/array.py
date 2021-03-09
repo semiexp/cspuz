@@ -357,7 +357,7 @@ class IntArray1D(Array1D[IntExpr]):
     def __init__(self, data: Union[Iterable[IntExpr]]):
         super().__init__(data)
 
-    def __neg__(self, other: IntOperand1D) -> 'IntArray1D':
+    def __neg__(self) -> 'IntArray1D':
         return _elementwise(Op.NEG, self.shape, [self])
 
     def __add__(self, other: IntOperand1D) -> 'IntArray1D':
@@ -544,7 +544,7 @@ class IntArray2D(Array2D[IntExpr]):
                  shape: Optional[Tuple[int, int]] = None):
         super().__init__(data, shape)
 
-    def __neg__(self, other: IntOperand2D) -> 'IntArray2D':
+    def __neg__(self) -> 'IntArray2D':
         return _elementwise(Op.NEG, self.shape, [self])
 
     def __add__(self, other: IntOperand2D) -> 'IntArray2D':
