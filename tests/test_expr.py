@@ -253,6 +253,12 @@ class TestExprConstruction:
         with pytest.raises(TypeError):
             res = self.input(solver, lhs) < self.input(solver, rhs)  # noqa: E501, F841  # yapf: disable
 
+    def test_is_variable(self, ix, iy, bx, by):
+        assert ix.is_variable()
+        assert bx.is_variable()
+        assert not (ix + iy).is_variable()
+        assert not (bx | by).is_variable()
+
 
 class TestExprValue:
     @pytest.fixture(autouse=True, params=["sugar", "z3"])
