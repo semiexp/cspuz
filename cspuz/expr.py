@@ -61,7 +61,6 @@ def _is_int_expr_like(value: Any) -> bool:
 def _make_bool_expr(op: BoolOp, operands: List[ExprLike]) -> 'BoolExpr':
     # type checking
     if op in [Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT]:
-        print(operands)
         if len(operands) != 2 or not all(map(_is_int_expr_like, operands)):
             return NotImplemented
     elif op in [Op.AND, Op.OR, Op.IFF, Op.XOR, Op.IMP]:
