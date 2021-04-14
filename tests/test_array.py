@@ -294,6 +294,22 @@ class TestArray:
         with pytest.raises(IndexError):
             _ = array[3, -9]
 
+    def test_bool_array2d_getitem_1d(self, solver):
+        array = solver.bool_array((5, 8))
+        actual = array[2:4]
+        assert actual.shape == (2, 8)
+        for i in range(2):
+            for j in range(8):
+                assert check_equality_expr(actual[i, j], array[i + 2, j])
+
+    def test_int_array2d_getitem_1d(self, solver):
+        array = solver.int_array((5, 8), 0, 2)
+        actual = array[2:4]
+        assert actual.shape == (2, 8)
+        for i in range(2):
+            for j in range(8):
+                assert check_equality_expr(actual[i, j], array[i + 2, j])
+
     @pytest.mark.parametrize("height,width,y,x,expected",
                              FOUR_NEIGHBOR_TEST_PATTERN)
     def test_bool_array2d_four_neighbor_indices(self, solver, height, width, y,
@@ -321,6 +337,8 @@ class TestArray:
         array = solver.int_array((height, width), -5, -2)
         actual = array.four_neighbor_indices(y, x)
         assert set(actual) == set(expected)
+        actual2 = array.four_neighbor_indices((y, x))
+        assert set(actual2) == set(expected)
 
     @pytest.mark.parametrize("height,width,y,x,expected",
                              FOUR_NEIGHBOR_TEST_PATTERN)
@@ -329,6 +347,18 @@ class TestArray:
         array = solver.int_array((height, width), 1, 4)
         indices = array.four_neighbor_indices(y, x)
         actual = array.four_neighbors(y, x)
+
+        assert len(indices) == len(actual)
+        for i in range(len(indices)):
+            assert check_equality_expr(array[indices[i]], actual[i])
+
+    @pytest.mark.parametrize("height,width,y,x,expected",
+                             FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_int_array2d_four_neighbors_as_tuple(self, solver, height, width, y, x,
+                                        expected):
+        array = solver.int_array((height, width), 1, 4)
+        indices = array.four_neighbor_indices((y, x))
+        actual = array.four_neighbors((y, x))
 
         assert len(indices) == len(actual)
         for i in range(len(indices)):

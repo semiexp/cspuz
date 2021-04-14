@@ -144,7 +144,7 @@ class BoolExpr(Expr):
                        'IntArray2D'], f: Union[IntExprLike, 'IntArray1D',
                                                'IntArray2D']
     ) -> Union['IntExpr', 'IntArray1D', 'IntArray2D']:
-        if _is_int_expr_like(t) and _is_bool_expr_like(f):
+        if _is_int_expr_like(t) and _is_int_expr_like(f):
             res = _make_int_expr(
                 Op.IF, [self, cast(IntExprLike, t),
                         cast(IntExprLike, f)])
