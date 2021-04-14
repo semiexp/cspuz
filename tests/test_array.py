@@ -354,8 +354,8 @@ class TestArray:
 
     @pytest.mark.parametrize("height,width,y,x,expected",
                              FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_int_array2d_four_neighbors_as_tuple(self, solver, height, width, y, x,
-                                        expected):
+    def test_int_array2d_four_neighbors_as_tuple(self, solver, height, width,
+                                                 y, x, expected):
         array = solver.int_array((height, width), 1, 4)
         indices = array.four_neighbor_indices((y, x))
         actual = array.four_neighbors((y, x))
