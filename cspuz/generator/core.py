@@ -2,7 +2,8 @@ import math
 import random
 import sys
 
-from cspuz.constraints import IntVar, BoolVar, Array
+from ..array import Array1D, Array2D
+from cspuz.expr import BoolExpr, IntExpr
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.generator.builder import build_neighbor_generator
 
@@ -10,10 +11,10 @@ from cspuz.generator.builder import build_neighbor_generator
 def default_score_calculator(*args):
     score = 0
     for arg in args:
-        if isinstance(arg, (IntVar, BoolVar)):
+        if isinstance(arg, (BoolExpr, IntExpr)) and arg.is_variable():
             if arg.sol is not None:
                 score += 1
-        elif isinstance(arg, (Array, BoolGridFrame)):
+        elif isinstance(arg, (Array1D, Array2D, BoolGridFrame)):
             for a in arg:
                 if a.sol is not None:
                     score += 1
@@ -25,10 +26,10 @@ def default_score_calculator(*args):
 
 def default_uniqueness_checker(*args):
     for arg in args:
-        if isinstance(arg, (IntVar, BoolVar)):
+        if isinstance(arg, (BoolExpr, IntExpr)) and arg.is_variable():
             if arg.sol is None:
                 return False
-        elif isinstance(arg, (Array, BoolGridFrame)):
+        elif isinstance(arg, (Array1D, Array2D, BoolGridFrame)):
             for a in arg:
                 if a.sol is None:
                     return False

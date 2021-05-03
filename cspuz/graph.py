@@ -1,50 +1,50 @@
-from cspuz.constraints import (count_true, Array, IntVar, IntExpr,
-                               _compute_shape, BoolExpr, Op)
-from cspuz.grid_frame import BoolGridFrame
-from cspuz.configuration import config
+from typing import (Iterator, List, Optional, Sequence, Tuple, Union, cast,
+                    overload)
 
-
-def _check_array_shape(array, dtype, dim):
-    return isinstance(array, Array) and array.dtype is dtype and len(
-        array.shape) == dim
-
-
-def _get_array_shape_2d(array):
-    if isinstance(array, Array):
-        shape = array.shape
-        if len(shape) != 2:
-            raise ValueError('`array` is not a 2-d Array')
-        return shape
-    else:
-        shape = _compute_shape(array)
-        if len(shape) != 2:
-            raise ValueError('`array` is not a 2-d array (list of list)')
-        return shape
+from .array import (Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D,
+                    _infer_shape)
+from .constraints import (IntExpr, BoolExpr, Op, count_true, then)
+from .expr import BoolExprLike, IntExprLike
+from .grid_frame import BoolGridFrame
+from .configuration import config
+from .solver import Solver
 
 
 class Graph(object):
+    num_vertices: int
+    edges: List[Tuple[int, int]]
+    incident_edges: List[List[Tuple[int, int]]]
+
     def __init__(self, num_vertices):
         self.num_vertices = num_vertices
         self.edges = []
         self.incident_edges = [[] for i in range(self.num_vertices)]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.edges)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Tuple[int, int]]:
         return iter(self.edges)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Tuple[int, int]:
         return self.edges[item]
 
-    def add_edge(self, i, j):
+    def add_edge(self, i: int, j: int):
         edge_id = len(self.edges)
         self.edges.append((i, j))
         self.incident_edges[i].append((j, edge_id))
         self.incident_edges[j].append((i, edge_id))
 
 
-def _grid_graph(height, width):
+def _get_array_shape_2d(array):
+    if isinstance(array, Array2D):
+        return array.shape
+    else:
+        shape = _infer_shape(array)
+        return shape
+
+
+def _grid_graph(height: int, width: int) -> Graph:
     graph = Graph(height * width)
     for y in range(height):
         for x in range(width):
@@ -71,18 +71,20 @@ def _from_grid_frame(grid_frame):
     return edges, graph
 
 
-def _active_vertices_connected(solver,
-                               is_active,
-                               graph,
-                               acyclic=False,
-                               use_graph_primitive=None):
+def _active_vertices_connected(solver: Solver,
+                               is_active: Sequence[BoolExprLike],
+                               graph: Graph,
+                               acyclic: bool = False,
+                               use_graph_primitive: Optional[bool] = None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     if use_graph_primitive and not acyclic:
         solver.ensure(
-            BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
-                     [graph.num_vertices, len(graph)] + list(is_active) +
-                     sum([[x, y] for x, y in graph.edges], [])))
+            BoolExpr(
+                Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+                [graph.num_vertices, len(graph)] +
+                list(is_active) +  # type: ignore
+                sum([[x, y] for x, y in graph.edges], [])))
         return
 
     n = graph.num_vertices
@@ -98,57 +100,121 @@ def _active_vertices_connected(solver,
                 if i < j:
                     solver.ensure(ranks[j] != ranks[i])
             solver.ensure(
-                is_active[i].then(count_true(less_ranks + [is_root[i]]) == 1))
+                then(is_active[i],
+                     count_true(less_ranks + [is_root[i]]) == 1))
         else:
             solver.ensure(
-                is_active[i].then(count_true(less_ranks + [is_root[i]]) >= 1))
+                then(is_active[i],
+                     count_true(less_ranks + [is_root[i]]) >= 1))
     solver.ensure(count_true(is_root) <= 1)
 
 
-def active_vertices_connected(solver,
-                              is_active,
-                              graph=None,
-                              acyclic=False,
-                              use_graph_primitive=None):
+@overload
+def active_vertices_connected(solver: Solver,
+                              is_active: Union[Sequence[BoolExprLike],
+                                               BoolArray1D],
+                              graph: Graph,
+                              *,
+                              acyclic: bool = False,
+                              use_graph_primitive: Optional[bool] = None):
+    ...
+
+
+@overload
+def active_vertices_connected(solver: Solver,
+                              is_active: BoolArray2D,
+                              *,
+                              acyclic: bool = False,
+                              use_graph_primitive: Optional[bool] = None):
+    ...
+
+
+def active_vertices_connected(
+    solver: Solver,
+    is_active: Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D],
+    graph: Optional[Graph] = None,
+    *,
+    acyclic: bool = False,
+    use_graph_primitive: Optional[bool] = None,
+):
     if graph is None:
-        if not _check_array_shape(is_active, bool, 2):
+        if not isinstance(is_active, BoolArray2D):
             raise TypeError(
-                '`is_active` should be a 2-D bool Array if graph is not '
+                '\'is_active\' should be a BoolArray2D if graph is not '
                 'specified')
         height, width = is_active.shape
-        _active_vertices_connected(solver,
-                                   is_active.flatten(),
-                                   _grid_graph(height, width),
-                                   acyclic=acyclic,
-                                   use_graph_primitive=use_graph_primitive)
+        is_active2: Sequence[BoolExprLike] = is_active.flatten().data
+        graph2 = _grid_graph(height, width)
     else:
-        _active_vertices_connected(solver,
-                                   is_active,
-                                   graph,
-                                   acyclic=acyclic,
-                                   use_graph_primitive=use_graph_primitive)
-
-
-def active_vertices_not_adjacent(solver, is_active, graph=None):
-    if graph is None:
-        if not _check_array_shape(is_active, bool, 2):
+        if isinstance(is_active, BoolArray2D):
             raise TypeError(
-                '`is_active` should be a 2-D bool Array if graph is not '
+                '\'is_active\' should be sequence-like if graph is specified')
+        elif isinstance(is_active, BoolArray1D):
+            is_active2 = is_active.data
+        else:
+            is_active2 = is_active
+        graph2 = graph
+
+    _active_vertices_connected(solver,
+                               is_active2,
+                               graph2,
+                               acyclic=acyclic,
+                               use_graph_primitive=use_graph_primitive)
+
+
+@overload
+def active_vertices_not_adjacent(solver: Solver,
+                                 is_active: Union[Sequence[BoolExprLike],
+                                                  BoolArray1D], graph: Graph):
+    ...
+
+
+@overload
+def active_vertices_not_adjacent(solver: Solver, is_active: BoolArray2D):
+    ...
+
+
+def active_vertices_not_adjacent(solver: Solver,
+                                 is_active: Union[Sequence[BoolExprLike],
+                                                  BoolArray1D, BoolArray2D],
+                                 graph: Optional[Graph] = None):
+    if graph is None:
+        if not isinstance(is_active, BoolArray2D):
+            raise TypeError(
+                '\'is_active\' should be a BoolArray2D if graph is not '
                 'specified')
         solver.ensure(~(is_active[1:, :] & is_active[:-1, :]))
         solver.ensure(~(is_active[:, 1:] & is_active[:, :-1]))
     else:
+        if isinstance(is_active, BoolArray2D):
+            raise TypeError(
+                '\'is_active\' should be sequence-like if graph is specified')
         for i, j in graph:
             solver.ensure(~(is_active[i] & is_active[j]))
 
 
-def active_vertices_not_adjacent_and_not_segmenting(solver,
-                                                    is_active,
-                                                    graph=None):
+@overload
+def active_vertices_not_adjacent_and_not_segmenting(solver: Solver,
+                                                    is_active: BoolArray1D,
+                                                    graph: Graph):
+    ...
+
+
+@overload
+def active_vertices_not_adjacent_and_not_segmenting(solver: Solver,
+                                                    is_active: BoolArray2D):
+    ...
+
+
+# TODO: support Sequence[BoolExprLike]
+def active_vertices_not_adjacent_and_not_segmenting(
+        solver: Solver,
+        is_active: Union[BoolArray1D, BoolArray2D],
+        graph: Optional[Graph] = None):
     if graph is None:
-        if not _check_array_shape(is_active, bool, 2):
+        if not isinstance(is_active, BoolArray2D):
             raise TypeError(
-                '`is_active` should be a 2-D bool Array if graph is not '
+                '\'is_active\' should be a BoolArray2D if graph is not '
                 'specified')
         active_vertices_not_adjacent(solver, is_active)
         height, width = is_active.shape
@@ -171,12 +237,16 @@ def active_vertices_not_adjacent_and_not_segmenting(solver,
                 solver.ensure(is_active[y, x].then(
                     count_true(less_ranks) <= (0 if nonzero else 1)))
     else:
+        if isinstance(is_active, BoolArray2D):
+            raise TypeError(
+                '\'is_active\' should be sequence-like if graph is specified')
         active_vertices_not_adjacent(solver, is_active, graph)
-        active_vertices_connected(solver, ~is_active,
-                                  graph)  # TODO: is_active may not be an Array
+        active_vertices_connected(solver, ~is_active, graph)
 
 
-def active_edges_acyclic(solver, is_active_edge, graph):
+def active_edges_acyclic(solver: Solver,
+                         is_active_edge: Union[Sequence[BoolExprLike],
+                                               BoolArray1D], graph: Graph):
     n = graph.num_vertices
 
     ranks = solver.int_array(n, 0, n - 1)
@@ -190,13 +260,13 @@ def active_edges_acyclic(solver, is_active_edge, graph):
         solver.ensure(count_true(less_ranks) <= 1)
 
 
-def _division_connected(solver,
-                        division,
-                        num_regions,
-                        graph,
-                        roots=None,
-                        allow_empty_group=False,
-                        use_graph_primitive=None):
+def _division_connected(solver: Solver,
+                        division: Union[Sequence[IntExprLike], IntArray1D],
+                        num_regions: int,
+                        graph: Graph,
+                        roots: Optional[Sequence[Optional[int]]] = None,
+                        allow_empty_group: bool = False,
+                        use_graph_primitive: Optional[bool] = None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
 
@@ -208,7 +278,7 @@ def _division_connected(solver,
             region = solver.bool_array(n)
             solver.ensure(region == (division == i))
             _active_vertices_connected(solver,
-                                       region,
+                                       region.data,
                                        graph,
                                        use_graph_primitive=True)
 
@@ -218,6 +288,9 @@ def _division_connected(solver,
         if roots is not None:
             for i, r in enumerate(roots):
                 if r is not None:
+                    if not isinstance(r, int):
+                        raise TypeError(
+                            'each element in \'roots\' must be \'int\'')
                     solver.ensure(division[r] == i)
         return
 
@@ -250,26 +323,55 @@ def _division_connected(solver,
                 solver.ensure(is_root[r])
 
 
-def division_connected(solver,
-                       division,
-                       num_regions,
-                       graph=None,
-                       roots=None,
+@overload
+def division_connected(solver: Solver,
+                       division: Union[Sequence[IntExprLike], IntArray1D],
+                       num_regions: int,
+                       graph: Graph = None,
+                       *,
+                       roots: Optional[Sequence[Optional[int]]] = None,
+                       allow_empty_group=False):
+    ...
+
+
+@overload
+def division_connected(solver: Solver,
+                       division: IntArray2D,
+                       num_regions: int,
+                       *,
+                       roots: Optional[Sequence[Optional[int]]] = None,
+                       allow_empty_group=False):
+    ...
+
+
+def division_connected(solver: Solver,
+                       division: Union[Sequence[IntExprLike], IntArray1D,
+                                       IntArray2D],
+                       num_regions: int,
+                       graph: Optional[Graph] = None,
+                       *,
+                       roots: Union[Sequence[Optional[int]],
+                                    Sequence[Optional[Tuple[int,
+                                                            int]]]] = None,
                        allow_empty_group=False):
     if graph is None:
-        if not _check_array_shape(division, int, 2):
+        if not isinstance(division, IntArray2D):
             raise TypeError(
-                '`division` should be a 2-D bool Array if graph is not '
+                '\'division\' should be a IntArray2D if graph is not '
                 'specified')
         height, width = division.shape
         if roots is None:
-            roots_conv = None
+            roots_conv: Optional[List[Optional[int]]] = None
         else:
             roots_conv = []
             for a in roots:
                 if a is None:
                     roots_conv.append(a)
                 else:
+                    if isinstance(a, int):
+                        raise TypeError(
+                            'each element in \'roots\' must be tuple (y, x) '
+                            'if \'division\' is an IntArray2D')
                     y, x = a
                     roots_conv.append(y * width + x)
         _division_connected(solver,
@@ -279,15 +381,24 @@ def division_connected(solver,
                             roots=roots_conv,
                             allow_empty_group=allow_empty_group)
     else:
+        if isinstance(division, IntArray2D):
+            raise TypeError(
+                '\'division\' should be sequence-like if graph is specified')
         _division_connected(solver,
                             division,
                             num_regions,
                             graph,
-                            roots=roots,
+                            roots=cast('Union[Sequence[Optional[int]]]',
+                                       roots),
                             allow_empty_group=allow_empty_group)
 
 
-def _division_connected_variable_groups(solver, graph, group_size=None):
+def _division_connected_variable_groups(
+    solver: Solver,
+    graph: Graph,
+    group_size: Union[None, IntExprLike,
+                      Sequence[Optional[IntExprLike]]] = None
+) -> IntArray1D:
     n = graph.num_vertices
     m = len(graph)
 
@@ -320,13 +431,17 @@ def _division_connected_variable_groups(solver, graph, group_size=None):
                      for j, e in graph.incident_edges[i]]) +
                 1 == downstream_size[i])
 
-            if isinstance(group_size, (int, IntVar, IntExpr)):
-                s = group_size
+            if isinstance(group_size, (int, IntExpr)):
+                s: Optional[IntExprLike] = group_size
             else:
-                s = group_size[i]
+                gi = group_size[i]
+                if gi is not None and not isinstance(gi, (int, IntExpr)):
+                    raise TypeError(
+                        'invalid type for element of \'group_size\'')
+                s = gi
             if s is not None:
                 solver.ensure(total_size[i] == s)
-        if not isinstance(group_size, (int, IntVar, IntExpr)):
+        if not isinstance(group_size, (int, IntExpr)):
             for i, (u, v) in enumerate(graph):
                 s = total_size[u]
                 t = total_size[v]
@@ -334,21 +449,52 @@ def _division_connected_variable_groups(solver, graph, group_size=None):
     return group_id
 
 
-def division_connected_variable_groups(solver,
-                                       graph=None,
-                                       shape=None,
-                                       group_size=None):
+@overload
+def division_connected_variable_groups(
+    solver: Solver,
+    *,
+    shape: Optional[Tuple[int, int]] = None,
+    group_size: Union[None, IntExprLike, IntArray2D,
+                      Sequence[Sequence[Optional[IntExprLike]]]] = None):
+    ...
+
+
+@overload
+def division_connected_variable_groups(
+    solver: Solver,
+    *,
+    graph: Graph,
+    group_size: Union[None, IntExprLike, IntArray1D,
+                      Sequence[Optional[IntExprLike]]] = None):
+    ...
+
+
+def division_connected_variable_groups(
+    solver: Solver,
+    *,
+    graph: Optional[Graph] = None,
+    shape: Optional[Tuple[int, int]] = None,
+    group_size: Union[None, IntExprLike, IntArray1D,
+                      Sequence[Optional[IntExprLike]], IntArray2D,
+                      Sequence[Sequence[Optional[IntExprLike]]]] = None):
     if graph is None:
         if shape is None:
+            if group_size is None:
+                raise ValueError('grid size cannot be inferred')
             shape = _get_array_shape_2d(group_size)
         if group_size is None:
-            group_size_converted = None
-        elif isinstance(group_size, int):
+            group_size_converted: Union[None, IntExprLike,
+                                        Sequence[Optional[IntExprLike]]] = None
+        elif isinstance(group_size, (int, IntExpr)):
             group_size_converted = group_size
-        elif isinstance(group_size, Array):
-            group_size_converted = group_size.flatten()
+        elif isinstance(group_size, IntArray2D):
+            group_size_converted = group_size.flatten().data
         else:
-            group_size_converted = sum(group_size, [])  # TODO: error checking
+            group_size_converted = []
+            for row in group_size:
+                if row is None or isinstance(row, (int, IntExpr)):
+                    raise TypeError('invalid type for \'group_size\'')
+                group_size_converted += row
         height, width = shape
         group_id_flat = _division_connected_variable_groups(
             solver,
@@ -359,15 +505,14 @@ def division_connected_variable_groups(solver,
         if shape is not None:
             raise ValueError(
                 '`graph` and `shape` cannot be specified at the same time')
-        return _division_connected_variable_groups(solver,
-                                                   graph,
-                                                   group_size=group_size)
+        return _division_connected_variable_groups(
+            solver, graph, group_size=group_size)  # type: ignore
 
 
-def _active_edges_single_cycle(solver,
-                               is_active_edge,
-                               graph,
-                               use_graph_primitive=None):
+def _active_edges_single_cycle(solver: Solver,
+                               is_active_edge: Sequence[BoolExprLike],
+                               graph: Graph,
+                               use_graph_primitive: Optional[bool] = None):
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     n = graph.num_vertices
@@ -390,9 +535,11 @@ def _active_edges_single_cycle(solver,
                     else:
                         edge_graph.add((y, x))
         solver.ensure(
-            BoolExpr(Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
-                     [len(graph), len(edge_graph)] + list(is_active_edge) +
-                     sum([[x, y] for x, y in edge_graph], [])))
+            BoolExpr(
+                Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
+                [len(graph), len(edge_graph)] +
+                list(is_active_edge) +  # type: ignore
+                sum([[x, y] for x, y in edge_graph], [])))
     else:
         rank = solver.int_array(n, 0, n - 1)
         is_root = solver.bool_array(n)
@@ -410,10 +557,31 @@ def _active_edges_single_cycle(solver,
     return is_passed
 
 
-def active_edges_single_cycle(solver,
-                              is_active_edge,
-                              graph=None,
-                              use_graph_primitive=None):
+@overload
+def active_edges_single_cycle(solver: Solver,
+                              is_active_edge: BoolGridFrame,
+                              *,
+                              use_graph_primitive: Optional[bool] = None):
+    ...
+
+
+@overload
+def active_edges_single_cycle(solver: Solver,
+                              is_active_edge: Union[Sequence[BoolExprLike],
+                                                    BoolArray1D],
+                              graph: Graph,
+                              *,
+                              use_graph_primitive: Optional[bool] = None):
+    ...
+
+
+def active_edges_single_cycle(solver: Solver,
+                              is_active_edge: Union[BoolGridFrame,
+                                                    Sequence[BoolExprLike],
+                                                    BoolArray1D],
+                              graph: Optional[Graph] = None,
+                              *,
+                              use_graph_primitive: Optional[bool] = None):
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError(
@@ -425,6 +593,12 @@ def active_edges_single_cycle(solver,
         return is_passed_flat.reshape(
             (is_active_edge.height + 1, is_active_edge.width + 1))
     else:
+        if isinstance(is_active_edge, BoolGridFrame):
+            raise TypeError(
+                '\'is_active_edge\' should be sequence-like if graph is '
+                'specified')
+        if isinstance(is_active_edge, BoolArray1D):
+            is_active_edge = is_active_edge.data
         return _active_edges_single_cycle(
             solver,
             is_active_edge,

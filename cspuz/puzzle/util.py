@@ -1,8 +1,8 @@
-from cspuz import Array
+from ..array import Array1D, Array2D
 
 
 def stringify_array(array, symbol_map=None):
-    if isinstance(array, Array):
+    if isinstance(array, (Array1D, Array2D)):
         height, _ = array.shape
     else:
         height = len(array)

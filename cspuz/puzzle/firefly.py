@@ -3,7 +3,8 @@ import subprocess
 
 import cspuz
 from cspuz import Solver
-from cspuz.grid_frame import Array, BoolGridFrame
+from cspuz.array import BoolArray1D
+from cspuz.grid_frame import BoolGridFrame
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
 from cspuz.generator import (generate_problem, count_non_default_values,
@@ -19,8 +20,9 @@ def solve_firefly(height, width, problem):
     line_ul = BoolGridFrame(solver, height - 1, width - 1)
     line_dr = BoolGridFrame(solver, height - 1, width - 1)
     solver.ensure(
-        Array(list(has_line)) == (Array(list(line_ul)) | Array(list(line_dr))))
-    solver.ensure(~(Array(list(line_ul)) & Array(list(line_dr))))
+        BoolArray1D(list(has_line)) == (BoolArray1D(list(line_ul))
+                                        | BoolArray1D(list(line_dr))))
+    solver.ensure(~(BoolArray1D(list(line_ul)) & BoolArray1D(list(line_dr))))
 
     # unicyclic (= connected)
     ignored_edge = BoolGridFrame(solver, height - 1, width - 1)

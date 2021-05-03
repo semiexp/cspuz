@@ -3,7 +3,7 @@ import subprocess
 import signal
 
 try:
-    import psutil
+    import psutil  # type: ignore
     _PSUTIL_AVAILABLE = True
 except ImportError:
     _PSUTIL_AVAILABLE = False

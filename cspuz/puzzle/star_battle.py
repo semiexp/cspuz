@@ -3,13 +3,12 @@ import math
 import sys
 import numpy as np
 
-from cspuz import Array, Solver
+from cspuz import Solver
+from cspuz.constraints import count_true
 from cspuz.puzzle import util
 
 
 def solve_star_battle(n, blocks, k):
-    if not isinstance(blocks, Array):
-        blocks = Array(blocks)
     solver = Solver()
     has_star = solver.bool_array((n, n))
     solver.add_answer_key(has_star)
@@ -21,7 +20,12 @@ def solve_star_battle(n, blocks, k):
     solver.ensure(~(has_star[:-1, :-1] & has_star[1:, 1:]))
     solver.ensure(~(has_star[:-1, 1:] & has_star[1:, :-1]))
     for i in range(n):
-        solver.ensure(sum((has_star & (blocks == i)).cond(1, 0)) == k)
+        cells = []
+        for y in range(n):
+            for x in range(n):
+                if blocks[y][x] == i:
+                    cells.append(has_star[y, x])
+        solver.ensure(count_true(cells) == k)
 
     is_sat = solver.solve()
     return is_sat, has_star

@@ -3,7 +3,7 @@ import sys
 
 from cspuz import Solver, graph
 from cspuz.puzzle import util
-from cspuz.constraints import Array, count_true
+from cspuz.constraints import count_true
 from cspuz.generator import generate_problem, count_non_default_values, Choice
 
 
@@ -20,7 +20,7 @@ def solve_gokigen(height, width, problem):
             edge_list.append(edge_type[y, x])
             g.add_edge(y * (width + 1) + (x + 1), (y + 1) * (width + 1) + x)
             edge_list.append(~edge_type[y, x])
-    graph.active_edges_acyclic(solver, Array(edge_list), g)
+    graph.active_edges_acyclic(solver, edge_list, g)
 
     for y in range(height + 1):
         for x in range(width + 1):
