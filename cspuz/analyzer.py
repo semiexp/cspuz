@@ -19,13 +19,21 @@ class Analyzer(Solver):
         self.axiom_constraints = []
         self.optional_constraints = []
 
+    def bool_var(self) -> BoolVar:
+        self.answer_key_name.append(None)
+        return super(Analyzer, self).bool_var()
+
+    def int_var(self, lo, hi) -> IntVar:
+        self.answer_key_name.append(None)
+        return super(Analyzer, self).int_var(lo, hi)
+
     def add_answer_key(self, *variable: Any, name: Optional[str] = None):
         if len(variable) == 0:
             return
         elif len(variable) == 1:
             var = variable[0]
             if isinstance(var, (BoolVar, IntVar)):
-                self.answer_key_name.append(name)
+                self.answer_key_name[var.id] = name
                 super(Analyzer, self).add_answer_key(var)
                 return
 
