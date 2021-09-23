@@ -5,6 +5,7 @@ CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 from ..configuration import config
 from ..expr import Op, Expr, BoolVar, IntVar
 
+from ._binding import call_sugar_binding
 from ._subproc import run_subprocess
 
 OP_TO_OPNAME = {
@@ -82,9 +83,13 @@ class CSPSolver(object):
         csp_description = '\n'.join(self.converted_variables +
                                     self.converted_constraints)
         sugar_path = config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'],
-                             csp_description,
-                             timeout=config.solver_timeout).split('\n')
+        if config.sugar_binding is not None:
+            out = call_sugar_binding(config.sugar_binding,
+                                     csp_description).split('\n')
+        else:
+            out = run_subprocess([sugar_path, '/dev/stdin'],
+                                 csp_description,
+                                 timeout=config.solver_timeout).split('\n')
         if 'UNSATISFIABLE' in out[0]:
             for v in self.variables:
                 v.sol = None

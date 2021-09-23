@@ -2,6 +2,7 @@ from ..configuration import config
 from ..expr import BoolVar, IntVar
 from . import sugar
 
+from ._binding import call_sugar_binding
 from ._subproc import run_subprocess
 
 
@@ -24,9 +25,13 @@ class CSPSolver(sugar.CSPSolver):
                                     self.converted_constraints +
                                     [answer_keys_desc])
         sugar_path = config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'],
-                             csp_description,
-                             timeout=config.solver_timeout).split('\n')
+        if config.sugar_binding is not None:
+            out = call_sugar_binding(config.sugar_binding,
+                                     csp_description).split('\n')
+        else:
+            out = run_subprocess([sugar_path, '/dev/stdin'],
+                                 csp_description,
+                                 timeout=config.solver_timeout).split('\n')
         for v in self.variables:
             v.sol = None
 

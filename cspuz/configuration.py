@@ -13,6 +13,7 @@ def _get_default(infer_from_env, env_key, default):
 class Config(object):
     default_backend: str
     backend_path: Optional[str]
+    csugar_binding: Optional[str]
     use_graph_primitive: bool
     solver_timeout: Optional[float]
 
@@ -21,6 +22,8 @@ class Config(object):
                                             'CSPUZ_DEFAULT_BACKEND', 'sugar')
         self.backend_path = _get_default(infer_from_env, 'CSPUZ_BACKEND_PATH',
                                          None)
+        self.sugar_binding = _get_default(infer_from_env,
+                                          'CSPUZ_SUGAR_BINDING', None)
         self.use_graph_primitive = strtobool(
             _get_default(infer_from_env, 'CSPUZ_USE_GRAPH_PRIMITIVE', 'False'))
         self.solver_timeout = None
