@@ -14,7 +14,6 @@ def solve_heyawake(height, width, problem):
     solver = Solver()
     is_black = solver.bool_array((height, width))
     solver.add_answer_key(is_black)
-    #graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
     graph.active_vertices_not_adjacent(solver, is_black)
     graph.active_vertices_connected(solver, ~is_black)
     for y0, x0, y1, x1, n in problem:
@@ -35,7 +34,6 @@ def pretest(height, width, problem):
     solver = Solver()
     is_black = solver.bool_array((height, width))
     solver.add_answer_key(is_black)
-    #graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_black)
     graph.active_vertices_not_adjacent(solver, is_black)
     graph.active_vertices_connected(solver, ~is_black)
     for y0, x0, y1, x1, n in problem:

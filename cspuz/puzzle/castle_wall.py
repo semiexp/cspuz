@@ -93,6 +93,7 @@ def trivial_decision(height, width, arrow, max_clue_gap):
 
 def generate_castle_wall(height,
                          width,
+                         min_clue=None,
                          max_clue_gap=0,
                          no_side_clue=False,
                          verbose=False):
@@ -223,6 +224,7 @@ def _main():
             try:
                 problem = generate_castle_wall(height,
                                                width,
+                                               min_clue=min_clue,
                                                max_clue_gap=max_clue_gap,
                                                no_side_clue=no_side_clue,
                                                verbose=verbose)
