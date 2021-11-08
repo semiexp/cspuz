@@ -1,0 +1,335 @@
+import re
+from typing import Any, List, Optional, Tuple
+
+
+def _as_list(x):
+    if isinstance(x, list):
+        return x
+    elif isinstance(x, set):
+        return list(x)
+    else:
+        return [x]
+
+
+_BASE36_CHARS = "0123456789abcdefghijklmnopqrstuvwxyz"
+
+
+def _to_base16(n: int) -> str:
+    return hex(n)[2:]
+
+
+def _from_base16(s: str) -> int:
+    return int(s, 16)
+
+
+def _to_base36(n: int) -> str:
+    if n < 0:
+        raise ValueError("`n` must be non-negative")
+    if n == 0:
+        return "0"
+    ret_rev = []
+    while n > 0:
+        ret_rev += _BASE36_CHARS[n % 36]
+        n //= 36
+    return "".join(reversed(ret_rev))
+
+
+def _from_base36(s: str) -> int:
+    return int(s, 36)
+
+
+def _is_alnum_lower(s: str) -> bool:
+    for c in s:
+        i = ord(c)
+        if not (48 <= i <= 57 or 97 <= i <= 122):
+            return False
+    return True
+
+
+def _is_hex(s: str) -> bool:
+    for c in s:
+        i = ord(c)
+        if not (48 <= i <= 57 or 97 <= i <= 102):
+            return False
+    return True
+
+
+class CombinatorEnv:
+    height: int
+    width: int
+
+    def __init__(self, height: int, width: int):
+        self.height = height
+        self.width = width
+
+
+class Combinator:
+    def __init__(self):
+        pass
+
+    def serialize(self, env: CombinatorEnv, data: List[Any],
+                  idx: int) -> Optional[Tuple[int, str]]:
+        raise NotImplementedError()
+
+    def deserialize(self, env: CombinatorEnv, data: str,
+                    idx: int) -> Optional[Tuple[int, List[Any]]]:
+        raise NotImplementedError()
+
+
+class Dict(Combinator):
+    def __init__(self, before, after):
+        super(Dict, self).__init__()
+        self._before = _as_list(before)
+        self._after = _as_list(after)
+
+        if len(self._before) != len(self._after):
+            raise ValueError(
+                "`before` and `after` should have the same number of elements")
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        for i in range(len(self._before)):
+            if data[idx] == self._before[i]:
+                return 1, self._after[i]
+        return None
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        for i in range(len(self._before)):
+            if idx + len(self._after[i]) <= len(
+                    data) and data[idx:idx +
+                                   len(self._after[i])] == self._after[i]:
+                return len(self._after[i]), [self._before[i]]
+        return None
+
+
+class Spaces(Combinator):
+    def __init__(self, space, smallest):
+        super(Spaces, self).__init__()
+        self._space = space
+        self._smallest = smallest
+
+        if not isinstance(smallest, str) or len(smallest) != 1:
+            raise ValueError("`smallest` must be a 1-digit base-36 number")
+        self._offset = _from_base36(smallest) - 1
+        self._max_consecutive = 35 - self._offset
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if data[idx] != self._space:
+            return None
+        i = 1
+        while i < self._max_consecutive and idx + i < len(data) and data[
+                idx + i] == self._space:
+            i += 1
+        return i, _to_base36(self._offset + i)
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not _is_alnum_lower(data[idx]):
+            return None
+        i = _from_base36(data[idx])
+        if i > self._offset:
+            return 1, [self._space for _ in range(i - self._offset)]
+        return None
+
+
+class HexInt(Combinator):
+    def __init__(self):
+        super(HexInt, self).__init__()
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not isinstance(data[idx], int):
+            return None
+        v = data[idx]
+        if not 0 <= v <= 4095:
+            return None
+        prefix = ""
+        if 16 <= v < 256:
+            prefix = "-"
+        elif 256 <= v:
+            prefix = "+"
+        return 1, prefix + _to_base16(v)
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        c = data[idx]
+        if c == '-':
+            if idx + 3 > len(data):
+                return None
+            return 3, [_from_base16(data[idx + 1:idx + 3])]
+        elif c == '+':
+            if idx + 4 > len(data):
+                return None
+            return 4, [_from_base16(data[idx + 1:idx + 4])]
+        elif _is_hex(c):
+            return 1, [_from_base16(c)]
+        else:
+            return None
+
+
+class OneOf(Combinator):
+    def __init__(self, *choices):
+        super(OneOf, self).__init__()
+        self._choices = []
+        for choice in choices:
+            if isinstance(choice, list):
+                self._choices += choice
+            else:
+                self._choices.append(choice)
+
+    def serialize(self, env, data, idx):
+        for choice in self._choices:
+            res = choice.serialize(env, data, idx)
+            if res is not None:
+                return res
+        return None
+
+    def deserialize(self, env, data, idx):
+        for choice in self._choices:
+            res = choice.deserialize(env, data, idx)
+            if res is not None:
+                return res
+        return None
+
+
+class Seq(Combinator):
+    def __init__(self, base, n):
+        super(Seq, self).__init__()
+        self._base = base
+        self._n = n
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not isinstance(data[idx], list):
+            return None
+        d = data[idx]
+
+        ret = []
+        n_read = 0
+        while n_read < self._n:
+            tmp = self._base.serialize(env, d, n_read)
+            if tmp is None:
+                return None
+            ofs, d2 = tmp
+            n_read += ofs
+            ret.append(d2)
+        assert n_read == self._n
+        return 1, "".join(ret)
+
+    def deserialize(self, env, data, idx):
+        ret = []
+        n_read = 0
+        while len(ret) < self._n:
+            tmp = self._base.deserialize(env, data, idx + n_read)
+            if tmp is None:
+                return None
+            ofs, d = tmp
+            n_read += ofs
+            ret += d
+        return n_read, [ret[:self._n]]
+
+
+class Grid(Combinator):
+    def __init__(self, base):
+        super(Grid, self).__init__()
+        self._base = base
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not isinstance(data[idx], list):
+            return None
+
+        d = data[idx]
+        height = env.height
+        width = env.width
+        seq_combinator = Seq(self._base, height * width)
+
+        d_flat = []
+        for y in range(height):
+            d_flat += d[y]
+
+        tmp = seq_combinator.serialize(env, [d_flat], idx)
+        return tmp
+
+    def deserialize(self, env, data, idx):
+        height = env.height
+        width = env.width
+        seq_combinator = Seq(self._base, height * width)
+
+        tmp = seq_combinator.deserialize(env, data, idx)
+        if tmp is None:
+            return None
+        ofs, d = tmp
+        assert len(d) == 1
+        d = d[0]
+        assert len(d) == height * width
+        ret = []
+        for i in range(height):
+            row = []
+            for j in range(width):
+                row.append(d[i * width + j])
+            ret.append(row)
+        return ofs, [ret]
+
+
+def serialize_problem(combinator, problem, **kwargs):
+    env = CombinatorEnv(**kwargs)
+    tmp = combinator.serialize(env, [problem], 0)
+    assert tmp is not None
+    return tmp[1]
+
+
+def deserialize_problem(combinator, serialized, **kwargs):
+    env = CombinatorEnv(**kwargs)
+    tmp = combinator.deserialize(env, serialized, 0)
+    assert tmp is not None
+    problem = tmp[1]
+    assert len(problem) == 1
+    return problem[0]
+
+
+def serialize_problem_as_url(combinator,
+                             puzzle,
+                             height,
+                             width,
+                             problem,
+                             prefix="https://puzz.link/p?"):
+    serialized = serialize_problem(combinator,
+                                   problem,
+                                   height=height,
+                                   width=width)
+    return f"{prefix}{puzzle}/{width}/{height}/{serialized}"
+
+
+_DESERIALIZE_URL_REG = re.compile(
+    "https?://[^/]+/p\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
+
+
+def deserialize_problem_as_url(combinator, url, allowed_puzzles=None):
+    m = _DESERIALIZE_URL_REG.match(url)
+    assert m is not None
+
+    puzzle = m[1]
+    width = int(m[2])
+    height = int(m[3])
+    body = m[4]
+
+    if allowed_puzzles is not None:
+        if isinstance(allowed_puzzles, list):
+            if puzzle not in allowed_puzzles:
+                raise ValueError(f"unexpected puzzle name: {puzzle}")
+        else:
+            if puzzle != allowed_puzzles:
+                raise ValueError(f"unexpected puzzle name: {puzzle}")
+
+    return deserialize_problem(combinator, body, height=height, width=width)

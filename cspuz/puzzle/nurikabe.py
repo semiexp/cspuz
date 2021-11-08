@@ -7,6 +7,9 @@ from cspuz import Solver, graph, count_true
 from cspuz.puzzle import util
 from cspuz.generator import (generate_problem, count_non_default_values,
                              ArrayBuilder2D)
+from cspuz.problem_serializer import (Grid, OneOf, Spaces, HexInt, Dict,
+                                      serialize_problem_as_url,
+                                      deserialize_problem_as_url)
 
 
 def solve_nurikabe(height, width, problem, unknown_low=None):
@@ -98,6 +101,22 @@ def generate_nurikabe(height,
         return None
     else:
         return resolve_unknown(height, width, generated, unknown_low=min_clue)
+
+
+NURIKABE_COMBINATOR = Grid(OneOf(Dict([-1], ["."]), Spaces(0, "g"), HexInt()))
+
+
+def serialize_nurikabe(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(NURIKABE_COMBINATOR, "nurikabe", height,
+                                    width, problem)
+
+
+def deserialize_nurikabe(url):
+    return deserialize_problem_as_url(NURIKABE_COMBINATOR,
+                                      url,
+                                      allowed_puzzles="nurikabe")
 
 
 def main():
