@@ -28,13 +28,10 @@ def solve_nurikabe(height, width, problem, unknown_low=None):
     solver.add_answer_key(is_white)
 
     solver.ensure(
-        (is_white[:-1, :]
-         & is_white[1:, :]).then(division[:-1, :] == division[1:, :]))
-    solver.ensure((is_white[:, :-1]
-                   & is_white[:, 1:]).then(division[:, :-1] == division[:,
-                                                                        1:]))
-    solver.ensure(is_white[:-1, :-1] | is_white[:-1, 1:] | is_white[1:, :-1]
-                  | is_white[1:, 1:])
+        is_white.conv2d(2, 1, 'and').then(division[:-1, :] == division[1:, :]))
+    solver.ensure(
+        is_white.conv2d(1, 2, 'and').then(division[:, :-1] == division[:, 1:]))
+    solver.ensure(is_white.conv2d(2, 2, 'or'))
     for i, (y, x, n) in enumerate(clues):
         if n > 0:
             solver.ensure(count_true(division == (i + 1)) == n)

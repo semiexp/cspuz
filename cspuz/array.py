@@ -1,6 +1,6 @@
 import functools
-from typing import (Any, Generic, Iterable, Iterator, List, Optional, Tuple,
-                    TypeVar, Union, cast, overload)
+from typing import (Any, Generic, Iterable, Iterator, List, Literal, Optional,
+                    Tuple, TypeVar, Union, cast, overload)
 
 from .expr import (BoolExpr, BoolExprLike, BoolOp, Expr, ExprLike, IntExpr,
                    IntExprLike, IntOp, Op, is_bool_op)
@@ -528,6 +528,24 @@ class BoolArray2D(Array2D[BoolExpr]):
             y: Union[int, Tuple[int, int]],
             x: Optional[int] = None) -> List[Tuple[int, int]]:
         return _four_neighbor_indices(self.shape, y, x)
+
+    def conv2d(self, height: int, width: int,
+               op: Literal['and', 'or']) -> 'BoolArray2D':
+        if op not in ('and', 'or'):
+            raise ValueError(
+                'op for conv2d on BoolArray must be either "and" or "or"')
+
+        r_height = max(0, self.shape[0] - height + 1)
+        r_width = max(0, self.shape[1] - width + 1)
+        r_data = []
+        for y in range(r_height):
+            for x in range(r_width):
+                component = self[y:y + height, x:x + width]
+                if op == 'and':
+                    r_data.append(BoolExpr(Op.AND, component))
+                elif op == 'or':
+                    r_data.append(BoolExpr(Op.OR, component))
+        return BoolArray2D(r_data, (r_height, r_width))
 
 
 class IntArray2D(Array2D[IntExpr]):
