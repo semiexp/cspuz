@@ -5,6 +5,7 @@ from cspuz.problem_serializer import (CombinatorEnv, Dict, Spaces, HexInt,
                                       Rooms)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
+from cspuz.puzzle.norinori import serialize_norinori, deserialize_norinori
 
 
 class TestSerializerCombinators:
@@ -216,4 +217,21 @@ class TestSerializerPuzzles:
             [0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
         ]
         reserialized_url = serialize_masyu(problem)
+        assert url == reserialized_url
+
+    def test_norinori(self):
+        # https://puzsq.jp/main/puzzle_play.php?pid=7919
+        url = "https://puzz.link/p?norinori/6/6/93op35pb9vpq"
+        problem = deserialize_norinori(url)
+        assert problem == (6, 6, [[(0, 0), (0, 1)],
+                                  [(0, 2), (0, 3), (0, 4), (1, 0), (1, 1),
+                                   (1, 2), (1, 3), (2, 1), (3, 1)],
+                                  [(0, 5), (1, 5)],
+                                  [(1, 4), (2, 2), (2, 3), (2, 4), (2, 5)],
+                                  [(2, 0), (3, 0)],
+                                  [(3, 2), (3, 3), (3, 4), (4, 4)],
+                                  [(3, 5), (4, 5), (5, 5)],
+                                  [(4, 0), (4, 1), (4, 2), (4, 3), (5, 3),
+                                   (5, 4)], [(5, 0), (5, 1), (5, 2)]])
+        reserialized_url = serialize_norinori(*problem)
         assert url == reserialized_url

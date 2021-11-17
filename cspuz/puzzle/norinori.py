@@ -3,11 +3,11 @@ import sys
 import math
 from collections import defaultdict, deque
 
-import numpy as np
-
 from cspuz import Solver
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
+from cspuz.problem_serializer import (Rooms, serialize_problem_as_url,
+                                      deserialize_problem_as_url)
 
 
 def solve_norinori(height, width, blocks):
@@ -239,33 +239,18 @@ def generate_norinori(height,
     return None
 
 
-def problem_to_pzv_url(height, width, blocks):
-    def convert_binary_seq(s):
-        ret = ''
-        for i in range((len(s) + 4) // 5):
-            v = 0
-            for j in range(5):
-                if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2**(4 - j))
-            ret += np.base_repr(v, 32).lower()
-        return ret
+NORINORI_COMBINATOR = Rooms()
 
-    block_id = [[-1 for _ in range(width)] for _ in range(height)]
-    for i, block in enumerate(blocks):
-        for y, x in block:
-            block_id[y][x] = i
-    s = []
-    for y in range(height):
-        for x in range(width - 1):
-            s.append(1 if block_id[y][x] != block_id[y][x + 1] else 0)
-    ret = convert_binary_seq(s)
-    s = []
-    for y in range(height - 1):
-        for x in range(width):
-            s.append(1 if block_id[y][x] != block_id[y + 1][x] else 0)
-    ret += convert_binary_seq(s)
 
-    return 'http://pzv.jp/p.html?norinori/{}/{}/{}'.format(width, height, ret)
+def serialize_norinori(height, width, blocks):
+    return serialize_problem_as_url(NORINORI_COMBINATOR, "norinori", height,
+                                    width, blocks)
+
+
+def deserialize_norinori(url):
+    return deserialize_problem_as_url(NORINORI_COMBINATOR,
+                                      url,
+                                      return_size=True)
 
 
 def _main():
@@ -297,7 +282,7 @@ def _main():
                                     min_block_size=2,
                                     verbose=True)
             if gen is not None:
-                url = problem_to_pzv_url(height, width, gen)
+                url = serialize_norinori(height, width, gen)
                 print(url, flush=True)
 
 

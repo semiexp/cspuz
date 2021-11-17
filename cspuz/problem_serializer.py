@@ -535,7 +535,10 @@ _DESERIALIZE_URL_REG = re.compile(
     "https?://[^/]+/p\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
 
 
-def deserialize_problem_as_url(combinator, url, allowed_puzzles=None):
+def deserialize_problem_as_url(combinator,
+                               url,
+                               allowed_puzzles=None,
+                               return_size=False):
     m = _DESERIALIZE_URL_REG.match(url)
     assert m is not None
 
@@ -552,4 +555,8 @@ def deserialize_problem_as_url(combinator, url, allowed_puzzles=None):
             if puzzle != allowed_puzzles:
                 raise ValueError(f"unexpected puzzle name: {puzzle}")
 
-    return deserialize_problem(combinator, body, height=height, width=width)
+    problem = deserialize_problem(combinator, body, height=height, width=width)
+    if return_size:
+        return height, width, problem
+    else:
+        return problem
