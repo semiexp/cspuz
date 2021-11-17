@@ -1,5 +1,5 @@
 from cspuz.problem_serializer import (CombinatorEnv, Dict, Spaces, HexInt,
-                                      MultiDigit, OneOf, Seq, Grid)
+                                      MultiDigit, OneOf, Tupl, Seq, Grid)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 
@@ -88,6 +88,18 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "hg-2a0", 5) == (1, [0])
         assert combinator.deserialize(env, "hg-2a0", 6) is None
         assert combinator.deserialize(env, ".12345", 0) is None
+
+    def test_tupl(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = Tupl(HexInt(), Spaces(-1, "g"))
+
+        assert combinator.serialize(env, [([7], [-1, -1, 2])], 0) == (1, "7h")
+        assert combinator.serialize(env, [([7], [-1, -1, 2])], 1) is None
+        assert combinator.serialize(env, [([7], [2])], 0) is None
+
+        assert combinator.deserialize(env, "7h", 0) == (2, [([7], [-1, -1])])
+        assert combinator.deserialize(env, "7h", 1) is None
+        assert combinator.deserialize(env, "775", 1) is None
 
     def test_seq(self):
         env = CombinatorEnv(height=1, width=1)

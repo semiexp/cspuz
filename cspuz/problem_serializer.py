@@ -240,6 +240,49 @@ class OneOf(Combinator):
         return None
 
 
+class Tupl(Combinator):
+    def __init__(self, *elements):
+        super().__init__()
+        self._elements = []
+        for element in elements:
+            if isinstance(element, list):
+                self._elements += element
+            else:
+                self._elements.append(element)
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        d = data[idx]
+        if not isinstance(d, tuple):
+            return None
+        if len(d) != len(self._elements):
+            return None
+        parts = []
+        for i in range(len(self._elements)):
+            res = self._elements[i].serialize(env, d[i], 0)
+            if res is None:
+                return None
+            parts.append(res[1])
+
+        return 1, "".join(parts)
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        parts = []
+        ofs = 0
+        for element in self._elements:
+            res = element.deserialize(env, data, idx + ofs)
+            if res is None:
+                return None
+            n_read, val = res
+            ofs += n_read
+            parts.append(val)
+
+        return ofs, [tuple(parts)]
+
+
 class Seq(Combinator):
     def __init__(self, base, n):
         super(Seq, self).__init__()
