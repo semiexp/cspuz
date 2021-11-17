@@ -3,11 +3,11 @@ import random
 import sys
 import math
 
-import numpy as np
-
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or, fold_and
 from cspuz.puzzle import util
+from cspuz.problem_serializer import (Rooms, serialize_problem_as_url,
+                                      deserialize_problem_as_url)
 
 
 def solve_lits(height, width, blocks):
@@ -279,32 +279,16 @@ def generate_lits(height, width, num_min_blocks=None, verbose=False):
     return None
 
 
-def problem_to_pzv_url(height, width, blocks):
-    def convert_binary_seq(s):
-        ret = ''
-        for i in range((len(s) + 4) // 5):
-            v = 0
-            for j in range(5):
-                if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2**(4 - j))
-            ret += np.base_repr(v, 32).lower()
-        return ret
+LITS_COMBINATOR = Rooms()
 
-    block_id = [[-1 for _ in range(width)] for _ in range(height)]
-    for i, block in enumerate(blocks):
-        for y, x in block:
-            block_id[y][x] = i
-    s = []
-    for y in range(height):
-        for x in range(width - 1):
-            s.append(1 if block_id[y][x] != block_id[y][x + 1] else 0)
-    ret = convert_binary_seq(s)
-    s = []
-    for y in range(height - 1):
-        for x in range(width):
-            s.append(1 if block_id[y][x] != block_id[y + 1][x] else 0)
-    ret += convert_binary_seq(s)
-    return 'http://pzv.jp/p.html?lits/{}/{}/{}'.format(width, height, ret)
+
+def serialize_lits(height, width, blocks):
+    return serialize_problem_as_url(LITS_COMBINATOR, "lits", height, width,
+                                    blocks)
+
+
+def deserialize_lits(url):
+    return deserialize_problem_as_url(LITS_COMBINATOR, url, return_size=True)
 
 
 def _main():
@@ -351,7 +335,7 @@ def _main():
                     for x in range(width):
                         print('{:2}'.format(a[y][x]), end='', file=sys.stderr)
                     print(file=sys.stderr)
-                print(problem_to_pzv_url(height, width, gen), flush=True)
+                print(serialize_lits(height, width, gen), flush=True)
 
 
 if __name__ == '__main__':
