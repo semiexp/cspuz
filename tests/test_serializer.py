@@ -1,6 +1,7 @@
 from cspuz.problem_serializer import (CombinatorEnv, Dict, Spaces, HexInt,
-                                      OneOf, Seq, Grid)
+                                      MultiDigit, OneOf, Seq, Grid)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
+from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 
 
 class TestSerializerCombinators:
@@ -55,6 +56,21 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "g0000", 0) is None
         assert combinator.deserialize(env, ".1234", 0) is None
         assert combinator.deserialize(env, "-1", 0) is None
+
+    def test_multidigit(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = MultiDigit(base=4, digits=2)
+
+        assert combinator.serialize(env, [1, 3, 2, 4], 0) == (2, "7")
+        assert combinator.serialize(env, [1, 3, 2, 4], 1) == (2, "e")
+        assert combinator.serialize(env, [1, 3, 2, 4], 2) is None
+        assert combinator.serialize(env, [1, 3, 2, 4], 4) is None
+        assert combinator.serialize(env, [1, 3, 2, 4, 3], 4) == (1, "c")
+
+        assert combinator.deserialize(env, "7eg", 0) == (1, [1, 3])
+        assert combinator.deserialize(env, "7eg", 1) == (1, [3, 2])
+        assert combinator.deserialize(env, "7eg", 2) is None
+        assert combinator.deserialize(env, "7eg", 3) is None
 
     def test_oneof(self):
         env = CombinatorEnv(height=1, width=1)
@@ -120,4 +136,23 @@ class TestSerializerPuzzles:
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ]
         reserialized_url = serialize_nurikabe(problem)
+        assert url == reserialized_url
+
+    def test_masyu(self):
+        # https://puzsq.jp/main/puzzle_play.php?pid=9833
+        url = "https://puzz.link/p?masyu/10/10/0600003i06b1300600000a30600i090330"  # noqa: E501
+        problem = deserialize_masyu(url)
+        assert problem == [
+            [0, 0, 0, 0, 2, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 2, 0, 0, 0, 0, 0, 0, 2, 0],
+            [1, 0, 2, 0, 0, 1, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 0, 1, 0, 1, 0, 0],
+            [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+            [0, 2, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+        ]
+        reserialized_url = serialize_masyu(problem)
         assert url == reserialized_url

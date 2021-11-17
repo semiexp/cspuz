@@ -7,6 +7,9 @@ from cspuz.grid_frame import BoolGridFrame
 from cspuz.puzzle import util
 from cspuz.generator import (generate_problem, count_non_default_values,
                              ArrayBuilder2D)
+from cspuz.problem_serializer import (Grid, MultiDigit,
+                                      serialize_problem_as_url,
+                                      deserialize_problem_as_url)
 
 
 def solve_masyu(height, width, problem):
@@ -62,6 +65,22 @@ def generate_masyu(height, width, symmetry=False, verbose=False):
             problem, default=0, weight=10),
         verbose=verbose)
     return generated
+
+
+MASYU_COMBINATOR = Grid(MultiDigit(base=3, digits=3))
+
+
+def serialize_masyu(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(MASYU_COMBINATOR, "masyu", height, width,
+                                    problem)
+
+
+def deserialize_masyu(url):
+    return deserialize_problem_as_url(MASYU_COMBINATOR,
+                                      url,
+                                      allowed_puzzles=["masyu", "mashu"])
 
 
 def _main():

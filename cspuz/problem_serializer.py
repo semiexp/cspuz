@@ -175,6 +175,46 @@ class HexInt(Combinator):
             return None
 
 
+class MultiDigit(Combinator):
+    def __init__(self, base, digits):
+        super(MultiDigit, self).__init__()
+
+        if base**digits > 36:
+            raise ValueError("base ** digits must be at most 36")
+        self._base = base
+        self._digits = digits
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+
+        value = 0
+        for i in range(self._digits):
+            value *= self._base
+            if idx + i < len(data):
+                if not 0 <= data[idx + i] < self._base:
+                    return None
+                value += data[idx + i]
+        return min(len(data) - idx, self._digits), _to_base36(value)
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+
+        if not _is_alnum_lower(data[idx]):
+            return None
+
+        value = _from_base36(data[idx])
+        if not 0 <= value < self._base**self._digits:
+            return None
+        unpacked = []
+        for i in range(self._digits):
+            unpacked.append(value % self._base)
+            value //= self._base
+        unpacked.reverse()
+        return 1, unpacked
+
+
 class OneOf(Combinator):
     def __init__(self, *choices):
         super(OneOf, self).__init__()
