@@ -1,8 +1,8 @@
 import pytest
 
-from cspuz.problem_serializer import (CombinatorEnv, Dict, Spaces, HexInt,
-                                      MultiDigit, OneOf, Tupl, Seq, Grid,
-                                      Rooms)
+from cspuz.problem_serializer import (CombinatorEnv, Dict, FixStr, Spaces,
+                                      DecInt, HexInt, MultiDigit, OneOf, Tupl,
+                                      Seq, Grid, Rooms)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 from cspuz.puzzle.norinori import serialize_norinori, deserialize_norinori
@@ -24,6 +24,18 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "xyz", 2) is None
         assert combinator.deserialize(env, "xyz", 3) is None
 
+    def test_fixstr(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = FixStr("foo")
+
+        assert combinator.serialize(env, [1, 2], 0) == (0, "foo")
+        assert combinator.serialize(env, [1, 2], 2) == (0, "foo")
+
+        assert combinator.deserialize(env, "foobar", 0) == (3, [])
+        assert combinator.deserialize(env, "foobar", 1) is None
+        assert combinator.deserialize(env, "foobar", 4) is None
+        assert combinator.deserialize(env, "barfoo", 3) == (3, [])
+
     def test_spaces(self):
         env = CombinatorEnv(height=1, width=1)
         combinator = Spaces(0, 'f')
@@ -38,6 +50,21 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "fh", 1) == (1, [0, 0, 0])
         assert combinator.deserialize(env, "e", 0) is None
         assert combinator.deserialize(env, "z", 0) == (1, [0] * 21)
+
+    def test_decint(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = DecInt()
+
+        assert combinator.serialize(env, [42, 0], 0) == (1, "42")
+        assert combinator.serialize(env, [42, -3], 1) is None
+        assert combinator.serialize(env, [42, 0], 2) is None
+
+        assert combinator.deserialize(env, "42/-3", 0) == (2, [42])
+        assert combinator.deserialize(env, "42/-3", 1) == (1, [2])
+        assert combinator.deserialize(env, "42/-3", 2) is None
+        assert combinator.deserialize(env, "42/-3", 3) is None
+        assert combinator.deserialize(env, "42/-3", 4) == (1, [3])
+        assert combinator.deserialize(env, "42/-3", 5) is None
 
     def test_hexint(self):
         env = CombinatorEnv(height=1, width=1)

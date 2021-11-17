@@ -76,6 +76,23 @@ class Combinator:
         raise NotImplementedError()
 
 
+class FixStr(Combinator):
+    def __init__(self, s):
+        super().__init__()
+        self._s = s
+
+    def serialize(self, env, data, idx):
+        return 0, self._s
+
+    def deserialize(self, env, data, idx):
+        if idx + len(self._s) > len(data):
+            return None
+        if data[idx:idx + len(self._s)] == self._s:
+            return len(self._s), []
+        else:
+            return None
+
+
 class Dict(Combinator):
     def __init__(self, before, after):
         super(Dict, self).__init__()
@@ -136,6 +153,30 @@ class Spaces(Combinator):
         if i > self._offset:
             return 1, [self._space for _ in range(i - self._offset)]
         return None
+
+
+class DecInt(Combinator):
+    def __init__(self):
+        super().__init__()
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not isinstance(data[idx], int):
+            return None
+        if data[idx] < 0:
+            return None
+        return 1, str(data[idx])
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        n_digits = 0
+        while idx + n_digits < len(data) and data[idx + n_digits].isdigit():
+            n_digits += 1
+        if n_digits == 0:
+            return None
+        return n_digits, [int(data[idx:idx + n_digits])]
 
 
 class HexInt(Combinator):
