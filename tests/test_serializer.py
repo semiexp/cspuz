@@ -1,5 +1,8 @@
+import pytest
+
 from cspuz.problem_serializer import (CombinatorEnv, Dict, Spaces, HexInt,
-                                      MultiDigit, OneOf, Tupl, Seq, Grid)
+                                      MultiDigit, OneOf, Tupl, Seq, Grid,
+                                      Rooms)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 
@@ -128,6 +131,52 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "1-2a+100012",
                                       0) == (11, [[[1, 42, 256], [0, 1, 2]]])
         assert combinator.deserialize(env, "1-2a+100012", 1) is None
+
+    def test_grid_fixed_size(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = Grid(HexInt(), height=2, width=3)
+
+        assert combinator.serialize(env, [[
+            [1, 42, 256],
+            [0, 1, 2],
+        ]], 0) == (1, "1-2a+100012")
+        assert combinator.serialize(env, [[
+            [1, 42, 256],
+            [0, 1, 2],
+        ]], 1) is None
+
+        assert combinator.deserialize(env, "1-2a+100012",
+                                      0) == (11, [[[1, 42, 256], [0, 1, 2]]])
+        assert combinator.deserialize(env, "1-2a+100012", 1) is None
+
+    def test_rooms(self):
+        env = CombinatorEnv(height=4, width=3)
+        combinator = Rooms()
+
+        assert combinator.serialize(env, [[
+            [(0, 0), (0, 1)],
+            [(0, 2), (1, 1), (1, 2)],
+            [(1, 0), (2, 0), (3, 0), (3, 1)],
+            [(2, 1), (2, 2), (3, 2)],
+        ]], 0) == (1, "d4pk")
+
+        with pytest.raises(ValueError):
+            combinator.serialize(env, [[
+                [(0, 0), (0, 1)],
+                [(0, 2), (1, 1), (1, 2)],
+                [(1, 0), (3, 0), (3, 1)],
+                [(2, 1), (2, 2), (3, 2)],
+            ]], 0)  # (2, 0) does not belong to any room
+
+        assert combinator.deserialize(env, "d4pk", 0) == (4, [[
+            [(0, 0), (0, 1)],
+            [(0, 2), (1, 1), (1, 2)],
+            [(1, 0), (2, 0), (3, 0), (3, 1)],
+            [(2, 1), (2, 2), (3, 2)],
+        ]])
+
+        with pytest.raises(ValueError):
+            combinator.deserialize(env, "dkpg", 0)  # redundant border
 
 
 class TestSerializerPuzzles:

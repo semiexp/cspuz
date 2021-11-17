@@ -322,9 +322,14 @@ class Seq(Combinator):
 
 
 class Grid(Combinator):
-    def __init__(self, base):
+    def __init__(self, base, height=None, width=None):
         super(Grid, self).__init__()
         self._base = base
+        if (height is None) != (width is None):
+            raise ValueError(
+                "`height` and `width` must be specified at the same time")
+        self._height = height
+        self._width = width
 
     def serialize(self, env, data, idx):
         if idx == len(data):
@@ -333,8 +338,8 @@ class Grid(Combinator):
             return None
 
         d = data[idx]
-        height = env.height
-        width = env.width
+        height = self._height or env.height
+        width = self._width or env.width
         seq_combinator = Seq(self._base, height * width)
 
         d_flat = []
@@ -345,8 +350,8 @@ class Grid(Combinator):
         return tmp
 
     def deserialize(self, env, data, idx):
-        height = env.height
-        width = env.width
+        height = self._height or env.height
+        width = self._width or env.width
         seq_combinator = Seq(self._base, height * width)
 
         tmp = seq_combinator.deserialize(env, data, idx)
@@ -363,6 +368,138 @@ class Grid(Combinator):
                 row.append(d[i * width + j])
             ret.append(row)
         return ofs, [ret]
+
+
+class Rooms(Combinator):
+    def __init__(self, skip_on_error=False, allow_redundant_border=False):
+        super().__init__()
+
+        self._skip_on_error = skip_on_error
+        self._allow_redundant_border = allow_redundant_border
+
+    def _serialize(self, env, data, idx):
+        if idx == len(data):
+            raise ValueError("index out of bounds")
+        d = data[idx]
+        if not isinstance(d, list):
+            raise ValueError(
+                "Rooms can serialize only List[List[Tuple[int, int]]]")
+        height = env.height
+        width = env.width
+        room_id = [[-1 for _ in range(width)] for _ in range(height)]
+        for i, room in enumerate(d):
+            if not isinstance(room, list):
+                raise ValueError(
+                    "Rooms can serialize only List[List[Tuple[int, int]]]")
+            for p in room:
+                if not isinstance(p, tuple) or len(p) != 2:
+                    raise ValueError(
+                        "Rooms can serialize only List[List[Tuple[int, int]]]")
+                y, x = p
+                if not 0 <= y < height and 0 <= x < width:
+                    raise ValueError(
+                        f"Cell position out of bounds: ({y}, {x})")
+                if room_id[y][x] != -1:
+                    raise ValueError(
+                        f"Cell ({y}, {x}) belongs to multiple rooms")
+                room_id[y][x] = i
+        for y in range(height):
+            for x in range(width):
+                if room_id[y][x] == -1:
+                    raise ValueError(
+                        f"Cell ({y}, {x}) does not belong to any room")
+        vertical = [[
+            1 if room_id[y][x] != room_id[y][x + 1] else 0
+            for x in range(width - 1)
+        ] for y in range(height)]
+        horizontal = [[
+            1 if room_id[y][x] != room_id[y + 1][x] else 0
+            for x in range(width)
+        ] for y in range(height - 1)]
+
+        combinator = Tupl(
+            Grid(MultiDigit(base=2, digits=5), height=height, width=width - 1),
+            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width))
+        return combinator.serialize(env, [([vertical], [horizontal])], 0)
+
+    def serialize(self, env, data, idx):
+        if self._skip_on_error:
+            try:
+                res = self._serialize(env, data, idx)
+                return res
+            except ValueError:
+                return None
+        else:
+            return self._serialize(env, data, idx)
+
+    def _deserialize(self, env, data, idx):
+        if idx == len(data):
+            raise ValueError("index out of bounds")
+        height = env.height
+        width = env.width
+
+        combinator = Tupl(
+            Grid(MultiDigit(base=2, digits=5), height=height, width=width - 1),
+            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width))
+        res = combinator.deserialize(env, data, idx)
+        if res is None:
+            raise ValueError("border data could not be deserialized")
+        n_read, [([vertical], [horizontal])] = res
+        room_id = [[-1 for _ in range(width)] for _ in range(height)]
+
+        def dfs(y: int, x: int, id: int):
+            nonlocal room_id
+            nonlocal vertical
+            nonlocal horizontal
+            nonlocal height
+            nonlocal width
+
+            if room_id[y][x] != -1:
+                return
+            room_id[y][x] = id
+            if y > 0 and not horizontal[y - 1][x]:
+                dfs(y - 1, x, id)
+            if y < height - 1 and not horizontal[y][x]:
+                dfs(y + 1, x, id)
+            if x > 0 and not vertical[y][x - 1]:
+                dfs(y, x - 1, id)
+            if x < width - 1 and not vertical[y][x]:
+                dfs(y, x + 1, id)
+
+        last_id = 0
+        for y in range(height):
+            for x in range(width):
+                if room_id[y][x] == -1:
+                    dfs(y, x, last_id)
+                    last_id += 1
+
+        if not self._allow_redundant_border:
+            for y in range(height):
+                for x in range(width):
+                    if y < height - 1 and horizontal[y][x] and room_id[y][
+                            x] == room_id[y + 1][x]:
+                        raise ValueError("redundant horizontal border found")
+                    if x < width - 1 and vertical[y][x] and room_id[y][
+                            x] == room_id[y][x + 1]:
+                        raise ValueError("redundant vertical border found")
+
+        rooms = [[] for _ in range(last_id)]
+        for y in range(height):
+            for x in range(width):
+                assert room_id[y][x] != -1
+                rooms[room_id[y][x]].append((y, x))
+
+        return n_read, [rooms]
+
+    def deserialize(self, env, data, idx):
+        if self._skip_on_error:
+            try:
+                res = self._deserialize(env, data, idx)
+                return res
+            except ValueError:
+                return None
+        else:
+            return self._deserialize(env, data, idx)
 
 
 def serialize_problem(combinator, problem, **kwargs):
