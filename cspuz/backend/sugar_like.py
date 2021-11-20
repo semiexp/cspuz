@@ -5,7 +5,7 @@ CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 from ..configuration import config
 from ..expr import Op, Expr, BoolVar, IntVar
 
-from ._binding import call_sugar_binding
+from .backend import Backend
 from ._subproc import run_subprocess
 
 OP_TO_OPNAME = {
@@ -60,7 +60,7 @@ def _convert_expr(e):
                                 ' '.join(map(_convert_expr, e.operands)))
 
 
-class CSPSolver(object):
+class SugarLikeBackend(Backend):
     def __init__(self, variables):
         self.variables = variables
         max_var_id = -1
@@ -82,14 +82,7 @@ class CSPSolver(object):
     def solve(self):
         csp_description = '\n'.join(self.converted_variables +
                                     self.converted_constraints)
-        sugar_path = config.backend_path or 'sugar'
-        if config.sugar_binding is not None:
-            out = call_sugar_binding(config.sugar_binding,
-                                     csp_description).split('\n')
-        else:
-            out = run_subprocess([sugar_path, '/dev/stdin'],
-                                 csp_description,
-                                 timeout=config.solver_timeout).split('\n')
+        out = self._call_solver(csp_description).split('\n')
         if 'UNSATISFIABLE' in out[0]:
             for v in self.variables:
                 v.sol = None
@@ -110,3 +103,76 @@ class CSPSolver(object):
         for v in self.variables:
             v.sol = assignment[v.id]
         return True
+
+    def solve_irrefutably(self, is_answer_key):
+        answer_keys = []
+        for i in range(len(self.variables)):
+            if is_answer_key[i]:
+                if isinstance(self.variables[i], BoolVar):
+                    answer_keys.append('b{}'.format(self.variables[i].id))
+                elif isinstance(self.variables[i], IntVar):
+                    answer_keys.append('i{}'.format(self.variables[i].id))
+                else:
+                    raise TypeError()
+        answer_keys_desc = '#' + ' '.join(answer_keys)
+        csp_description = '\n'.join(self.converted_variables +
+                                    self.converted_constraints +
+                                    [answer_keys_desc])
+        out = self._call_solver(csp_description).split('\n')
+        for v in self.variables:
+            v.sol = None
+
+        if 'unsat' in out[0]:
+            return False
+
+        assignment = [None] * (self.max_var_id + 1)
+        for line in out[1:]:
+            if len(line) <= 2:
+                break
+            var, val = line.split(' ')
+            if val == 'true':
+                converted_val = True
+            elif val == 'false':
+                converted_val = False
+            else:
+                converted_val = int(val)
+            assignment[int(var[1:])] = converted_val
+        for v in self.variables:
+            v.sol = assignment[v.id]
+        return True
+
+    def _call_solver(self, csp_description: str) -> str:
+        raise NotImplementedError
+
+
+class SugarBackend(SugarLikeBackend):
+    def solve_irrefutably(self, is_answer_key):
+        raise NotImplementedError
+
+    def _call_solver(self, csp_description: str) -> str:
+        sugar_path = config.backend_path or 'sugar'
+        out = run_subprocess([sugar_path, '/dev/stdin'],
+                             csp_description,
+                             timeout=config.solver_timeout)
+        return out
+
+
+class SugarExtendedBackend(SugarLikeBackend):
+    def _call_solver(self, csp_description: str) -> str:
+        sugar_path = config.backend_path or 'sugar'
+        out = run_subprocess([sugar_path, '/dev/stdin'],
+                             csp_description,
+                             timeout=config.solver_timeout)
+        return out
+
+
+class CSugarBackend(SugarLikeBackend):
+    def _call_solver(self, csp_description: str) -> str:
+        import pycsugar
+        return pycsugar.solver(csp_description)
+
+
+class EnigmaCSPBackend(SugarLikeBackend):
+    def _call_solver(self, csp_description: str) -> str:
+        import enigma_csp
+        return enigma_csp.solver(csp_description)

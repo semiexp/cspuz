@@ -1,3 +1,3 @@
-from . import sugar, sugar_extended, z3
+from . import backend, sugar_like, z3
 
-__all__ = ['sugar', 'sugar_extended', 'z3']
+__all__ = ['backend', 'sugar_like', 'z3']

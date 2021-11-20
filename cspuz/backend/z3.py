@@ -4,6 +4,7 @@ try:
 except ImportError:
     Z3_AVAILABLE = False
 
+from .backend import Backend
 from ..expr import Op, Expr, BoolVar, IntVar
 
 
@@ -59,7 +60,7 @@ def _convert_expr(e, variables_dict):
             return z3.Distinct(operands)
 
 
-class CSPSolver(object):
+class Z3Backend(Backend):
     def __init__(self, variables):
         self.variables = variables
         self.variables_dict = dict()

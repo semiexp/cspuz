@@ -1,5 +1,4 @@
 import functools
-from types import ModuleType
 from typing import Any, List, Tuple, Union, cast, overload
 
 from . import backend
@@ -9,16 +8,33 @@ from .expr import BoolExpr, BoolExprLike, BoolVar, IntVar, Op
 from .constraints import flatten_iterator
 
 
-def _get_default_backend() -> ModuleType:
-    backend_name = config.default_backend
+def _get_backend_by_name(backend_name: str) -> type:
     if backend_name == 'sugar':
-        return backend.sugar
+        return backend.sugar_like.SugarBackend
     elif backend_name == 'sugar_extended':
-        return backend.sugar_extended
+        return backend.sugar_like.SugarExtendedBackend
     elif backend_name == 'z3':
-        return backend.z3
+        return backend.z3.Z3Backend
+    elif backend_name == 'csugar':
+        return backend.sugar_like.CSugarBackend
+    elif backend_name == 'enigma_csp':
+        return backend.sugar_like.EnigmaCSPBackend
     else:
-        raise ValueError('invalid default backend {}'.format(backend_name))
+        raise ValueError('invalid backend {}'.format(backend_name))
+
+
+def _get_default_backend() -> type:
+    backend_name = config.default_backend
+    return _get_backend_by_name(backend_name)
+
+
+def _get_backend(backend: Union[None, str, type]) -> type:
+    if backend is None:
+        return _get_default_backend()
+    elif isinstance(backend, str):
+        return _get_backend_by_name(backend)
+    else:
+        return backend
 
 
 class Solver(object):
@@ -105,21 +121,21 @@ class Solver(object):
                 raise TypeError(
                     'each element in \'variable\' must be BoolVar or IntVar')
 
-    def find_answer(self, backend: ModuleType = None) -> bool:
-        if backend is None:
-            backend = _get_default_backend()
-        csp_solver = backend.CSPSolver(self.variables)  # type: ignore
+    def find_answer(self, backend: Union[None, str, type] = None) -> bool:
+        backend_type = _get_backend(backend)
+        csp_solver = backend_type(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
         return csp_solver.solve()
 
-    def solve(self, backend: ModuleType = None) -> bool:
-        if backend is None:
-            backend = _get_default_backend()
-        csp_solver = backend.CSPSolver(self.variables)  # type: ignore
+    def solve(self, backend: Union[None, str, type] = None) -> bool:
+        backend_type = _get_backend(backend)
+        csp_solver = backend_type(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
 
-        if hasattr(csp_solver, 'solve_irrefutably'):
+        try:
             return csp_solver.solve_irrefutably(self.is_answer_key)
+        except NotImplementedError:
+            pass
 
         if not csp_solver.solve():
             # inconsistent problem
