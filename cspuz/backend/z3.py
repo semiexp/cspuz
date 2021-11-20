@@ -1,11 +1,9 @@
-try:
-    import z3  # type: ignore
-    Z3_AVAILABLE = True
-except ImportError:
-    Z3_AVAILABLE = False
+import importlib
 
 from .backend import Backend
 from ..expr import Op, Expr, BoolVar, IntVar
+
+z3 = None
 
 
 def _convert_expr(e, variables_dict):
@@ -62,6 +60,10 @@ def _convert_expr(e, variables_dict):
 
 class Z3Backend(Backend):
     def __init__(self, variables):
+        global z3
+        if z3 is None:
+            z3 = importlib.import_module('z3')
+
         self.variables = variables
         self.variables_dict = dict()
         id_last = 0
@@ -82,8 +84,6 @@ class Z3Backend(Backend):
                 _convert_expr(constraint, self.variables_dict))
 
     def solve(self):
-        if not Z3_AVAILABLE:
-            raise ModuleNotFoundError('z3 is not found')
         solver = z3.Solver()
         for var in self.variables:
             if isinstance(var, IntVar):
