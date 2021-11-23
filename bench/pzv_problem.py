@@ -3,7 +3,7 @@ import sys
 import time
 
 from cspuz import problem_serializer
-from cspuz.puzzle import nurikabe
+from cspuz.puzzle import heyawake, masyu, nurikabe
 from cspuz.generator import default_uniqueness_checker
 
 
@@ -12,9 +12,33 @@ def solve_nurikabe(url):
     height = len(problem)
     width = len(problem[0])
     is_sat, ans = nurikabe.solve_nurikabe(height, width, problem)
-    if not is_sat:
-        return False
-    return default_uniqueness_checker(ans)
+    return is_sat and default_uniqueness_checker(ans)
+
+
+def solve_masyu(url):
+    problem = masyu.deserialize_masyu(url)
+    height = len(problem)
+    width = len(problem[0])
+    is_sat, ans = masyu.solve_masyu(height, width, problem)
+    return is_sat and default_uniqueness_checker(ans)
+
+
+def solve_heyawake(url):
+    problem = heyawake.deserialize_heyawake(url)
+    if problem is None:
+        return None
+    height, width, (rooms, clues) = problem
+    for clue in clues:
+        if clue > 15:
+            # TODO: problem with large clue numbers are too difficult to solve
+            return None
+    is_sat, ans = heyawake.solve_heyawake(height, width, rooms, clues)
+    return is_sat and default_uniqueness_checker(ans)
+
+
+PUZZLE_KIND_ALIAS = {
+    "mashu": "masyu",
+}
 
 
 def solve_problem(url, height_lim=None, width_lim=None):
@@ -28,8 +52,15 @@ def solve_problem(url, height_lim=None, width_lim=None):
     if width_lim is not None and width > width_lim:
         return None
 
+    if kind in PUZZLE_KIND_ALIAS:
+        kind = PUZZLE_KIND_ALIAS[kind]
+
     if kind == "nurikabe":
         return solve_nurikabe(url)
+    elif kind == "masyu":
+        return solve_masyu(url)
+    elif kind == "heyawake":
+        return solve_heyawake(url)
     else:
         return None
 
