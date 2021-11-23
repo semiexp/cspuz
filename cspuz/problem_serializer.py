@@ -556,7 +556,7 @@ class ValuedRooms(Combinator):
         d = data[idx]
         if not isinstance(d, tuple) or len(d) != 2:
             return None
-        rooms, values = d
+        rooms, values = list(map(list, zip(*sorted(zip(*d)))))
 
         combinator = Tupl(self._room_combinator,
                           Seq(self._value_combinator, len(rooms)))
@@ -589,6 +589,8 @@ def serialize_problem(combinator, problem, **kwargs):
 def deserialize_problem(combinator, serialized, **kwargs):
     env = CombinatorEnv(**kwargs)
     tmp = combinator.deserialize(env, serialized, 0)
+    if tmp is None:
+        return None
     assert tmp is not None
     problem = tmp[1]
     assert len(problem) == 1
@@ -609,7 +611,7 @@ def serialize_problem_as_url(combinator,
 
 
 _DESERIALIZE_URL_REG = re.compile(
-    "https?://[^/]+/p\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
+    "https?://[^/]+/p(?:\\.html)?\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
 
 
 def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
@@ -623,8 +625,11 @@ def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
 def deserialize_problem_as_url(combinator,
                                url,
                                allowed_puzzles=None,
+                               allow_failure=False,
                                return_size=False):
     m = _DESERIALIZE_URL_REG.match(url)
+    if allow_failure and m is None:
+        return None
     assert m is not None
 
     puzzle = m[1]
@@ -641,6 +646,8 @@ def deserialize_problem_as_url(combinator,
                 raise ValueError(f"unexpected puzzle name: {puzzle}")
 
     problem = deserialize_problem(combinator, body, height=height, width=width)
+    if problem is None:
+        return None
     if return_size:
         return height, width, problem
     else:

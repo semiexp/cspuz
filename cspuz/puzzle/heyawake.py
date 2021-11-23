@@ -1,64 +1,83 @@
 import argparse
+from typing import List, Tuple
 import random
 import sys
 import math
 
-import numpy as np
-
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or
 from cspuz.puzzle import util
+from cspuz.problem_serializer import (OneOf, ValuedRooms, HexInt, Spaces,
+                                      serialize_problem_as_url,
+                                      deserialize_problem_as_url)
+
+RectangularRepr = List[Tuple[int, int, int, int, int]]
+RoomRepr = Tuple[List[List[Tuple[int, int]]], List[int]]
 
 
-def solve_heyawake(height, width, problem):
+def convert_from_rectangular_repr(problem: RectangularRepr) -> RoomRepr:
+    rooms = []
+    clues = []
+    for y0, x0, y1, x1, n in problem:
+        room = []
+        for y in range(y0, y1):
+            for x in range(x0, x1):
+                room.append((y, x))
+        rooms.append(room)
+        clues.append(n)
+    return rooms, clues
+
+
+def solve_heyawake(height, width, *problem):
     solver = Solver()
     is_black = solver.bool_array((height, width))
     solver.add_answer_key(is_black)
     graph.active_vertices_not_adjacent(solver, is_black)
     graph.active_vertices_connected(solver, ~is_black)
-    for y0, x0, y1, x1, n in problem:
-        if n >= 0:
-            solver.ensure(count_true(is_black[y0:y1, x0:x1]) == n)
-        if 0 < y0 and y1 < height:
-            for x in range(x0, x1):
-                solver.ensure(fold_or(is_black[(y0 - 1):(y1 + 1), x]))
-        if 0 < x0 and x1 < width:
-            for y in range(y0, y1):
-                solver.ensure(fold_or(is_black[y, (x0 - 1):(x1 + 1)]))
+
+    if len(problem) == 1:
+        rooms, clues = convert_from_rectangular_repr(problem[0])
+    else:
+        rooms, clues = problem
+
+    room_id = [[-1 for _ in range(width)] for _ in range(height)]
+    for i in range(len(rooms)):
+        room_cells = []
+        for y, x in rooms[i]:
+            if room_id[y][x] != -1:
+                raise ValueError(f"cell ({y}, {x}) belongs to multiple rooms")
+            room_id[y][x] = i
+            room_cells.append(is_black[y, x])
+        if clues[i] >= 0:
+            solver.ensure(count_true(room_cells) == clues[i])
+
+    for y in range(height):
+        for x in range(width):
+            if room_id[y][x] == -1:
+                raise ValueError(f"cell ({y}, {x}) belongs to no room")
+            if y < height - 1 and room_id[y][x] != room_id[y + 1][x]:
+                y2 = y + 1
+                while y2 < height - 1:
+                    if room_id[y2][x] != room_id[y2 + 1][x]:
+                        solver.ensure(fold_or(is_black[y:(y2 + 2), x]))
+                        break
+                    y2 += 1
+            if x < width - 1 and room_id[y][x] != room_id[y][x + 1]:
+                x2 = x + 1
+                while x2 < width - 1:
+                    if room_id[y][x2] != room_id[y][x2 + 1]:
+                        solver.ensure(fold_or(is_black[y, x:(x2 + 2)]))
+                        break
+                    x2 += 1
+
     is_sat = solver.solve()
 
     return is_sat, is_black
 
 
-def pretest(height, width, problem):
-    solver = Solver()
-    is_black = solver.bool_array((height, width))
-    solver.add_answer_key(is_black)
-    graph.active_vertices_not_adjacent(solver, is_black)
-    graph.active_vertices_connected(solver, ~is_black)
-    for y0, x0, y1, x1, n in problem:
-        if n >= 0:
-            solver.ensure(count_true(is_black[y0:y1, x0:x1]) == n)
-        if 0 < y0 and y1 < height:
-            for x in range(x0, x1):
-                solver.ensure(fold_or(is_black[(y0 - 1):(y1 + 1), x]))
-        if 0 < x0 and x1 < width:
-            for y in range(y0, y1):
-                solver.ensure(fold_or(is_black[y, (x0 - 1):(x1 + 1)]))
-    solver.ensure(is_black[2, 3])
-    solver.ensure(is_black[2, 6])
-    solver.ensure(is_black[5, 3])
-    solver.ensure(is_black[5, 6])
-    solver.ensure(is_black[3, 4])
-    solver.ensure(is_black[4, 5])
-    return solver.find_answer()
-
-
 def enumerate_division_update(problem):
     ret = []
     for i in range(len(problem)):
-        if i == 0:
-            continue
         y0, x0, y1, x1, n = problem[i]
         if y1 - y0 >= 2:
             for y in range(y0 + 1, y1):
@@ -215,8 +234,6 @@ def generate_heyawake(height,
 
             if num_thin_blocks(problem2) > 5:
                 continue
-            if not pretest(height, width, problem2):
-                continue
             sat, is_black = solve_heyawake(height, width, problem2)
             if not sat:
                 score_next = -1
@@ -246,58 +263,26 @@ def generate_heyawake(height,
     return None
 
 
-def problem_to_pzv_url(height, width, problem):
-    def convert_binary_seq(s):
-        ret = ''
-        for i in range((len(s) + 4) // 5):
-            v = 0
-            for j in range(5):
-                if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2**(4 - j))
-            ret += np.base_repr(v, 32).lower()
-        return ret
+HEYAWAKE_COMBINATOR = ValuedRooms(OneOf(HexInt(), Spaces(-1, 'g')),
+                                  skip_on_error=True,
+                                  allow_redundant_border=False)
 
-    blocks = [[-1 for _ in range(width)] for _ in range(height)]
-    clues = [[-2 for _ in range(width)] for _ in range(height)]
-    for i, (y0, x0, y1, x1, n) in enumerate(problem):
-        for y in range(y0, y1):
-            for x in range(x0, x1):
-                blocks[y][x] = i
-        clues[y0][x0] = n
-    s = []
-    for y in range(height):
-        for x in range(width - 1):
-            s.append(1 if blocks[y][x] != blocks[y][x + 1] else 0)
-    ret = convert_binary_seq(s)
-    s = []
-    for y in range(height - 1):
-        for x in range(width):
-            s.append(1 if blocks[y][x] != blocks[y + 1][x] else 0)
-    ret += convert_binary_seq(s)
 
-    contiguous_empty_cells = 0
-    for y in range(height):
-        for x in range(width):
-            if clues[y][x] == -2:
-                continue
-            if clues[y][x] == -1:
-                if contiguous_empty_cells == 20:
-                    ret += 'z'
-                    contiguous_empty_cells = 1
-                else:
-                    contiguous_empty_cells += 1
-            else:
-                if contiguous_empty_cells > 0:
-                    ret += chr(ord('f') + contiguous_empty_cells)
-                    contiguous_empty_cells = 0
-                if clues[y][x] >= 16:
-                    ret += '-' + format(clues[y][x], 'x')
-                else:
-                    ret += format(clues[y][x], 'x')
-    if contiguous_empty_cells > 0:
-        ret += chr(ord('f') + contiguous_empty_cells)
+def serialize_heyawake(height, width, *problem):
+    if len(problem) == 1:
+        rooms, clues = convert_from_rectangular_repr(problem[0])
+    else:
+        rooms, clues = problem
+    return serialize_problem_as_url(HEYAWAKE_COMBINATOR, "heyawake", height,
+                                    width, (rooms, clues))
 
-    return 'http://pzv.jp/p.html?heyawake/{}/{}/{}'.format(width, height, ret)
+
+def deserialize_heyawake(url) -> RoomRepr:
+    return deserialize_problem_as_url(HEYAWAKE_COMBINATOR,
+                                      url,
+                                      allowed_puzzles="heyawake",
+                                      allow_failure=True,
+                                      return_size=True)
 
 
 def _main():
@@ -340,7 +325,7 @@ def _main():
                                         no_limit_clue=args.no_limit_clue,
                                         verbose=args.verbose)
             if problem is not None:
-                url = problem_to_pzv_url(height, width, problem)
+                url = serialize_heyawake(height, width, problem)
                 print(url, flush=True)
                 print(problem, file=sys.stderr)
 
