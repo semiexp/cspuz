@@ -5,6 +5,9 @@ from cspuz.constraints import count_true, fold_and, fold_or
 from cspuz.puzzle import util
 from cspuz.generator import (generate_problem, count_non_default_values,
                              ArrayBuilder2D)
+from cspuz.problem_serializer import (Grid, OneOf, Spaces, HexInt, Dict,
+                                      serialize_problem_as_url,
+                                      deserialize_problem_as_url)
 
 
 def solve_nurimisaki(height, width, problem):
@@ -68,6 +71,23 @@ def generate_fillomino(height, width, verbose=False):
             problem, default=-1, weight=7),
         verbose=verbose)
     return generated
+
+
+NURIMISAKI_COMBINATOR = Grid(OneOf(Dict([0], ["."]), Spaces(-1, "g"),
+                                   HexInt()))
+
+
+def serialize_nurimisaki(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(NURIMISAKI_COMBINATOR, "nurimisaki",
+                                    height, width, problem)
+
+
+def deserialize_nurimisaki(url):
+    return deserialize_problem_as_url(NURIMISAKI_COMBINATOR,
+                                      url,
+                                      allowed_puzzles="nurimisaki")
 
 
 def _main():
