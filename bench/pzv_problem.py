@@ -3,7 +3,7 @@ import sys
 import time
 
 from cspuz import problem_serializer
-from cspuz.puzzle import heyawake, masyu, nurikabe
+from cspuz.puzzle import heyawake, lits, masyu, nurikabe, nurimisaki
 from cspuz.generator import default_uniqueness_checker
 
 
@@ -36,6 +36,23 @@ def solve_heyawake(url):
     return is_sat and default_uniqueness_checker(ans)
 
 
+def solve_lits(url):
+    problem = lits.deserialize_lits(url)
+    if problem is None:
+        return None
+    height, width, rooms = problem
+    is_sat, ans = lits.solve_lits(height, width, rooms)
+    return is_sat and default_uniqueness_checker(ans)
+
+
+def solve_nurimisaki(url):
+    problem = nurimisaki.deserialize_nurimisaki(url)
+    height = len(problem)
+    width = len(problem[0])
+    is_sat, ans = nurimisaki.solve_nurimisaki(height, width, problem)
+    return is_sat and default_uniqueness_checker(ans)
+
+
 PUZZLE_KIND_ALIAS = {
     "mashu": "masyu",
 }
@@ -61,6 +78,10 @@ def solve_problem(url, height_lim=None, width_lim=None):
         return solve_masyu(url)
     elif kind == "heyawake":
         return solve_heyawake(url)
+    elif kind == "lits":
+        return solve_lits(url)
+    elif kind == "nurimisaki":
+        return solve_nurimisaki(url)
     else:
         return None
 
