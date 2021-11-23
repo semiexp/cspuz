@@ -576,6 +576,14 @@ _DESERIALIZE_URL_REG = re.compile(
     "https?://[^/]+/p\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
 
 
+def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
+    m = _DESERIALIZE_URL_REG.match(url)
+    if m is None:
+        return None
+    else:
+        return (m[1], int(m[3]), int(m[2]))
+
+
 def deserialize_problem_as_url(combinator,
                                url,
                                allowed_puzzles=None,
