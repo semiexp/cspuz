@@ -543,6 +543,42 @@ class Rooms(Combinator):
             return self._deserialize(env, data, idx)
 
 
+class ValuedRooms(Combinator):
+    def __init__(self, value_combinator, **kwargs):
+        super().__init__()
+
+        self._value_combinator = value_combinator
+        self._room_combinator = Rooms(**kwargs)
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        d = data[idx]
+        if not isinstance(d, tuple) or len(d) != 2:
+            return None
+        rooms, values = d
+
+        combinator = Tupl(self._room_combinator,
+                          Seq(self._value_combinator, len(rooms)))
+        res = combinator.serialize(env, [([rooms], [values])], 0)
+        return res or (1, res[1])
+
+    def deserialize(self, env, data, idx):
+        rooms_res = self._room_combinator.deserialize(env, data, idx)
+        if rooms_res is None:
+            return None
+        ofs, rooms = rooms_res
+        rooms = rooms[0]
+        value_combinator = Seq(self._value_combinator, len(rooms))
+        values_res = value_combinator.deserialize(env, data, idx + ofs)
+        if values_res is None:
+            return None
+        ofs2, values = values_res
+        values = values[0]
+
+        return ofs + ofs2, [(rooms, values)]
+
+
 def serialize_problem(combinator, problem, **kwargs):
     env = CombinatorEnv(**kwargs)
     tmp = combinator.serialize(env, [problem], 0)

@@ -2,7 +2,7 @@ import pytest
 
 from cspuz.problem_serializer import (CombinatorEnv, Dict, FixStr, Spaces,
                                       DecInt, HexInt, MultiDigit, OneOf, Tupl,
-                                      Seq, Grid, Rooms)
+                                      Seq, Grid, Rooms, ValuedRooms)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 from cspuz.puzzle.norinori import serialize_norinori, deserialize_norinori
@@ -205,6 +205,24 @@ class TestSerializerCombinators:
 
         with pytest.raises(ValueError):
             combinator.deserialize(env, "dkpg", 0)  # redundant border
+
+    def test_valued_rooms(self):
+        env = CombinatorEnv(height=4, width=3)
+        combinator = ValuedRooms(OneOf(HexInt(), Spaces(-1, 'g')))
+
+        assert combinator.serialize(env, [([
+            [(0, 0), (0, 1)],
+            [(0, 2), (1, 2), (2, 1), (2, 2)],
+            [(1, 0), (1, 1), (2, 0), (3, 0)],
+            [(3, 1), (3, 2)],
+        ], [1, 2, 0, -1])], 0) == (1, "b8p6120g")
+
+        assert combinator.deserialize(env, "b8p6120g", 0) == (8, [([
+            [(0, 0), (0, 1)],
+            [(0, 2), (1, 2), (2, 1), (2, 2)],
+            [(1, 0), (1, 1), (2, 0), (3, 0)],
+            [(3, 1), (3, 2)],
+        ], [1, 2, 0, -1])])
 
 
 class TestSerializerPuzzles:
