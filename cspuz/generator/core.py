@@ -1,11 +1,11 @@
 import math
-import random
 import sys
 
 from ..array import Array1D, Array2D
 from cspuz.expr import BoolExpr, IntExpr
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.generator.builder import build_neighbor_generator
+import cspuz.generator.srandom as srandom
 
 
 def default_score_calculator(*args):
@@ -68,6 +68,8 @@ def generate_problem(
     solve_initial_problem=False,
     verbose=False,
 ):
+    global _use_deterministic_prng
+
     if builder_pattern is not None:
         if initial_problem is not None or neighbor_generator is not None:
             raise ValueError(
@@ -114,7 +116,8 @@ def generate_problem(
                 continue
 
             if uniqueness(*answer):
-                print("generated", file=sys.stderr)
+                if verbose:
+                    print("generated", file=sys.stderr)
                 return next_problem
 
             next_score_base = score(*answer)
@@ -127,7 +130,7 @@ def generate_problem(
             update = (
                 current_score is None
                 or current_score <= next_score
-                or random.random() < math.exp((next_score - current_score) / temperature)
+                or srandom.random() < math.exp((next_score - current_score) / temperature)
             )
             if update:
                 if verbose:

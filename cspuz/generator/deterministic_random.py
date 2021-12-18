@@ -116,3 +116,14 @@ def shuffle(seq: Sequence[Any]):
         j = randint(0, i)
         if i != j:
             seq[i], seq[j] = seq[j], seq[i]
+
+
+def random() -> float:
+    """Return a uniform random float number in [0, 1).
+
+    Returns:
+        :obj:`float`: A random number.
+    """
+
+    global _rng
+    return float(_rng.next()) / _XORSHIFT_DOMAIN_SIZE
