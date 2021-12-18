@@ -25,7 +25,7 @@ class XorShift:
         self._x = 123456789
         self._y = 362436069
         self._z = 521288629
-        self._w = 88675123 ^ (seed & 0xffffffff)
+        self._w = 88675123 ^ (seed & 0xFFFFFFFF)
 
     def next(self) -> int:
         """Return a random integer, modifying the internal states.
@@ -33,7 +33,7 @@ class XorShift:
         Returns:
             int: A random integer in range [0, 2^31-1].
         """
-        t = (self._x ^ (self._x << 11)) & 0xffffffff
+        t = (self._x ^ (self._x << 11)) & 0xFFFFFFFF
         self._x = self._y
         self._y = self._z
         self._z = self._w
@@ -52,6 +52,7 @@ def seed(s: int):
         s (int): Seed for initialization. See :obj:`XorShift::__init__` for
         details.
     """
+    global _rng
     _rng = XorShift(s)
 
 

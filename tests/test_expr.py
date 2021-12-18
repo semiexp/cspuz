@@ -39,8 +39,7 @@ class TestExprConstruction:
         assert check_equality_expr(bx.cond(ix, iy), Expr(Op.IF, [bx, ix, iy]))
 
     def test_cond_bool_var_var(self, ix, iy):
-        assert check_equality_expr(cspuz.cond(True, ix, iy),
-                                   Expr(Op.IF, [True, ix, iy]))
+        assert check_equality_expr(cspuz.cond(True, ix, iy), Expr(Op.IF, [True, ix, iy]))
 
     def test_inv_var(self, bx):
         assert check_equality_expr(~bx, Expr(Op.NOT, [bx]))
@@ -67,33 +66,31 @@ class TestExprConstruction:
         assert check_equality_expr(bx == by, Expr(Op.IFF, [bx, by]))
 
     def test_beq_var_bool(self, bx):
-        assert check_equality_expr(bx == True, Expr(Op.IFF, [bx, True]))  # noqa: E501, E712  # yapf: disable
+        assert check_equality_expr(bx == True, Expr(Op.IFF, [bx, True]))  # noqa: E501, E712
 
     def test_beq_bool_var(self, bx):
-        assert check_equality_expr(True == bx, Expr(Op.IFF, [bx, True]))  # noqa: E501, E712  # yapf: disable
+        assert check_equality_expr(True == bx, Expr(Op.IFF, [bx, True]))  # noqa: E501, E712
 
     def test_bne_var_var(self, bx, by):
         assert check_equality_expr(bx != by, Expr(Op.XOR, [bx, by]))
 
     def test_bne_var_bool(self, bx):
-        assert check_equality_expr(bx != True, Expr(Op.XOR, [bx, True]))  # noqa: E501, E712  # yapf: disable
+        assert check_equality_expr(bx != True, Expr(Op.XOR, [bx, True]))  # noqa: E501, E712
 
     def test_bne_bool_var(self, bx):
-        assert check_equality_expr(True != bx, Expr(Op.XOR, [bx, True]))  # noqa: E501, E712  # yapf: disable
+        assert check_equality_expr(True != bx, Expr(Op.XOR, [bx, True]))  # noqa: E501, E712
 
     def test_fold_or(self, bx):
         assert check_equality_expr(bx.fold_or(), bx)
 
     def test_fold_or_list(self, bx, by):
-        assert check_equality_expr(cspuz.fold_or([bx, by]),
-                                   Expr(Op.OR, [bx, by]))
+        assert check_equality_expr(cspuz.fold_or([bx, by]), Expr(Op.OR, [bx, by]))
 
     def test_fold_and(self, bx):
         assert check_equality_expr(bx.fold_and(), bx)
 
     def test_fold_and_list(self, bx, by):
-        assert check_equality_expr(cspuz.fold_and([bx, by]),
-                                   Expr(Op.AND, [bx, by]))
+        assert check_equality_expr(cspuz.fold_and([bx, by]), Expr(Op.AND, [bx, by]))
 
     def test_count_true(self, bx):
         assert check_equality_expr(bx.count_true(), Expr(Op.IF, [bx, 1, 0]))
@@ -177,20 +174,38 @@ class TestExprConstruction:
         with pytest.raises(TypeError):
             res = ~ix  # noqa: F841
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "ivar"), ("ivar", "bvar"),
-                                         ("ivar", "ivar"), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True), (2, "ivar"),
-                                         ("ivar", 2)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            ("ivar", "ivar"),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+            (2, "ivar"),
+            ("ivar", 2),
+        ],
+    )
     def test_type_error_and(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
             self.input(solver, lhs) & self.input(solver, rhs)
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "ivar"), ("ivar", "bvar"),
-                                         ("ivar", "ivar"), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True), (2, "ivar"),
-                                         ("ivar", 2)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            ("ivar", "ivar"),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+            (2, "ivar"),
+            ("ivar", 2),
+        ],
+    )
     def test_type_error_or(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
             self.input(solver, lhs) | self.input(solver, rhs)
@@ -199,59 +214,113 @@ class TestExprConstruction:
         with pytest.raises(TypeError):
             res = -bx  # noqa: F841
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_add(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
             self.input(solver, lhs) + self.input(solver, rhs)
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_sub(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
             self.input(solver, lhs) - self.input(solver, rhs)
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_ge(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
-            res = self.input(solver, lhs) >= self.input(solver, rhs)  # noqa: E501, F841  # yapf: disable
+            res = self.input(solver, lhs) >= self.input(solver, rhs)  # noqa: E501, F841
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_gt(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
-            res = self.input(solver, lhs) > self.input(solver, rhs)  # noqa: E501, F841  # yapf: disable
+            res = self.input(solver, lhs) > self.input(solver, rhs)  # noqa: E501, F841
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_le(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
-            res = self.input(solver, lhs) <= self.input(solver, rhs)  # noqa: E501, F841  # yapf: disable
+            res = self.input(solver, lhs) <= self.input(solver, rhs)  # noqa: E501, F841
 
-    @pytest.mark.parametrize("lhs,rhs", [("bvar", "bvar"), ("bvar", "ivar"),
-                                         ("ivar", "bvar"), (True, "bvar"),
-                                         ("bvar", True), (True, "ivar"),
-                                         ("bvar", 2), (2, "bvar"),
-                                         ("ivar", True)])
+    @pytest.mark.parametrize(
+        "lhs,rhs",
+        [
+            ("bvar", "bvar"),
+            ("bvar", "ivar"),
+            ("ivar", "bvar"),
+            (True, "bvar"),
+            ("bvar", True),
+            (True, "ivar"),
+            ("bvar", 2),
+            (2, "bvar"),
+            ("ivar", True),
+        ],
+    )
     def test_type_error_lt(self, solver, lhs, rhs):
         with pytest.raises(TypeError):
-            res = self.input(solver, lhs) < self.input(solver, rhs)  # noqa: E501, F841  # yapf: disable
+            res = self.input(solver, lhs) < self.input(solver, rhs)  # noqa: E501, F841
 
     def test_is_variable(self, ix, iy, bx, by):
         assert ix.is_variable()
@@ -269,8 +338,7 @@ class TestExprValue:
     def solver(self):
         return cspuz.Solver()
 
-    @pytest.mark.parametrize("x_val,y_val,z_val,expected", [(True, 1, 2, 1),
-                                                            (False, 1, 2, 2)])
+    @pytest.mark.parametrize("x_val,y_val,z_val,expected", [(True, 1, 2, 1), (False, 1, 2, 2)])
     def test_cond(self, solver, x_val, y_val, z_val, expected):
         x = solver.bool_var()
         y = solver.int_var(-2, 2)
@@ -281,10 +349,10 @@ class TestExprValue:
         solver.ensure(cspuz.cond(x, y, z) == expected)
         assert solver.find_answer()
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(False, False, True),
-                                                    (False, True, True),
-                                                    (True, False, False),
-                                                    (True, True, True)])
+    @pytest.mark.parametrize(
+        "x_val,y_val,is_sat",
+        [(False, False, True), (False, True, True), (True, False, False), (True, True, True)],
+    )
     def test_then(self, solver, x_val, y_val, is_sat):
         x = solver.bool_var()
         y = solver.bool_var()
@@ -300,10 +368,10 @@ class TestExprValue:
         solver.ensure(~x)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(False, False, False),
-                                                    (False, True, False),
-                                                    (True, False, False),
-                                                    (True, True, True)])
+    @pytest.mark.parametrize(
+        "x_val,y_val,is_sat",
+        [(False, False, False), (False, True, False), (True, False, False), (True, True, True)],
+    )
     def test_and(self, solver, x_val, y_val, is_sat):
         x = solver.bool_var()
         y = solver.bool_var()
@@ -312,10 +380,10 @@ class TestExprValue:
         solver.ensure(x & y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(False, False, False),
-                                                    (False, True, True),
-                                                    (True, False, True),
-                                                    (True, True, True)])
+    @pytest.mark.parametrize(
+        "x_val,y_val,is_sat",
+        [(False, False, False), (False, True, True), (True, False, True), (True, True, True)],
+    )
     def test_or(self, solver, x_val, y_val, is_sat):
         x = solver.bool_var()
         y = solver.bool_var()
@@ -324,10 +392,10 @@ class TestExprValue:
         solver.ensure(x | y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(False, False, True),
-                                                    (False, True, False),
-                                                    (True, False, False),
-                                                    (True, True, True)])
+    @pytest.mark.parametrize(
+        "x_val,y_val,is_sat",
+        [(False, False, True), (False, True, False), (True, False, False), (True, True, True)],
+    )
     def test_beq(self, solver, x_val, y_val, is_sat):
         x = solver.bool_var()
         y = solver.bool_var()
@@ -336,10 +404,10 @@ class TestExprValue:
         solver.ensure(x == y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(False, False, False),
-                                                    (False, True, True),
-                                                    (True, False, True),
-                                                    (True, True, False)])
+    @pytest.mark.parametrize(
+        "x_val,y_val,is_sat",
+        [(False, False, False), (False, True, True), (True, False, True), (True, True, False)],
+    )
     def test_bne(self, solver, x_val, y_val, is_sat):
         x = solver.bool_var()
         y = solver.bool_var()
@@ -355,8 +423,7 @@ class TestExprValue:
         solver.ensure(-x == expected)
         assert solver.find_answer()
 
-    @pytest.mark.parametrize("x_val,y_val,expected", [(0, 0, 0), (1, 1, 2),
-                                                      (2, -1, 1)])
+    @pytest.mark.parametrize("x_val,y_val,expected", [(0, 0, 0), (1, 1, 2), (2, -1, 1)])
     def test_add(self, solver, x_val, y_val, expected):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -365,8 +432,7 @@ class TestExprValue:
         solver.ensure(x + y == expected)
         assert solver.find_answer()
 
-    @pytest.mark.parametrize("x_val,y_val,expected", [(0, 0, 0), (1, 2, -1),
-                                                      (-1, 1, -2)])
+    @pytest.mark.parametrize("x_val,y_val,expected", [(0, 0, 0), (1, 2, -1), (-1, 1, -2)])
     def test_sub(self, solver, x_val, y_val, expected):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -375,9 +441,7 @@ class TestExprValue:
         solver.ensure(x - y == expected)
         assert solver.find_answer()
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True),
-                                                    (1, 2, False),
-                                                    (-2, -2, True)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True), (1, 2, False), (-2, -2, True)])
     def test_ieq(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -386,9 +450,7 @@ class TestExprValue:
         solver.ensure(x == y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False),
-                                                    (1, 2, True),
-                                                    (-2, -2, False)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False), (1, 2, True), (-2, -2, False)])
     def test_ine(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -397,9 +459,7 @@ class TestExprValue:
         solver.ensure(x != y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True),
-                                                    (1, 2, False),
-                                                    (-1, -2, True)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True), (1, 2, False), (-1, -2, True)])
     def test_ge(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -408,9 +468,7 @@ class TestExprValue:
         solver.ensure(x >= y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False),
-                                                    (1, 2, False),
-                                                    (-1, -2, True)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False), (1, 2, False), (-1, -2, True)])
     def test_gt(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -419,8 +477,7 @@ class TestExprValue:
         solver.ensure(x > y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True), (1, 2, True),
-                                                    (-1, -2, False)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, True), (1, 2, True), (-1, -2, False)])
     def test_le(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)
@@ -429,9 +486,7 @@ class TestExprValue:
         solver.ensure(x <= y)
         assert solver.find_answer() == is_sat
 
-    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False),
-                                                    (1, 2, True),
-                                                    (-1, -2, False)])
+    @pytest.mark.parametrize("x_val,y_val,is_sat", [(0, 0, False), (1, 2, True), (-1, -2, False)])
     def test_lt(self, solver, x_val, y_val, is_sat):
         x = solver.int_var(-2, 2)
         y = solver.int_var(-2, 2)

@@ -6,8 +6,7 @@ import math
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or, fold_and
 from cspuz.puzzle import util
-from cspuz.problem_serializer import (Rooms, serialize_problem_as_url,
-                                      deserialize_problem_as_url)
+from cspuz.problem_serializer import Rooms, serialize_problem_as_url, deserialize_problem_as_url
 
 
 def solve_lits(height, width, blocks):
@@ -19,8 +18,7 @@ def solve_lits(height, width, blocks):
     graph.active_vertices_connected(solver, is_black)
 
     # no 2x2 black cells
-    solver.ensure(~(is_black[1:, 1:] & is_black[1:, :-1] & is_black[:-1, 1:]
-                    & is_black[:-1, :-1]))
+    solver.ensure(~(is_black[1:, 1:] & is_black[1:, :-1] & is_black[:-1, 1:] & is_black[:-1, :-1]))
 
     block_id = [[-1 for _ in range(width)] for _ in range(height)]
     for i, block in enumerate(blocks):
@@ -41,25 +39,19 @@ def solve_lits(height, width, blocks):
                 if block_id[y2][x2] == i:
                     neighbor_same_block.append((y2, x2))
                     if (y, x) < (y2, x2):
-                        adjacent_pairs.append(is_black[y, x]
-                                              & is_black[y2, x2])
-            solver.ensure(is_black[y, x].then(
-                fold_or([is_black[p] for p in neighbor_same_block])))
+                        adjacent_pairs.append(is_black[y, x] & is_black[y2, x2])
+            solver.ensure(is_black[y, x].then(fold_or([is_black[p] for p in neighbor_same_block])))
 
             tmp = []
-            if 0 < y < height - 1 and block_id[y - 1][x] == i and block_id[
-                    y + 1][x] == i:
-                tmp.append(fold_and(is_black[y - 1:y + 2, x]))
-            if 0 < x < width - 1 and block_id[y][x - 1] == i and block_id[y][
-                    x + 1] == i:
-                tmp.append(fold_and(is_black[y, x - 1:x + 2]))
+            if 0 < y < height - 1 and block_id[y - 1][x] == i and block_id[y + 1][x] == i:
+                tmp.append(fold_and(is_black[y - 1 : y + 2, x]))
+            if 0 < x < width - 1 and block_id[y][x - 1] == i and block_id[y][x + 1] == i:
+                tmp.append(fold_and(is_black[y, x - 1 : x + 2]))
             if len(tmp) >= 1:
                 is_straight.append(fold_or(tmp))
 
             if len(neighbor_same_block) >= 3:
-                is_t.append(
-                    count_true([is_black[p]
-                                for p in neighbor_same_block]) >= 3)
+                is_t.append(count_true([is_black[p] for p in neighbor_same_block]) >= 3)
         solver.ensure(count_true(adjacent_pairs) == 3)
 
         solver.ensure(num_straight[i] == count_true(is_straight))
@@ -71,16 +63,18 @@ def solve_lits(height, width, blocks):
                 i = block_id[y][x]
                 j = block_id[y + 1][x]
                 solver.ensure(
-                    (is_black[y, x]
-                     & is_black[y + 1,
-                                x]).then((num_straight[i] != num_straight[j])
-                                         | (has_t[i] != has_t[j])))
+                    (is_black[y, x] & is_black[y + 1, x]).then(
+                        (num_straight[i] != num_straight[j]) | (has_t[i] != has_t[j])
+                    )
+                )
             if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
                 i = block_id[y][x]
                 j = block_id[y][x + 1]
-                solver.ensure((is_black[y, x] & is_black[y, x + 1]
-                               ).then((num_straight[i] != num_straight[j])
-                                      | (has_t[i] != has_t[j])))
+                solver.ensure(
+                    (is_black[y, x] & is_black[y, x + 1]).then(
+                        (num_straight[i] != num_straight[j]) | (has_t[i] != has_t[j])
+                    )
+                )
     is_sat = solver.solve()
     return is_sat, is_black
 
@@ -104,8 +98,7 @@ def split_block(block):
             y, x = q.popleft()
             d = ans[(y, x)]
             for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                if (y + dy, x + dx) in block_set and (y + dy,
-                                                      x + dx) not in ans:
+                if (y + dy, x + dx) in block_set and (y + dy, x + dx) not in ans:
                     ans[(y + dy, x + dx)] = d + 1
                     q.append((y + dy, x + dx))
         return ans
@@ -193,22 +186,30 @@ def generate_cand(height, width, blocks, no_merge=False):
                 i = block_id[y][x]
                 j = block_id[y + 1][x]
                 if is_connected(blocks[i], (y, x)):
-                    ret.append(([i, j], [[p for p in blocks[i] if p != (y, x)],
-                                         blocks[j] + [(y, x)]]))
+                    ret.append(
+                        ([i, j], [[p for p in blocks[i] if p != (y, x)], blocks[j] + [(y, x)]])
+                    )
                 if is_connected(blocks[j], (y + 1, x)):
                     ret.append(
-                        ([i, j], [[p for p in blocks[j] if p != (y + 1, x)],
-                                  blocks[i] + [(y + 1, x)]]))
+                        (
+                            [i, j],
+                            [[p for p in blocks[j] if p != (y + 1, x)], blocks[i] + [(y + 1, x)]],
+                        )
+                    )
             if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
                 i = block_id[y][x]
                 j = block_id[y][x + 1]
                 if is_connected(blocks[i], (y, x)):
-                    ret.append(([i, j], [[p for p in blocks[i] if p != (y, x)],
-                                         blocks[j] + [(y, x)]]))
+                    ret.append(
+                        ([i, j], [[p for p in blocks[i] if p != (y, x)], blocks[j] + [(y, x)]])
+                    )
                 if is_connected(blocks[j], (y, x + 1)):
                     ret.append(
-                        ([i, j], [[p for p in blocks[j] if p != (y, x + 1)],
-                                  blocks[i] + [(y, x + 1)]]))
+                        (
+                            [i, j],
+                            [[p for p in blocks[j] if p != (y, x + 1)], blocks[i] + [(y, x + 1)]],
+                        )
+                    )
 
     return ret
 
@@ -232,16 +233,11 @@ def generate_lits(height, width, num_min_blocks=None, verbose=False):
     temperature = 5.0
     fully_solved_score = height * width
     for step in range(height * width * 10):
-        cand = generate_cand(height,
-                             width,
-                             blocks,
-                             no_merge=(len(blocks) < 11))
+        cand = generate_cand(height, width, blocks, no_merge=(len(blocks) < 11))
         random.shuffle(cand)
 
         for rm, app in cand:
-            blocks_next = [
-                block for i, block in enumerate(blocks) if i not in rm
-            ] + app
+            blocks_next = [block for i, block in enumerate(blocks) if i not in rm] + app
             if len(blocks) >= 10 and len(blocks_next) < 10:
                 continue
 
@@ -252,30 +248,27 @@ def generate_lits(height, width, num_min_blocks=None, verbose=False):
             else:
                 raw_score_next = _compute_score(is_black)
                 if raw_score_next == fully_solved_score and (
-                        num_min_blocks is None
-                        or len(blocks_next) >= num_min_blocks):
+                    num_min_blocks is None or len(blocks_next) >= num_min_blocks
+                ):
                     return blocks_next
-                clue_score = -min(len(blocks_next),
-                                  20) * 5  # abs(len(blocks_next) - 12) * 4
+                clue_score = -min(len(blocks_next), 20) * 5  # abs(len(blocks_next) - 12) * 4
                 for block in blocks:
-                    clue_score += max(
-                        0.0,
-                        len(block) - float(height * width) / len(blocks)) * 2.0
+                    clue_score += max(0.0, len(block) - float(height * width) / len(blocks)) * 2.0
                 score_next = raw_score_next - clue_score
-                update = (score < score_next or random.random() < math.exp(
-                    (score_next - score) / temperature))
+                update = score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature
+                )
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next),
-                          file=sys.stderr)
+                    print("update: {} -> {}".format(score, score_next), file=sys.stderr)
                 score = score_next
                 blocks = blocks_next
                 break
 
         temperature *= 0.995
     if verbose:
-        print('failed', file=sys.stderr)
+        print("failed", file=sys.stderr)
     return None
 
 
@@ -283,8 +276,7 @@ LITS_COMBINATOR = Rooms()
 
 
 def serialize_lits(height, width, blocks):
-    return serialize_problem_as_url(LITS_COMBINATOR, "lits", height, width,
-                                    blocks)
+    return serialize_problem_as_url(LITS_COMBINATOR, "lits", height, width, blocks)
 
 
 def deserialize_lits(url):
@@ -296,16 +288,16 @@ def _main():
         height = 10
         width = 10
         b = [
-            '0000000222',
-            '0010002222',
-            '1113332222',
-            '5563444288',
-            '5663422228',
-            '5663223338',
-            '5633333338',
-            '6673339aaa',
-            '6773999aab',
-            '77bbbbbbbb',
+            "0000000222",
+            "0010002222",
+            "1113332222",
+            "5563444288",
+            "5663422228",
+            "5663223338",
+            "5633333338",
+            "6673339aaa",
+            "6773999aab",
+            "77bbbbbbbb",
         ]
         blocks = defaultdict(list)
         for y in range(height):
@@ -314,14 +306,9 @@ def _main():
         blocks = list(blocks.values())
 
         is_sat, is_black = solve_lits(height, width, blocks)
-        print('has answer:', is_sat)
+        print("has answer:", is_sat)
         if is_sat:
-            print(
-                util.stringify_array(is_black, {
-                    None: '?',
-                    True: '#',
-                    False: '.'
-                }))
+            print(util.stringify_array(is_black, {None: "?", True: "#", False: "."}))
     else:
         height, width = map(int, sys.argv[1:])
         while True:
@@ -333,10 +320,10 @@ def _main():
                         a[y][x] = i
                 for y in range(height):
                     for x in range(width):
-                        print('{:2}'.format(a[y][x]), end='', file=sys.stderr)
+                        print("{:2}".format(a[y][x]), end="", file=sys.stderr)
                     print(file=sys.stderr)
                 print(serialize_lits(height, width, gen), flush=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

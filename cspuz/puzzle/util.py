@@ -10,23 +10,19 @@ def stringify_array(array, symbol_map=None):
 
     for y in range(height):
         if isinstance(symbol_map, dict):
-            row = [
-                symbol_map[v.sol if hasattr(v, 'sol') else v] for v in array[y]
-            ]
+            row = [symbol_map[v.sol if hasattr(v, "sol") else v] for v in array[y]]
         elif symbol_map is not None:
-            row = [
-                symbol_map(v.sol if hasattr(v, 'sol') else v) for v in array[y]
-            ]
+            row = [symbol_map(v.sol if hasattr(v, "sol") else v) for v in array[y]]
         else:
-            row = [v.sol if hasattr(v, 'sol') else v for v in array[y]]
-        rows.append(' '.join(row))
+            row = [v.sol if hasattr(v, "sol") else v for v in array[y]]
+        rows.append(" ".join(row))
 
-    return '\n'.join(rows)
+    return "\n".join(rows)
 
 
-_VERTICAL_EDGE = {None: ' ', True: '|', False: 'x'}
+_VERTICAL_EDGE = {None: " ", True: "|", False: "x"}
 
-_HORIZONTAL_EDGE = {None: ' ', True: '-', False: 'x'}
+_HORIZONTAL_EDGE = {None: " ", True: "-", False: "x"}
 
 
 def stringify_grid_frame(grid_frame):
@@ -34,18 +30,18 @@ def stringify_grid_frame(grid_frame):
     for y in range(2 * grid_frame.height + 1):
         for x in range(2 * grid_frame.width + 1):
             if y % 2 == 0 and x % 2 == 0:
-                res.append('+')
+                res.append("+")
             elif y % 2 == 1 and x % 2 == 0:
                 res.append(_VERTICAL_EDGE[grid_frame[y, x].sol])
             elif y % 2 == 0 and x % 2 == 1:
                 res.append(_HORIZONTAL_EDGE[grid_frame[y, x].sol])
             else:
-                res.append(' ')
-        res.append('\n')
-    return ''.join(res)
+                res.append(" ")
+        res.append("\n")
+    return "".join(res)
 
 
-_BASE36 = '0123456789abcdefghijklmnopqrstuvwxyz'
+_BASE36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
 def _encode_int_or_str(v):
@@ -53,13 +49,13 @@ def _encode_int_or_str(v):
         return v
     else:
         if v <= 15:
-            prefix = ''
+            prefix = ""
         elif v <= 255:
-            prefix = '-'
+            prefix = "-"
         elif v <= 4095:
-            prefix = '+'
+            prefix = "+"
         else:
-            raise ValueError('too large value: {}'.format(v))
+            raise ValueError("too large value: {}".format(v))
         return prefix + hex(v)[2:]
 
 
@@ -67,7 +63,7 @@ def map2d(func, it):
     return list(map(lambda x: list(map(func, x)), it))
 
 
-def encode_array(array, single_empty_marker='g', empty=None, dim=None):
+def encode_array(array, single_empty_marker="g", empty=None, dim=None):
     """
     Encode a 1-D or 2-D array into a serialized string in the pzpr format.
     :param array: a 1-D or 2-D array to be serialized.
@@ -96,7 +92,7 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
             dim = 1
     else:
         if dim not in (1, 2):
-            raise ValueError('invalid value of dim')
+            raise ValueError("invalid value of dim")
     if dim == 2:
         # flatten
         array = sum(array, [])
@@ -110,8 +106,7 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
                 contiguous_empty_cells = 1
         else:
             if contiguous_empty_cells > 0:
-                res.append(_BASE36[contiguous_empty_cells - 1 +
-                                   single_empty_index])
+                res.append(_BASE36[contiguous_empty_cells - 1 + single_empty_index])
                 contiguous_empty_cells = 0
             if isinstance(v, (str, int)):
                 res.append(_encode_int_or_str(v))
@@ -119,20 +114,20 @@ def encode_array(array, single_empty_marker='g', empty=None, dim=None):
                 for w in v:
                     res.append(_encode_int_or_str(w))
             else:
-                raise TypeError('unsupported type for serialization')
+                raise TypeError("unsupported type for serialization")
     if contiguous_empty_cells > 0:
         res.append(_BASE36[contiguous_empty_cells - 1 + single_empty_index])
-    return ''.join(res)
+    return "".join(res)
 
 
 def encode_grid_segmentation(height, width, block_id):
     def convert_binary_seq(s):
-        ret = ''
+        ret = ""
         for i in range((len(s) + 4) // 5):
             v = 0
             for j in range(5):
                 if i * 5 + j < len(s) and s[i * 5 + j] == 1:
-                    v += (2**(4 - j))
+                    v += 2 ** (4 - j)
             ret += _BASE36[v]
         return ret
 

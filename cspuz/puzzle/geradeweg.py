@@ -6,8 +6,7 @@ from cspuz import Solver, graph
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.constraints import fold_or
 from cspuz.puzzle import util
-from cspuz.generator import (generate_problem, count_non_default_values,
-                             ArrayBuilder2D)
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_geradeweg(height, width, problem):
@@ -31,23 +30,24 @@ def solve_geradeweg(height, width, problem):
                 solver.ensure(is_passed[y, x])
                 solver.ensure(
                     fold_or(
-                        ([grid_frame.horizontal[y, x - 1]] if x > 0 else []) +
-                        ([grid_frame.horizontal[y,
-                                                x]] if x < width - 1 else [])).
-                    then(
-                        line_length(
-                            reversed(list(grid_frame.horizontal[y, :x]))) +
-                        line_length(grid_frame.horizontal[y, x:]) == problem[y]
-                        [x]))
+                        ([grid_frame.horizontal[y, x - 1]] if x > 0 else [])
+                        + ([grid_frame.horizontal[y, x]] if x < width - 1 else [])
+                    ).then(
+                        line_length(reversed(list(grid_frame.horizontal[y, :x])))
+                        + line_length(grid_frame.horizontal[y, x:])
+                        == problem[y][x]
+                    )
+                )
                 solver.ensure(
                     fold_or(
-                        ([grid_frame.vertical[y - 1, x]] if y > 0 else []) +
-                        ([grid_frame.vertical[y, x]] if y < height - 1 else [])
+                        ([grid_frame.vertical[y - 1, x]] if y > 0 else [])
+                        + ([grid_frame.vertical[y, x]] if y < height - 1 else [])
                     ).then(
-                        line_length(reversed(list(grid_frame.vertical[:y,
-                                                                      x]))) +
-                        line_length(grid_frame.vertical[y:,
-                                                        x]) == problem[y][x]))
+                        line_length(reversed(list(grid_frame.vertical[:y, x])))
+                        + line_length(grid_frame.vertical[y:, x])
+                        == problem[y][x]
+                    )
+                )
 
     is_sat = solver.solve()
     return is_sat, grid_frame
@@ -56,14 +56,10 @@ def solve_geradeweg(height, width, problem):
 def generate_geradeweg(height, width, symmetry=False, verbose=False):
     generated = generate_problem(
         lambda problem: solve_geradeweg(height, width, problem),
-        builder_pattern=ArrayBuilder2D(height,
-                                       width,
-                                       range(0, 6),
-                                       default=0,
-                                       symmetry=symmetry),
-        clue_penalty=lambda problem: count_non_default_values(
-            problem, default=0, weight=10),
-        verbose=verbose)
+        builder_pattern=ArrayBuilder2D(height, width, range(0, 6), default=0, symmetry=symmetry),
+        clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=10),
+        verbose=verbose,
+    )
     return generated
 
 
@@ -85,7 +81,7 @@ def _main():
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         ]
         is_sat, is_line = solve_geradeweg(height, width, problem)
-        print('has answer:', is_sat)
+        print("has answer:", is_sat)
         if is_sat:
             print(util.stringify_grid_frame(is_line))
     else:
@@ -93,18 +89,13 @@ def _main():
         height, width = map(int, sys.argv[1:])
         while True:
             try:
-                problem = generate_geradeweg(height,
-                                             width,
-                                             symmetry=False,
-                                             verbose=True)
+                problem = generate_geradeweg(height, width, symmetry=False, verbose=True)
                 if problem is not None:
-                    print(
-                        util.stringify_array(
-                            problem, lambda x: '.' if x == 0 else str(x)))
+                    print(util.stringify_array(problem, lambda x: "." if x == 0 else str(x)))
                     print(flush=True)
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

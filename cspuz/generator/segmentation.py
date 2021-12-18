@@ -6,15 +6,17 @@ from cspuz.generator.builder import Builder
 
 
 class SegmentationBuilder2D(Builder):
-    def __init__(self,
-                 height,
-                 width,
-                 min_num_blocks=None,
-                 max_num_blocks=None,
-                 min_block_size=None,
-                 max_block_size=None,
-                 allow_unmet_constraints_first=False,
-                 initial_blocks=None):
+    def __init__(
+        self,
+        height,
+        width,
+        min_num_blocks=None,
+        max_num_blocks=None,
+        min_block_size=None,
+        max_block_size=None,
+        allow_unmet_constraints_first=False,
+        initial_blocks=None,
+    ):
         self.height = height
         self.width = width
         self.min_num_blocks = min_num_blocks or 1
@@ -40,8 +42,7 @@ class SegmentationBuilder2D(Builder):
             if not (self.min_num_blocks <= len(blocks) <= self.max_num_blocks):
                 is_met = False
             for block in blocks:
-                if not (self.min_block_size <= len(block) <=
-                        self.max_block_size):
+                if not (self.min_block_size <= len(block) <= self.max_block_size):
                     is_met = False
             if is_met:
                 return blocks
@@ -68,23 +69,27 @@ class SegmentationBuilder2D(Builder):
                 for x in range(width):
                     if block_id[y][x] == -1:
                         continue
-                    if y < height - 1 and block_id[y][x] != block_id[
-                            y + 1][x] and block_id[y + 1][x] != -1:
+                    if (
+                        y < height - 1
+                        and block_id[y][x] != block_id[y + 1][x]
+                        and block_id[y + 1][x] != -1
+                    ):
                         i = block_id[y][x]
                         j = block_id[y + 1][x]
-                        if len(current[i]) + len(
-                                current[j]) > self.max_block_size:
+                        if len(current[i]) + len(current[j]) > self.max_block_size:
                             continue
                         if i < j:
                             adjacent_pairs.add((i, j))
                         else:
                             adjacent_pairs.add((j, i))
-                    if x < width - 1 and block_id[y][x] != block_id[y][
-                            x + 1] and block_id[y][x + 1] != -1:
+                    if (
+                        x < width - 1
+                        and block_id[y][x] != block_id[y][x + 1]
+                        and block_id[y][x + 1] != -1
+                    ):
                         i = block_id[y][x]
                         j = block_id[y][x + 1]
-                        if len(current[i]) + len(
-                                current[j]) > self.max_block_size:
+                        if len(current[i]) + len(current[j]) > self.max_block_size:
                             continue
                         if i < j:
                             adjacent_pairs.add((i, j))
@@ -99,8 +104,10 @@ class SegmentationBuilder2D(Builder):
                 if len(block) >= self.min_block_size * 2:
                     for _ in range(2 * (len(block) - 1)):
                         block_a, block_b = split_block(block)
-                        if len(block_a) >= self.min_block_size and len(
-                                block_b) >= self.min_block_size:
+                        if (
+                            len(block_a) >= self.min_block_size
+                            and len(block_b) >= self.min_block_size
+                        ):
                             ret.append(([i], [block_a, block_b]))
 
         # mutate
@@ -111,41 +118,61 @@ class SegmentationBuilder2D(Builder):
                     j = block_id[y + 1][x]
                     if i == -1 or j == -1:
                         continue
-                    if len(current[i]) > self.min_block_size and len(
-                            current[j]
-                    ) < self.max_block_size and _is_connected(
-                            current[i], (y, x)):
+                    if (
+                        len(current[i]) > self.min_block_size
+                        and len(current[j]) < self.max_block_size
+                        and _is_connected(current[i], (y, x))
+                    ):
                         ret.append(
-                            ([i, j], [[p for p in current[i] if p != (y, x)],
-                                      current[j] + [(y, x)]]))
-                    if len(current[j]) > self.min_block_size and len(
-                            current[i]
-                    ) < self.max_block_size and _is_connected(
-                            current[j], (y + 1, x)):
+                            (
+                                [i, j],
+                                [[p for p in current[i] if p != (y, x)], current[j] + [(y, x)]],
+                            )
+                        )
+                    if (
+                        len(current[j]) > self.min_block_size
+                        and len(current[i]) < self.max_block_size
+                        and _is_connected(current[j], (y + 1, x))
+                    ):
                         ret.append(
-                            ([i,
-                              j], [[p for p in current[j] if p != (y + 1, x)],
-                                   current[i] + [(y + 1, x)]]))
+                            (
+                                [i, j],
+                                [
+                                    [p for p in current[j] if p != (y + 1, x)],
+                                    current[i] + [(y + 1, x)],
+                                ],
+                            )
+                        )
                 if x < width - 1 and block_id[y][x] != block_id[y][x + 1]:
                     i = block_id[y][x]
                     j = block_id[y][x + 1]
                     if i == -1 or j == -1:
                         continue
-                    if len(current[i]) > self.min_block_size and len(
-                            current[j]
-                    ) < self.max_block_size and _is_connected(
-                            current[i], (y, x)):
+                    if (
+                        len(current[i]) > self.min_block_size
+                        and len(current[j]) < self.max_block_size
+                        and _is_connected(current[i], (y, x))
+                    ):
                         ret.append(
-                            ([i, j], [[p for p in current[i] if p != (y, x)],
-                                      current[j] + [(y, x)]]))
-                    if len(current[j]) > self.min_block_size and len(
-                            current[i]
-                    ) < self.max_block_size and _is_connected(
-                            current[j], (y, x + 1)):
+                            (
+                                [i, j],
+                                [[p for p in current[i] if p != (y, x)], current[j] + [(y, x)]],
+                            )
+                        )
+                    if (
+                        len(current[j]) > self.min_block_size
+                        and len(current[i]) < self.max_block_size
+                        and _is_connected(current[j], (y, x + 1))
+                    ):
                         ret.append(
-                            ([i,
-                              j], [[p for p in current[j] if p != (y, x + 1)],
-                                   current[i] + [(y, x + 1)]]))
+                            (
+                                [i, j],
+                                [
+                                    [p for p in current[j] if p != (y, x + 1)],
+                                    current[i] + [(y, x + 1)],
+                                ],
+                            )
+                        )
 
         return ret
 
@@ -156,13 +183,10 @@ class SegmentationBuilder2D(Builder):
         exclude, append = update
         if use_deepcopy:
             return [
-                deepcopy(previous[i])
-                for i in range(len(previous)) if i not in exclude
+                deepcopy(previous[i]) for i in range(len(previous)) if i not in exclude
             ] + append
         else:
-            return [
-                previous[i] for i in range(len(previous)) if i not in exclude
-            ] + append
+            return [previous[i] for i in range(len(previous)) if i not in exclude] + append
 
 
 def split_block(block):
@@ -184,8 +208,7 @@ def split_block(block):
             y, x = q.popleft()
             d = ans[(y, x)]
             for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                if (y + dy, x + dx) in block_set and (y + dy,
-                                                      x + dx) not in ans:
+                if (y + dy, x + dx) in block_set and (y + dy, x + dx) not in ans:
                     ans[(y + dy, x + dx)] = d + 1
                     q.append((y + dy, x + dx))
         return ans

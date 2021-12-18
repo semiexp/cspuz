@@ -20,8 +20,8 @@ class TestConstraints:
 
         actual = cspuz.alldifferent(a, [b, c], d, e)
         assert check_equality_expr(
-            actual,
-            Expr(Op.ALLDIFF, [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d, e]))
+            actual, Expr(Op.ALLDIFF, [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d, e])
+        )
 
     def test_fold_or(self, solver):
         a = solver.bool_array((2, 2))
@@ -31,7 +31,8 @@ class TestConstraints:
 
         actual = cspuz.fold_or([[a, b], c], d)
         assert check_equality_expr(
-            actual, Expr(Op.OR, [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d]))
+            actual, Expr(Op.OR, [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d])
+        )
 
     def test_fold_or_empty(self, solver):
         actual = cspuz.fold_or()
@@ -52,8 +53,8 @@ class TestConstraints:
 
         actual = cspuz.fold_and([[a, b], c], d)
         assert check_equality_expr(
-            actual, Expr(Op.AND,
-                         [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d]))
+            actual, Expr(Op.AND, [a[0, 0], a[0, 1], a[1, 0], a[1, 1], b, c, d])
+        )
 
     def test_fold_and_empty(self, solver):
         actual = cspuz.fold_and()

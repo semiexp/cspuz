@@ -58,11 +58,8 @@ class Analyzer(Solver):
             if isinstance(x, (BoolExpr, bool)):
                 flat_constraints.append(x)
             else:
-                raise TypeError(
-                    'each element in \'constraint\' must be BoolExpr-like')
-        new_ids = list(
-            range(len(self.constraints),
-                  len(self.constraints) + len(flat_constraints)))
+                raise TypeError("each element in 'constraint' must be BoolExpr-like")
+        new_ids = list(range(len(self.constraints), len(self.constraints) + len(flat_constraints)))
         if name is None:
             self.axiom_constraints += new_ids
         else:
@@ -70,20 +67,16 @@ class Analyzer(Solver):
         self.constraints += flat_constraints
 
     def _test_unlearnt_fact(self, i, unlearnt_facts, learnt_facts):
-        is_active_constraint = [
-            True for _ in range(len(self.optional_constraints))
-        ]
+        is_active_constraint = [True for _ in range(len(self.optional_constraints))]
         is_active_fact = [True for _ in range(len(learnt_facts))]
 
         def check():
             csp_solver = sugar_extended.CSPSolver(self.variables)
-            csp_solver.add_constraint(
-                [self.constraints[j] for j in self.axiom_constraints])
+            csp_solver.add_constraint([self.constraints[j] for j in self.axiom_constraints])
             for k in range(len(self.optional_constraints)):
                 if is_active_constraint[k]:
                     _, cs = self.optional_constraints[k]
-                    csp_solver.add_constraint(
-                        [self.constraints[j] for j in cs])
+                    csp_solver.add_constraint([self.constraints[j] for j in cs])
             for k in range(len(learnt_facts)):
                 if is_active_fact[k]:
                     vi, val = learnt_facts[k]
@@ -103,12 +96,9 @@ class Analyzer(Solver):
                 is_active_fact[j] = True
 
         active_constraint_ids = [
-            i for i in range(len(is_active_constraint))
-            if is_active_constraint[i]
+            i for i in range(len(is_active_constraint)) if is_active_constraint[i]
         ]
-        active_fact_ids = [
-            i for i in range(len(is_active_fact)) if is_active_fact[i]
-        ]
+        active_fact_ids = [i for i in range(len(is_active_fact)) if is_active_fact[i]]
         score = len(active_constraint_ids) + len(active_fact_ids)
         return score, active_constraint_ids, active_fact_ids
 
@@ -129,8 +119,7 @@ class Analyzer(Solver):
         while len(unlearnt_facts) > 0:
             if n_workers >= 0:
                 with Pool(None if n_workers == 0 else n_workers) as pool:
-                    args = [(i, unlearnt_facts, learnt_facts)
-                            for i in range(len(unlearnt_facts))]
+                    args = [(i, unlearnt_facts, learnt_facts) for i in range(len(unlearnt_facts))]
                     cand_all = pool.starmap(self._test_unlearnt_fact, args)
             else:
                 cand_all = [
@@ -142,8 +131,7 @@ class Analyzer(Solver):
 
             _, active_constraint_ids, active_fact_ids = best_cand
             csp_solver = sugar_extended.CSPSolver(self.variables)
-            csp_solver.add_constraint(
-                [self.constraints[i] for i in self.axiom_constraints])
+            csp_solver.add_constraint([self.constraints[i] for i in self.axiom_constraints])
             for k in active_constraint_ids:
                 _, cs = self.optional_constraints[k]
                 csp_solver.add_constraint([self.constraints[j] for j in cs])
@@ -162,24 +150,20 @@ class Analyzer(Solver):
                 else:
                     new_unlearnt_facts.append((vi, val))
 
-            res.append((
-                [(self.answer_key_name[i], val)
-                 for i, val in new_learnt_facts],
-                [self.optional_constraints[i][0] for i in best_cand[1]],
-                [
-                    self.answer_key_name[learnt_facts[i][0]]
-                    for i in best_cand[2]
-                ],
-            ))
-            print((
-                [(self.answer_key_name[i], val)
-                 for i, val in new_learnt_facts],
-                [self.optional_constraints[i][0] for i in best_cand[1]],
-                [
-                    self.answer_key_name[learnt_facts[i][0]]
-                    for i in best_cand[2]
-                ],
-            ))
+            res.append(
+                (
+                    [(self.answer_key_name[i], val) for i, val in new_learnt_facts],
+                    [self.optional_constraints[i][0] for i in best_cand[1]],
+                    [self.answer_key_name[learnt_facts[i][0]] for i in best_cand[2]],
+                )
+            )
+            print(
+                (
+                    [(self.answer_key_name[i], val) for i, val in new_learnt_facts],
+                    [self.optional_constraints[i][0] for i in best_cand[1]],
+                    [self.answer_key_name[learnt_facts[i][0]] for i in best_cand[2]],
+                )
+            )
             learnt_facts += new_learnt_facts
             unlearnt_facts = new_unlearnt_facts
 

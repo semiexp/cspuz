@@ -51,8 +51,8 @@ def build_neighbor_generator(pattern):
             return pat.copy_with_update(problem, v)
         if isinstance(pat, (list, tuple)):
             ret = [
-                with_update(problem[i], pat[i], pos[1:], v)
-                if i == pos[0] else problem[i] for i in range(len(pat))
+                with_update(problem[i], pat[i], pos[1:], v) if i == pos[0] else problem[i]
+                for i in range(len(pat))
             ]
             if isinstance(pat, tuple):
                 ret = tuple(ret)
@@ -104,13 +104,7 @@ class Choice(Builder):
 
 
 class ArrayBuilder2D(Builder):
-    def __init__(self,
-                 height,
-                 width,
-                 choice,
-                 default,
-                 disallow_adjacent=False,
-                 symmetry=False):
+    def __init__(self, height, width, choice, default, disallow_adjacent=False, symmetry=False):
         self.height = height
         self.width = width
         self.choice = list(choice)
@@ -125,8 +119,7 @@ class ArrayBuilder2D(Builder):
         self.symmetry = symmetry
 
     def initial(self):
-        return [[self.default for _ in range(self.width)]
-                for _ in range(self.height)]
+        return [[self.default for _ in range(self.width)] for _ in range(self.height)]
 
     def candidates(self, current):
         global _use_deterministic_prng
@@ -137,8 +130,11 @@ class ArrayBuilder2D(Builder):
                 for dy, dx in self.disallow_adjacent:
                     y2 = y + dy
                     x2 = x + dx
-                    if 0 <= y2 < self.height and 0 <= x2 < self.width \
-                            and current[y2][x2] != self.default:
+                    if (
+                        0 <= y2 < self.height
+                        and 0 <= x2 < self.width
+                        and current[y2][x2] != self.default
+                    ):
                         default_only = True
                 if self.symmetry:
                     y2 = self.height - 1 - y
@@ -146,8 +142,7 @@ class ArrayBuilder2D(Builder):
                     if (y2 - y, x2 - x) in self.disallow_adjacent:
                         default_only = True
                     if current[y][x] != self.default:
-                        ret.append([(y, x, self.default),
-                                    (y2, x2, self.default)])
+                        ret.append([(y, x, self.default), (y2, x2, self.default)])
                     if not default_only:
                         if current[y][x] == self.default:
                             for v in self.non_default:

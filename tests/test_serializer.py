@@ -1,8 +1,20 @@
 import pytest
 
-from cspuz.problem_serializer import (CombinatorEnv, Dict, FixStr, Spaces,
-                                      DecInt, HexInt, MultiDigit, OneOf, Tupl,
-                                      Seq, Grid, Rooms, ValuedRooms)
+from cspuz.problem_serializer import (
+    CombinatorEnv,
+    Dict,
+    FixStr,
+    Spaces,
+    DecInt,
+    HexInt,
+    MultiDigit,
+    OneOf,
+    Tupl,
+    Seq,
+    Grid,
+    Rooms,
+    ValuedRooms,
+)
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 from cspuz.puzzle.norinori import serialize_norinori, deserialize_norinori
@@ -38,7 +50,7 @@ class TestSerializerCombinators:
 
     def test_spaces(self):
         env = CombinatorEnv(height=1, width=1)
-        combinator = Spaces(0, 'f')
+        combinator = Spaces(0, "f")
 
         assert combinator.serialize(env, [0, 0, 0], 0) == (3, "h")
         assert combinator.serialize(env, [0, 0, 0], 1) == (2, "g")
@@ -139,90 +151,163 @@ class TestSerializerCombinators:
         assert combinator.serialize(env, [[1, 42, 256]], 0) == (1, "1-2a+100")
         assert combinator.serialize(env, [[1, 42, 256]], 1) is None
 
-        assert combinator.deserialize(env, "1-2a+100", 0) == (8, [[1, 42,
-                                                                   256]])
+        assert combinator.deserialize(env, "1-2a+100", 0) == (8, [[1, 42, 256]])
         assert combinator.deserialize(env, "1-2a+100", 1) is None
 
     def test_grid(self):
         env = CombinatorEnv(height=2, width=3)
         combinator = Grid(HexInt())
 
-        assert combinator.serialize(env, [[
-            [1, 42, 256],
-            [0, 1, 2],
-        ]], 0) == (1, "1-2a+100012")
-        assert combinator.serialize(env, [[
-            [1, 42, 256],
-            [0, 1, 2],
-        ]], 1) is None
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [1, 42, 256],
+                        [0, 1, 2],
+                    ]
+                ],
+                0,
+            )
+            == (1, "1-2a+100012")
+        )
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [1, 42, 256],
+                        [0, 1, 2],
+                    ]
+                ],
+                1,
+            )
+            is None
+        )
 
-        assert combinator.deserialize(env, "1-2a+100012",
-                                      0) == (11, [[[1, 42, 256], [0, 1, 2]]])
+        assert combinator.deserialize(env, "1-2a+100012", 0) == (11, [[[1, 42, 256], [0, 1, 2]]])
         assert combinator.deserialize(env, "1-2a+100012", 1) is None
 
     def test_grid_fixed_size(self):
         env = CombinatorEnv(height=1, width=1)
         combinator = Grid(HexInt(), height=2, width=3)
 
-        assert combinator.serialize(env, [[
-            [1, 42, 256],
-            [0, 1, 2],
-        ]], 0) == (1, "1-2a+100012")
-        assert combinator.serialize(env, [[
-            [1, 42, 256],
-            [0, 1, 2],
-        ]], 1) is None
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [1, 42, 256],
+                        [0, 1, 2],
+                    ]
+                ],
+                0,
+            )
+            == (1, "1-2a+100012")
+        )
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [1, 42, 256],
+                        [0, 1, 2],
+                    ]
+                ],
+                1,
+            )
+            is None
+        )
 
-        assert combinator.deserialize(env, "1-2a+100012",
-                                      0) == (11, [[[1, 42, 256], [0, 1, 2]]])
+        assert combinator.deserialize(env, "1-2a+100012", 0) == (11, [[[1, 42, 256], [0, 1, 2]]])
         assert combinator.deserialize(env, "1-2a+100012", 1) is None
 
     def test_rooms(self):
         env = CombinatorEnv(height=4, width=3)
         combinator = Rooms()
 
-        assert combinator.serialize(env, [[
-            [(0, 0), (0, 1)],
-            [(0, 2), (1, 1), (1, 2)],
-            [(1, 0), (2, 0), (3, 0), (3, 1)],
-            [(2, 1), (2, 2), (3, 2)],
-        ]], 0) == (1, "d4pk")
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [(0, 0), (0, 1)],
+                        [(0, 2), (1, 1), (1, 2)],
+                        [(1, 0), (2, 0), (3, 0), (3, 1)],
+                        [(2, 1), (2, 2), (3, 2)],
+                    ]
+                ],
+                0,
+            )
+            == (1, "d4pk")
+        )
 
         with pytest.raises(ValueError):
-            combinator.serialize(env, [[
-                [(0, 0), (0, 1)],
-                [(0, 2), (1, 1), (1, 2)],
-                [(1, 0), (3, 0), (3, 1)],
-                [(2, 1), (2, 2), (3, 2)],
-            ]], 0)  # (2, 0) does not belong to any room
+            combinator.serialize(
+                env,
+                [
+                    [
+                        [(0, 0), (0, 1)],
+                        [(0, 2), (1, 1), (1, 2)],
+                        [(1, 0), (3, 0), (3, 1)],
+                        [(2, 1), (2, 2), (3, 2)],
+                    ]
+                ],
+                0,
+            )  # (2, 0) does not belong to any room
 
-        assert combinator.deserialize(env, "d4pk", 0) == (4, [[
-            [(0, 0), (0, 1)],
-            [(0, 2), (1, 1), (1, 2)],
-            [(1, 0), (2, 0), (3, 0), (3, 1)],
-            [(2, 1), (2, 2), (3, 2)],
-        ]])
+        assert combinator.deserialize(env, "d4pk", 0) == (
+            4,
+            [
+                [
+                    [(0, 0), (0, 1)],
+                    [(0, 2), (1, 1), (1, 2)],
+                    [(1, 0), (2, 0), (3, 0), (3, 1)],
+                    [(2, 1), (2, 2), (3, 2)],
+                ]
+            ],
+        )
 
         with pytest.raises(ValueError):
             combinator.deserialize(env, "dkpg", 0)  # redundant border
 
     def test_valued_rooms(self):
         env = CombinatorEnv(height=4, width=3)
-        combinator = ValuedRooms(OneOf(HexInt(), Spaces(-1, 'g')))
+        combinator = ValuedRooms(OneOf(HexInt(), Spaces(-1, "g")))
 
-        assert combinator.serialize(env, [([
-            [(0, 0), (0, 1)],
-            [(0, 2), (1, 2), (2, 1), (2, 2)],
-            [(1, 0), (1, 1), (2, 0), (3, 0)],
-            [(3, 1), (3, 2)],
-        ], [1, 2, 0, -1])], 0) == (1, "b8p6120g")
+        assert (
+            combinator.serialize(
+                env,
+                [
+                    (
+                        [
+                            [(0, 0), (0, 1)],
+                            [(0, 2), (1, 2), (2, 1), (2, 2)],
+                            [(1, 0), (1, 1), (2, 0), (3, 0)],
+                            [(3, 1), (3, 2)],
+                        ],
+                        [1, 2, 0, -1],
+                    )
+                ],
+                0,
+            )
+            == (1, "b8p6120g")
+        )
 
-        assert combinator.deserialize(env, "b8p6120g", 0) == (8, [([
-            [(0, 0), (0, 1)],
-            [(0, 2), (1, 2), (2, 1), (2, 2)],
-            [(1, 0), (1, 1), (2, 0), (3, 0)],
-            [(3, 1), (3, 2)],
-        ], [1, 2, 0, -1])])
+        assert combinator.deserialize(env, "b8p6120g", 0) == (
+            8,
+            [
+                (
+                    [
+                        [(0, 0), (0, 1)],
+                        [(0, 2), (1, 2), (2, 1), (2, 2)],
+                        [(1, 0), (1, 1), (2, 0), (3, 0)],
+                        [(3, 1), (3, 2)],
+                    ],
+                    [1, 2, 0, -1],
+                )
+            ],
+        )
 
 
 class TestSerializerPuzzles:
@@ -268,15 +353,20 @@ class TestSerializerPuzzles:
         # https://puzsq.jp/main/puzzle_play.php?pid=7919
         url = "https://puzz.link/p?norinori/6/6/93op35pb9vpq"
         problem = deserialize_norinori(url)
-        assert problem == (6, 6, [[(0, 0), (0, 1)],
-                                  [(0, 2), (0, 3), (0, 4), (1, 0), (1, 1),
-                                   (1, 2), (1, 3), (2, 1), (3, 1)],
-                                  [(0, 5), (1, 5)],
-                                  [(1, 4), (2, 2), (2, 3), (2, 4), (2, 5)],
-                                  [(2, 0), (3, 0)],
-                                  [(3, 2), (3, 3), (3, 4), (4, 4)],
-                                  [(3, 5), (4, 5), (5, 5)],
-                                  [(4, 0), (4, 1), (4, 2), (4, 3), (5, 3),
-                                   (5, 4)], [(5, 0), (5, 1), (5, 2)]])
+        assert problem == (
+            6,
+            6,
+            [
+                [(0, 0), (0, 1)],
+                [(0, 2), (0, 3), (0, 4), (1, 0), (1, 1), (1, 2), (1, 3), (2, 1), (3, 1)],
+                [(0, 5), (1, 5)],
+                [(1, 4), (2, 2), (2, 3), (2, 4), (2, 5)],
+                [(2, 0), (3, 0)],
+                [(3, 2), (3, 3), (3, 4), (4, 4)],
+                [(3, 5), (4, 5), (5, 5)],
+                [(4, 0), (4, 1), (4, 2), (4, 3), (5, 3), (5, 4)],
+                [(5, 0), (5, 1), (5, 2)],
+            ],
+        )
         reserialized_url = serialize_norinori(*problem)
         assert url == reserialized_url

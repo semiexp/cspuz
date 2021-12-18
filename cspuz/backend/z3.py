@@ -14,8 +14,7 @@ def _convert_expr(e, variables_dict):
     if isinstance(e, (BoolVar, IntVar)):
         return variables_dict[e.id]
     else:
-        operands = list(
-            map(lambda x: _convert_expr(x, variables_dict), e.operands))
+        operands = list(map(lambda x: _convert_expr(x, variables_dict), e.operands))
         if e.op == Op.NEG:
             return -operands[0]
         elif e.op == Op.ADD:
@@ -62,26 +61,26 @@ class Z3Backend(Backend):
     def __init__(self, variables):
         global z3
         if z3 is None:
-            z3 = importlib.import_module('z3')
+            z3 = importlib.import_module("z3")
 
         self.variables = variables
         self.variables_dict = dict()
         id_last = 0
         for v in variables:
             if isinstance(v, BoolVar):
-                self.variables_dict[v.id] = z3.Bool('b' + str(id_last))
+                self.variables_dict[v.id] = z3.Bool("b" + str(id_last))
             elif isinstance(v, IntVar):
-                self.variables_dict[v.id] = z3.Int('i' + str(id_last))
+                self.variables_dict[v.id] = z3.Int("i" + str(id_last))
             id_last += 1
         self.converted_constraints = []
 
     def add_constraint(self, constraint):
         if isinstance(constraint, list):
             self.converted_constraints += map(
-                lambda e: _convert_expr(e, self.variables_dict), constraint)
+                lambda e: _convert_expr(e, self.variables_dict), constraint
+            )
         else:
-            self.converted_constraints.append(
-                _convert_expr(constraint, self.variables_dict))
+            self.converted_constraints.append(_convert_expr(constraint, self.variables_dict))
 
     def solve(self):
         solver = z3.Solver()

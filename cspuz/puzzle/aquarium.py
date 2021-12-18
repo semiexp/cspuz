@@ -3,8 +3,12 @@ import sys
 from cspuz import Solver
 from cspuz.puzzle import util
 from cspuz.constraints import count_true
-from cspuz.generator import (generate_problem, Choice, SegmentationBuilder2D,
-                             count_non_default_values)
+from cspuz.generator import (
+    generate_problem,
+    Choice,
+    SegmentationBuilder2D,
+    count_non_default_values,
+)
 
 
 def solve_aquarium(height, width, blocks, clue_row, clue_col):
@@ -33,34 +37,29 @@ def solve_aquarium(height, width, blocks, clue_row, clue_col):
 
 
 def generate_aquarium(height, width, verbose=False):
-    builder_pattern = (SegmentationBuilder2D(
-        height,
-        width,
-        min_block_size=1,
-        max_block_size=3,
-        allow_unmet_constraints_first=False), [
-            Choice([-1] + list(range(3, width - 2)), default=-1)
-            for _ in range(height)
-        ], [
-            Choice([-1] + list(range(3, height - 2)), default=-1)
-            for _ in range(width)
-        ])
+    builder_pattern = (
+        SegmentationBuilder2D(
+            height, width, min_block_size=1, max_block_size=3, allow_unmet_constraints_first=False
+        ),
+        [Choice([-1] + list(range(3, width - 2)), default=-1) for _ in range(height)],
+        [Choice([-1] + list(range(3, height - 2)), default=-1) for _ in range(width)],
+    )
     generated = generate_problem(
         lambda problem: solve_aquarium(height, width, *problem),
         builder_pattern=builder_pattern,
-        clue_penalty=lambda problem: count_non_default_values(
-            problem[1], default=-1, weight=4) + count_non_default_values(
-                problem[2], default=-1, weight=4),
-        verbose=verbose)
+        clue_penalty=lambda problem: count_non_default_values(problem[1], default=-1, weight=4)
+        + count_non_default_values(problem[2], default=-1, weight=4),
+        verbose=verbose,
+    )
     return generated
 
 
 def problem_to_url(height, width, blocks, clue_row, clue_col):
     blocks_str = util.encode_grid_segmentation(
-        height, width, util.blocks_to_block_id(height, width, blocks))
+        height, width, util.blocks_to_block_id(height, width, blocks)
+    )
     clues_str = util.encode_array(clue_col + clue_row, empty=-1)
-    return 'https://puzz.link/p?aquarium/{}/{}/{}/{}'.format(
-        width, height, blocks_str, clues_str)
+    return "https://puzz.link/p?aquarium/{}/{}/{}/{}".format(width, height, blocks_str, clues_str)
 
 
 def _main():
@@ -75,5 +74,5 @@ def _main():
                 print(problem_to_url(height, width, *gen))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

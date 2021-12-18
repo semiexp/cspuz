@@ -5,8 +5,7 @@ import subprocess
 import cspuz
 from cspuz import Solver, BoolGridFrame, graph
 from cspuz.puzzle import util
-from cspuz.generator import (generate_problem, ArrayBuilder2D,
-                             count_non_default_values)
+from cspuz.generator import generate_problem, ArrayBuilder2D, count_non_default_values
 
 
 def solve_simpleloop(height, width, blocked, pivot):
@@ -48,14 +47,11 @@ def generate_simpleloop(height, width, verbose):
 
     generated = generate_problem(
         lambda problem: solve_simpleloop(height, width, problem, pivot),
-        builder_pattern=ArrayBuilder2D(height,
-                                       width, [0, 1],
-                                       default=0,
-                                       disallow_adjacent=True),
-        clue_penalty=lambda problem: count_non_default_values(
-            problem, default=0, weight=10),
+        builder_pattern=ArrayBuilder2D(height, width, [0, 1], default=0, disallow_adjacent=True),
+        clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=10),
         pretest=pretest,
-        verbose=verbose)
+        verbose=verbose,
+    )
     if generated is None:
         return None
     num_pass = 0
@@ -78,15 +74,11 @@ def _main():
             try:
                 problem = generate_simpleloop(height, width, verbose=True)
                 if problem is not None:
-                    print(util.stringify_array(problem, {
-                        0: '.',
-                        1: '#'
-                    }),
-                          flush=True)
-                    print('', flush=True)
+                    print(util.stringify_array(problem, {0: ".", 1: "#"}), flush=True)
+                    print("", flush=True)
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

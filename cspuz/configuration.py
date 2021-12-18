@@ -58,6 +58,7 @@ class Config(object):
     `default_backend` correctly, rather than specifying the backend on calling
     `Solver.solve` or `Solver.solve_irrefutably`.
     """
+
     default_backend: str
     backend_path: Optional[str]
     csugar_binding: Optional[str]
@@ -65,17 +66,15 @@ class Config(object):
     solver_timeout: Optional[float]
 
     def __init__(self, infer_from_env=True):
-        self.default_backend = _get_default(infer_from_env,
-                                            'CSPUZ_DEFAULT_BACKEND', 'sugar')
-        self.backend_path = _get_default(infer_from_env, 'CSPUZ_BACKEND_PATH',
-                                         None)
-        if self.default_backend in ('csugar', 'enigma_csp'):
-            graph_primitive_default = 'True'
+        self.default_backend = _get_default(infer_from_env, "CSPUZ_DEFAULT_BACKEND", "sugar")
+        self.backend_path = _get_default(infer_from_env, "CSPUZ_BACKEND_PATH", None)
+        if self.default_backend in ("csugar", "enigma_csp"):
+            graph_primitive_default = "True"
         else:
-            graph_primitive_default = 'False'
+            graph_primitive_default = "False"
         self.use_graph_primitive = _strtobool_optional(
-            _get_default(infer_from_env, 'CSPUZ_USE_GRAPH_PRIMITIVE',
-                         graph_primitive_default))
+            _get_default(infer_from_env, "CSPUZ_USE_GRAPH_PRIMITIVE", graph_primitive_default)
+        )
         self.solver_timeout = None
 
 

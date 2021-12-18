@@ -3,9 +3,12 @@ import sys
 from cspuz import Solver
 from cspuz.constraints import alldifferent, fold_and
 from cspuz.puzzle import util
-from cspuz.generator import (Choice, generate_problem,
-                             build_neighbor_generator,
-                             count_non_default_values)
+from cspuz.generator import (
+    Choice,
+    generate_problem,
+    build_neighbor_generator,
+    count_non_default_values,
+)
 
 
 def solve_building(n, up, dw, lf, rg):
@@ -28,13 +31,11 @@ def solve_building(n, up, dw, lf, rg):
         if up[i] >= 1:
             solver.ensure(num_visible_buildings(answer[:, i]) == up[i])
         if dw[i] >= 1:
-            solver.ensure(
-                num_visible_buildings(reversed(list(answer[:, i]))) == dw[i])
+            solver.ensure(num_visible_buildings(reversed(list(answer[:, i]))) == dw[i])
         if lf[i] >= 1:
             solver.ensure(num_visible_buildings(answer[i, :]) == lf[i])
         if rg[i] >= 1:
-            solver.ensure(
-                num_visible_buildings(reversed(list(answer[i, :]))) == rg[i])
+            solver.ensure(num_visible_buildings(reversed(list(answer[i, :]))) == rg[i])
 
     is_sat = solver.solve()
     return is_sat, answer
@@ -42,15 +43,15 @@ def solve_building(n, up, dw, lf, rg):
 
 def generate_building(size, verbose=False):
     initial, neighbor = build_neighbor_generator(
-        [[Choice(range(0, size + 1), default=0) for _ in range(size)]
-         for _ in range(4)])
+        [[Choice(range(0, size + 1), default=0) for _ in range(size)] for _ in range(4)]
+    )
     generated = generate_problem(
         lambda problem: solve_building(size, *problem),
         initial,
         neighbor,
-        clue_penalty=lambda problem: count_non_default_values(
-            problem, default=0, weight=3.0),
-        verbose=verbose)
+        clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=3.0),
+        verbose=verbose,
+    )
     if generated is not None:
         return generated
 
@@ -75,5 +76,5 @@ def _main():
                 print(problem)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

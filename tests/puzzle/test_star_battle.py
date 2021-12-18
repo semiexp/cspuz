@@ -12,5 +12,5 @@ def test_serialization():
         [2, 4, 4, 1, 4, 5],
         [2, 2, 4, 4, 4, 5],
     ]
-    expected = 'http://pzv.jp/p.html?starbattle/6/6/1/2u9gn9c9jpmk'
+    expected = "http://pzv.jp/p.html?starbattle/6/6/1/2u9gn9c9jpmk"
     assert star_battle.problem_to_pzv_url(n, k, block_id) == expected

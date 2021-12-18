@@ -1,13 +1,35 @@
 import functools
-from typing import (Any, Generic, Iterable, Iterator, List, Literal, Optional,
-                    Tuple, TypeVar, Union, cast, overload)
+from typing import (
+    Any,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
-from .expr import (BoolExpr, BoolExprLike, BoolOp, Expr, ExprLike, IntExpr,
-                   IntExprLike, IntOp, Op, is_bool_op)
+from .expr import (
+    BoolExpr,
+    BoolExprLike,
+    BoolOp,
+    Expr,
+    ExprLike,
+    IntExpr,
+    IntExprLike,
+    IntOp,
+    Op,
+    is_bool_op,
+)
 
-T = TypeVar('T', bound=Expr)
-IntArray1DLike = Union['IntArray1D', Iterable[IntExprLike]]
-BoolArray1DLike = Union['BoolArray1D', Iterable[BoolExprLike]]
+T = TypeVar("T", bound=Expr)
+IntArray1DLike = Union["IntArray1D", Iterable[IntExprLike]]
+BoolArray1DLike = Union["BoolArray1D", Iterable[BoolExprLike]]
 
 
 class Array1D(Generic[T]):
@@ -16,7 +38,7 @@ class Array1D(Generic[T]):
 
     def __init__(self, data: Iterable[T]):
         self.data = list(data)
-        self.shape = (len(self.data), )
+        self.shape = (len(self.data),)
 
     def size(self) -> int:
         return self.shape[0]
@@ -30,12 +52,12 @@ class Array1D(Generic[T]):
 
 def _infer_shape(data: List[List[T]]) -> Tuple[int, int]:
     if len(data) == 0:
-        raise ValueError('shape cannot be inferred for empty lists')
+        raise ValueError("shape cannot be inferred for empty lists")
     height = len(data)
     width = len(data[0])
     for i in range(1, height):
         if len(data[i]) != width:
-            raise ValueError('shape cannot be inferred for jugged arrays')
+            raise ValueError("shape cannot be inferred for jugged arrays")
 
     return height, width
 
@@ -47,16 +69,13 @@ def _flatten(data: List[List[T]]) -> List[T]:
     return ret
 
 
-def _parse_range(size: int, key: Union[int,
-                                       slice]) -> Tuple[bool, int, int, int]:
+def _parse_range(size: int, key: Union[int, slice]) -> Tuple[bool, int, int, int]:
     if isinstance(key, int):
         p = key
         if p < 0:
             p += size
         if not 0 <= p < size:
-            raise IndexError(
-                'index {} is out of bounds for the axis with size {}'.format(
-                    p, size))
+            raise IndexError("index {} is out of bounds for the axis with size {}".format(p, size))
         return True, p, p + 1, 1
     else:
         start = key.start
@@ -82,7 +101,7 @@ def _parse_range(size: int, key: Union[int,
 
 def _range_size(start, stop, step):
     if step == 0:
-        raise ValueError('step must not be zero')
+        raise ValueError("step must not be zero")
     elif step > 0:
         if start >= stop:
             return 0
@@ -99,12 +118,15 @@ class Array2D(Generic[T]):
     shape: Tuple[int, int]
     data: List[T]
 
-    def __init__(self,
-                 data: Union[Iterable[Iterable[T]], Iterable[T]],
-                 shape: Optional[Tuple[int, int]] = None):
+    def __init__(
+        self,
+        data: Union[Iterable[Iterable[T]], Iterable[T]],
+        shape: Optional[Tuple[int, int]] = None,
+    ):
         if shape is None:
             data_list_list: List[List[T]] = list(
-                map(lambda e: list(e), cast(Iterable[Iterable[T]], data)))
+                map(lambda e: list(e), cast(Iterable[Iterable[T]], data))
+            )
             self.shape = _infer_shape(data_list_list)
             self.data = _flatten(data_list_list)
         else:
@@ -112,8 +134,8 @@ class Array2D(Generic[T]):
             size = shape[0] * shape[1]
             if len(data_list) != size:
                 raise ValueError(
-                    f'size of `data` ({size}) is inconsistent with the given '
-                    'shape {shape}')
+                    f"size of `data` ({size}) is inconsistent with the given " "shape {shape}"
+                )
             self.shape = shape
             self.data = data_list
 
@@ -122,24 +144,23 @@ class Array2D(Generic[T]):
         ...
 
     @overload
-    def _getitem_impl(
-            self, key: Union[int, Tuple[int, slice],
-                             Tuple[slice, int]]) -> Array1D[T]:
+    def _getitem_impl(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> Array1D[T]:
         ...
 
     @overload
-    def _getitem_impl(self, key: Union[slice, Tuple[slice,
-                                                    slice]]) -> 'Array2D[T]':
+    def _getitem_impl(self, key: Union[slice, Tuple[slice, slice]]) -> "Array2D[T]":
         ...
 
     def _getitem_impl(
-        self, key: Union[int, slice, Tuple[int, int], Tuple[int, slice],
-                         Tuple[slice, int], Tuple[slice, slice]]
-    ) -> Union[T, Array1D[T], 'Array2D[T]']:
+        self,
+        key: Union[
+            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+        ],
+    ) -> Union[T, Array1D[T], "Array2D[T]"]:
         if isinstance(key, (int, slice)):
             return self._getitem_impl(
-                cast(Union[Tuple[int, slice], Tuple[slice, slice]],
-                     (key, slice(None, None))))
+                cast(Union[Tuple[int, slice], Tuple[slice, slice]], (key, slice(None, None)))
+            )
         y_fixed, y_start, y_stop, y_step = _parse_range(self.shape[0], key[0])
         x_fixed, x_start, x_stop, x_step = _parse_range(self.shape[1], key[1])
         y_size = _range_size(y_start, y_stop, y_step)
@@ -174,38 +195,36 @@ def _is_int_like(value: Any) -> bool:
     return isinstance(value, (IntExpr, int, IntArray1D, IntArray2D))
 
 
-ElementwiseOperands = List[Union[BoolExprLike, 'BoolArray1D', 'BoolArray2D',
-                                 IntExprLike, 'IntArray1D', 'IntArray2D']]
+ElementwiseOperands = List[
+    Union[BoolExprLike, "BoolArray1D", "BoolArray2D", IntExprLike, "IntArray1D", "IntArray2D"]
+]
 
 
 @overload
-def _elementwise(op: BoolOp, shape: Tuple[int],
-                 operands: ElementwiseOperands) -> 'BoolArray1D':
+def _elementwise(op: BoolOp, shape: Tuple[int], operands: ElementwiseOperands) -> "BoolArray1D":
     ...
 
 
 @overload
-def _elementwise(op: IntOp, shape: Tuple[int],
-                 operands: ElementwiseOperands) -> 'IntArray1D':
+def _elementwise(op: IntOp, shape: Tuple[int], operands: ElementwiseOperands) -> "IntArray1D":
     ...
 
 
 @overload
-def _elementwise(op: BoolOp, shape: Tuple[int, int],
-                 operands: ElementwiseOperands) -> 'BoolArray2D':
+def _elementwise(
+    op: BoolOp, shape: Tuple[int, int], operands: ElementwiseOperands
+) -> "BoolArray2D":
     ...
 
 
 @overload
-def _elementwise(op: IntOp, shape: Tuple[int, int],
-                 operands: ElementwiseOperands) -> 'IntArray2D':
+def _elementwise(op: IntOp, shape: Tuple[int, int], operands: ElementwiseOperands) -> "IntArray2D":
     ...
 
 
 def _elementwise(
-    op: Op, shape: Union[Tuple[int], Tuple[int,
-                                           int]], operands: ElementwiseOperands
-) -> Union['BoolArray1D', 'IntArray1D', 'BoolArray2D', 'IntArray2D']:
+    op: Op, shape: Union[Tuple[int], Tuple[int, int]], operands: ElementwiseOperands
+) -> Union["BoolArray1D", "IntArray1D", "BoolArray2D", "IntArray2D"]:
     # type check
     if op in [Op.EQ, Op.NE, Op.LE, Op.LT, Op.GE, Op.GT]:
         if len(operands) != 2 or not all(map(_is_int_like, operands)):
@@ -226,26 +245,24 @@ def _elementwise(
         if len(operands) != 1 or not _is_int_like(operands[0]):
             return NotImplemented
     elif op == Op.IF:
-        if len(operands) != 3 or not (_is_bool_like(operands[0])
-                                      and _is_int_like(operands[1])
-                                      and _is_int_like(operands[2])):
+        if len(operands) != 3 or not (
+            _is_bool_like(operands[0]) and _is_int_like(operands[1]) and _is_int_like(operands[2])
+        ):
             return NotImplemented
     else:
-        raise ValueError(f'unknown operator {op}')
+        raise ValueError(f"unknown operator {op}")
 
     # shape check
     for operand in operands:
         if isinstance(operand, (Array1D, Array2D)):
             if operand.shape is not None and operand.shape != shape:
-                raise ValueError(
-                    f'shape mismatch: {shape} and {operand.shape}')
+                raise ValueError(f"shape mismatch: {shape} and {operand.shape}")
 
     if shape is None:
-        raise ValueError(
-            'no Array is given as an operand of collective operation')
+        raise ValueError("no Array is given as an operand of collective operation")
 
     if not (1 <= len(shape) <= 2):
-        raise ValueError('number of dimensions must be 1 or 2')
+        raise ValueError("number of dimensions must be 1 or 2")
 
     size = functools.reduce(lambda x, y: x * y, shape, 1)
 
@@ -272,54 +289,50 @@ def _elementwise(
             return IntArray1D(cast(List[IntExpr], res))
     else:
         if bool_op:
-            return BoolArray2D(cast(List[BoolExpr], res),
-                               cast(Tuple[int, int], shape))
+            return BoolArray2D(cast(List[BoolExpr], res), cast(Tuple[int, int], shape))
         else:
-            return IntArray2D(cast(List[IntExpr], res),
-                              cast(Tuple[int, int], shape))
+            return IntArray2D(cast(List[IntExpr], res), cast(Tuple[int, int], shape))
 
 
-BoolOperand1D = Union[BoolExprLike, 'BoolArray1D']
-IntOperand1D = Union[IntExprLike, 'IntArray1D']
+BoolOperand1D = Union[BoolExprLike, "BoolArray1D"]
+IntOperand1D = Union[IntExprLike, "IntArray1D"]
 
 
 class BoolArray1D(Array1D[BoolExpr]):
     def __init__(self, data: Union[Iterable[BoolExpr]]):
         super().__init__(data)
 
-    def cond(self, t: IntOperand1D, f: IntOperand1D) -> 'IntArray1D':
+    def cond(self, t: IntOperand1D, f: IntOperand1D) -> "IntArray1D":
         res = _elementwise(Op.IF, self.shape, [self, t, f])
         if res is NotImplemented:
-            raise TypeError(
-                'unsupported argument type(s) for operator \'cond\'')
+            raise TypeError("unsupported argument type(s) for operator 'cond'")
         return res
 
-    def then(self, other: BoolOperand1D) -> 'BoolArray1D':
+    def then(self, other: BoolOperand1D) -> "BoolArray1D":
         res = _elementwise(Op.IMP, self.shape, [self, other])
         if res is NotImplemented:
-            raise TypeError(
-                'unsupported argument type(s) for operator \'cond\'')
+            raise TypeError("unsupported argument type(s) for operator 'cond'")
         return res
 
-    def __invert__(self) -> 'BoolArray1D':
+    def __invert__(self) -> "BoolArray1D":
         return _elementwise(Op.NOT, self.shape, [self])
 
-    def __and__(self, other: BoolOperand1D) -> 'BoolArray1D':
+    def __and__(self, other: BoolOperand1D) -> "BoolArray1D":
         return _elementwise(Op.AND, self.shape, [self, other])
 
-    def __rand__(self, other: BoolOperand1D) -> 'BoolArray1D':
+    def __rand__(self, other: BoolOperand1D) -> "BoolArray1D":
         return _elementwise(Op.AND, self.shape, [other, self])
 
-    def __or__(self, other: BoolOperand1D) -> 'BoolArray1D':
+    def __or__(self, other: BoolOperand1D) -> "BoolArray1D":
         return _elementwise(Op.OR, self.shape, [self, other])
 
-    def __ror__(self, other: BoolOperand1D) -> 'BoolArray1D':
+    def __ror__(self, other: BoolOperand1D) -> "BoolArray1D":
         return _elementwise(Op.OR, self.shape, [other, self])
 
-    def __eq__(self, other: BoolOperand1D) -> 'BoolArray1D':  # type: ignore
+    def __eq__(self, other: BoolOperand1D) -> "BoolArray1D":  # type: ignore
         return _elementwise(Op.IFF, self.shape, [self, other])
 
-    def __ne__(self, other: BoolOperand1D) -> 'BoolArray1D':  # type: ignore
+    def __ne__(self, other: BoolOperand1D) -> "BoolArray1D":  # type: ignore
         return _elementwise(Op.XOR, self.shape, [self, other])
 
     def fold_or(self) -> BoolExpr:
@@ -333,11 +346,10 @@ class BoolArray1D(Array1D[BoolExpr]):
         ...
 
     @overload
-    def __getitem__(self, key: slice) -> 'BoolArray1D':
+    def __getitem__(self, key: slice) -> "BoolArray1D":
         ...
 
-    def __getitem__(self, key: Union[int,
-                                     slice]) -> Union[BoolExpr, 'BoolArray1D']:
+    def __getitem__(self, key: Union[int, slice]) -> Union[BoolExpr, "BoolArray1D"]:
         if isinstance(key, int):
             return self.data[key]
         else:
@@ -349,7 +361,7 @@ class BoolArray1D(Array1D[BoolExpr]):
     def __iter__(self) -> Iterator[BoolExpr]:
         return iter(self.data)
 
-    def reshape(self, shape: Tuple[int, int]) -> 'BoolArray2D':
+    def reshape(self, shape: Tuple[int, int]) -> "BoolArray2D":
         return _reshape(self, shape)
 
 
@@ -357,37 +369,37 @@ class IntArray1D(Array1D[IntExpr]):
     def __init__(self, data: Union[Iterable[IntExpr]]):
         super().__init__(data)
 
-    def __neg__(self) -> 'IntArray1D':
+    def __neg__(self) -> "IntArray1D":
         return _elementwise(Op.NEG, self.shape, [self])
 
-    def __add__(self, other: IntOperand1D) -> 'IntArray1D':
+    def __add__(self, other: IntOperand1D) -> "IntArray1D":
         return _elementwise(Op.ADD, self.shape, [self, other])
 
-    def __radd__(self, other: IntOperand1D) -> 'IntArray1D':
+    def __radd__(self, other: IntOperand1D) -> "IntArray1D":
         return _elementwise(Op.ADD, self.shape, [other, self])
 
-    def __sub__(self, other: IntOperand1D) -> 'IntArray1D':
+    def __sub__(self, other: IntOperand1D) -> "IntArray1D":
         return _elementwise(Op.SUB, self.shape, [self, other])
 
-    def __rsub__(self, other: IntOperand1D) -> 'IntArray1D':
+    def __rsub__(self, other: IntOperand1D) -> "IntArray1D":
         return _elementwise(Op.SUB, self.shape, [other, self])
 
-    def __eq__(self, other: IntOperand1D) -> 'BoolArray1D':  # type: ignore
+    def __eq__(self, other: IntOperand1D) -> "BoolArray1D":  # type: ignore
         return _elementwise(Op.EQ, self.shape, [self, other])
 
-    def __ne__(self, other: IntOperand1D) -> 'BoolArray1D':  # type: ignore
+    def __ne__(self, other: IntOperand1D) -> "BoolArray1D":  # type: ignore
         return _elementwise(Op.NE, self.shape, [self, other])
 
-    def __ge__(self, other: IntOperand1D) -> 'BoolArray1D':
+    def __ge__(self, other: IntOperand1D) -> "BoolArray1D":
         return _elementwise(Op.GE, self.shape, [self, other])
 
-    def __gt__(self, other: IntOperand1D) -> 'BoolArray1D':
+    def __gt__(self, other: IntOperand1D) -> "BoolArray1D":
         return _elementwise(Op.GT, self.shape, [self, other])
 
-    def __le__(self, other: IntOperand1D) -> 'BoolArray1D':
+    def __le__(self, other: IntOperand1D) -> "BoolArray1D":
         return _elementwise(Op.LE, self.shape, [self, other])
 
-    def __lt__(self, other: IntOperand1D) -> 'BoolArray1D':
+    def __lt__(self, other: IntOperand1D) -> "BoolArray1D":
         return _elementwise(Op.LT, self.shape, [self, other])
 
     @overload
@@ -395,22 +407,21 @@ class IntArray1D(Array1D[IntExpr]):
         ...
 
     @overload
-    def __getitem__(self, key: slice) -> 'IntArray1D':
+    def __getitem__(self, key: slice) -> "IntArray1D":
         ...
 
-    def __getitem__(self, key: Union[int,
-                                     slice]) -> Union[IntExpr, 'IntArray1D']:
+    def __getitem__(self, key: Union[int, slice]) -> Union[IntExpr, "IntArray1D"]:
         if isinstance(key, int):
             return self.data[key]
         else:
             return IntArray1D(self.data[key])
 
-    def reshape(self, shape: Tuple[int, int]) -> 'IntArray2D':
+    def reshape(self, shape: Tuple[int, int]) -> "IntArray2D":
         return _reshape(self, shape)
 
 
-BoolOperand2D = Union[BoolExprLike, 'BoolArray2D']
-IntOperand2D = Union[IntExprLike, 'IntArray2D']
+BoolOperand2D = Union[BoolExprLike, "BoolArray2D"]
+IntOperand2D = Union[IntExprLike, "IntArray2D"]
 
 
 class BoolArray2D(Array2D[BoolExpr]):
@@ -422,44 +433,44 @@ class BoolArray2D(Array2D[BoolExpr]):
     def __init__(self, data: Iterable[BoolExpr], shape: Tuple[int, int]):
         ...
 
-    def __init__(self,
-                 data: Union[Iterable[Iterable[BoolExpr]], Iterable[BoolExpr]],
-                 shape: Optional[Tuple[int, int]] = None):
+    def __init__(
+        self,
+        data: Union[Iterable[Iterable[BoolExpr]], Iterable[BoolExpr]],
+        shape: Optional[Tuple[int, int]] = None,
+    ):
         super().__init__(data, shape)
 
-    def cond(self, t: IntOperand2D, f: IntOperand2D) -> 'IntArray2D':
+    def cond(self, t: IntOperand2D, f: IntOperand2D) -> "IntArray2D":
         res = _elementwise(Op.IF, self.shape, [self, t, f])
         if res is NotImplemented:
-            raise TypeError(
-                'unsupported argument type(s) for operator \'cond\'')
+            raise TypeError("unsupported argument type(s) for operator 'cond'")
         return res
 
-    def then(self, other: BoolOperand2D) -> 'BoolArray2D':
+    def then(self, other: BoolOperand2D) -> "BoolArray2D":
         res = _elementwise(Op.IMP, self.shape, [self, other])
         if res is NotImplemented:
-            raise TypeError(
-                'unsupported argument type(s) for operator \'cond\'')
+            raise TypeError("unsupported argument type(s) for operator 'cond'")
         return res
 
-    def __invert__(self) -> 'BoolArray2D':
+    def __invert__(self) -> "BoolArray2D":
         return _elementwise(Op.NOT, self.shape, [self])
 
-    def __and__(self, other: BoolOperand2D) -> 'BoolArray2D':
+    def __and__(self, other: BoolOperand2D) -> "BoolArray2D":
         return _elementwise(Op.AND, self.shape, [self, other])
 
-    def __rand__(self, other: BoolOperand2D) -> 'BoolArray2D':
+    def __rand__(self, other: BoolOperand2D) -> "BoolArray2D":
         return _elementwise(Op.AND, self.shape, [other, self])
 
-    def __or__(self, other: BoolOperand2D) -> 'BoolArray2D':
+    def __or__(self, other: BoolOperand2D) -> "BoolArray2D":
         return _elementwise(Op.OR, self.shape, [self, other])
 
-    def __ror__(self, other: BoolOperand2D) -> 'BoolArray2D':
+    def __ror__(self, other: BoolOperand2D) -> "BoolArray2D":
         return _elementwise(Op.OR, self.shape, [other, self])
 
-    def __eq__(self, other: BoolOperand2D) -> 'BoolArray2D':  # type: ignore
+    def __eq__(self, other: BoolOperand2D) -> "BoolArray2D":  # type: ignore
         return _elementwise(Op.IFF, self.shape, [self, other])
 
-    def __ne__(self, other: BoolOperand2D) -> 'BoolArray2D':  # type: ignore
+    def __ne__(self, other: BoolOperand2D) -> "BoolArray2D":  # type: ignore
         return _elementwise(Op.XOR, self.shape, [self, other])
 
     def fold_or(self) -> BoolExpr:
@@ -473,20 +484,19 @@ class BoolArray2D(Array2D[BoolExpr]):
         ...
 
     @overload
-    def __getitem__(
-            self, key: Union[int, Tuple[int, slice],
-                             Tuple[slice, int]]) -> BoolArray1D:
+    def __getitem__(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> BoolArray1D:
         ...
 
     @overload
-    def __getitem__(self, key: Union[slice, Tuple[slice,
-                                                  slice]]) -> 'BoolArray2D':
+    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "BoolArray2D":
         ...
 
     def __getitem__(
-        self, key: Union[int, slice, Tuple[int, int], Tuple[int, slice],
-                         Tuple[slice, int], Tuple[slice, slice]]
-    ) -> Union[BoolExpr, BoolArray1D, 'BoolArray2D']:
+        self,
+        key: Union[
+            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+        ],
+    ) -> Union[BoolExpr, BoolArray1D, "BoolArray2D"]:
         ret = super()._getitem_impl(key)
         if isinstance(ret, Array1D):
             return BoolArray1D(ret.data)
@@ -498,7 +508,7 @@ class BoolArray2D(Array2D[BoolExpr]):
     def flatten(self) -> BoolArray1D:
         return BoolArray1D(self.data)
 
-    def reshape(self, shape: Tuple[int, int]) -> 'BoolArray2D':
+    def reshape(self, shape: Tuple[int, int]) -> "BoolArray2D":
         return _reshape(self, shape)
 
     @overload
@@ -509,41 +519,37 @@ class BoolArray2D(Array2D[BoolExpr]):
     def four_neighbors(self, y: Tuple[int, int]) -> BoolArray1D:
         ...
 
-    def four_neighbors(self,
-                       y: Union[int, Tuple[int, int]],
-                       x: Optional[int] = None) -> BoolArray1D:
-        return BoolArray1D(cast('List[BoolExpr]', _four_neighbors(self, y, x)))
+    def four_neighbors(
+        self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
+    ) -> BoolArray1D:
+        return BoolArray1D(cast("List[BoolExpr]", _four_neighbors(self, y, x)))
 
     @overload
     def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]:
         ...
 
     @overload
-    def four_neighbor_indices(self, y: Tuple[int,
-                                             int]) -> List[Tuple[int, int]]:
+    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]:
         ...
 
     def four_neighbor_indices(
-            self,
-            y: Union[int, Tuple[int, int]],
-            x: Optional[int] = None) -> List[Tuple[int, int]]:
+        self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
+    ) -> List[Tuple[int, int]]:
         return _four_neighbor_indices(self.shape, y, x)
 
-    def conv2d(self, height: int, width: int,
-               op: Literal['and', 'or']) -> 'BoolArray2D':
-        if op not in ('and', 'or'):
-            raise ValueError(
-                'op for conv2d on BoolArray must be either "and" or "or"')
+    def conv2d(self, height: int, width: int, op: Literal["and", "or"]) -> "BoolArray2D":
+        if op not in ("and", "or"):
+            raise ValueError('op for conv2d on BoolArray must be either "and" or "or"')
 
         r_height = max(0, self.shape[0] - height + 1)
         r_width = max(0, self.shape[1] - width + 1)
         r_data = []
         for y in range(r_height):
             for x in range(r_width):
-                component = self[y:y + height, x:x + width]
-                if op == 'and':
+                component = self[y : y + height, x : x + width]
+                if op == "and":
                     r_data.append(BoolExpr(Op.AND, component))
-                elif op == 'or':
+                elif op == "or":
                     r_data.append(BoolExpr(Op.OR, component))
         return BoolArray2D(r_data, (r_height, r_width))
 
@@ -557,42 +563,44 @@ class IntArray2D(Array2D[IntExpr]):
     def __init__(self, data: Iterable[IntExpr], shape: Tuple[int, int]):
         ...
 
-    def __init__(self,
-                 data: Union[Iterable[Iterable[IntExpr]], Iterable[IntExpr]],
-                 shape: Optional[Tuple[int, int]] = None):
+    def __init__(
+        self,
+        data: Union[Iterable[Iterable[IntExpr]], Iterable[IntExpr]],
+        shape: Optional[Tuple[int, int]] = None,
+    ):
         super().__init__(data, shape)
 
-    def __neg__(self) -> 'IntArray2D':
+    def __neg__(self) -> "IntArray2D":
         return _elementwise(Op.NEG, self.shape, [self])
 
-    def __add__(self, other: IntOperand2D) -> 'IntArray2D':
+    def __add__(self, other: IntOperand2D) -> "IntArray2D":
         return _elementwise(Op.ADD, self.shape, [self, other])
 
-    def __radd__(self, other: IntOperand2D) -> 'IntArray2D':
+    def __radd__(self, other: IntOperand2D) -> "IntArray2D":
         return _elementwise(Op.ADD, self.shape, [other, self])
 
-    def __sub__(self, other: IntOperand2D) -> 'IntArray2D':
+    def __sub__(self, other: IntOperand2D) -> "IntArray2D":
         return _elementwise(Op.SUB, self.shape, [self, other])
 
-    def __rsub__(self, other: IntOperand2D) -> 'IntArray2D':
+    def __rsub__(self, other: IntOperand2D) -> "IntArray2D":
         return _elementwise(Op.SUB, self.shape, [other, self])
 
-    def __eq__(self, other: IntOperand2D) -> 'BoolArray2D':  # type: ignore
+    def __eq__(self, other: IntOperand2D) -> "BoolArray2D":  # type: ignore
         return _elementwise(Op.EQ, self.shape, [self, other])
 
-    def __ne__(self, other: IntOperand2D) -> 'BoolArray2D':  # type: ignore
+    def __ne__(self, other: IntOperand2D) -> "BoolArray2D":  # type: ignore
         return _elementwise(Op.NE, self.shape, [self, other])
 
-    def __ge__(self, other: IntOperand2D) -> 'BoolArray2D':
+    def __ge__(self, other: IntOperand2D) -> "BoolArray2D":
         return _elementwise(Op.GE, self.shape, [self, other])
 
-    def __gt__(self, other: IntOperand2D) -> 'BoolArray2D':
+    def __gt__(self, other: IntOperand2D) -> "BoolArray2D":
         return _elementwise(Op.GT, self.shape, [self, other])
 
-    def __le__(self, other: IntOperand2D) -> 'BoolArray2D':
+    def __le__(self, other: IntOperand2D) -> "BoolArray2D":
         return _elementwise(Op.LE, self.shape, [self, other])
 
-    def __lt__(self, other: IntOperand2D) -> 'BoolArray2D':
+    def __lt__(self, other: IntOperand2D) -> "BoolArray2D":
         return _elementwise(Op.LT, self.shape, [self, other])
 
     @overload
@@ -600,20 +608,19 @@ class IntArray2D(Array2D[IntExpr]):
         ...
 
     @overload
-    def __getitem__(
-            self, key: Union[int, Tuple[int, slice],
-                             Tuple[slice, int]]) -> IntArray1D:
+    def __getitem__(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> IntArray1D:
         ...
 
     @overload
-    def __getitem__(self, key: Union[slice, Tuple[slice,
-                                                  slice]]) -> 'IntArray2D':
+    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "IntArray2D":
         ...
 
     def __getitem__(
-        self, key: Union[int, slice, Tuple[int, int], Tuple[int, slice],
-                         Tuple[slice, int], Tuple[slice, slice]]
-    ) -> Union[IntExpr, IntArray1D, 'IntArray2D']:
+        self,
+        key: Union[
+            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+        ],
+    ) -> Union[IntExpr, IntArray1D, "IntArray2D"]:
         ret = super()._getitem_impl(key)
         if isinstance(ret, Array1D):
             return IntArray1D(ret.data)
@@ -625,7 +632,7 @@ class IntArray2D(Array2D[IntExpr]):
     def flatten(self) -> IntArray1D:
         return IntArray1D(self.data)
 
-    def reshape(self, shape: Tuple[int, int]) -> 'IntArray2D':
+    def reshape(self, shape: Tuple[int, int]) -> "IntArray2D":
         return _reshape(self, shape)
 
     @overload
@@ -636,65 +643,57 @@ class IntArray2D(Array2D[IntExpr]):
     def four_neighbors(self, y: Tuple[int, int]) -> IntArray1D:
         ...
 
-    def four_neighbors(self,
-                       y: Union[int, Tuple[int, int]],
-                       x: Optional[int] = None) -> IntArray1D:
-        return IntArray1D(cast('List[IntExpr]', _four_neighbors(self, y, x)))
+    def four_neighbors(
+        self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
+    ) -> IntArray1D:
+        return IntArray1D(cast("List[IntExpr]", _four_neighbors(self, y, x)))
 
     @overload
     def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]:
         ...
 
     @overload
-    def four_neighbor_indices(self, y: Tuple[int,
-                                             int]) -> List[Tuple[int, int]]:
+    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]:
         ...
 
     def four_neighbor_indices(
-            self,
-            y: Union[int, Tuple[int, int]],
-            x: Optional[int] = None) -> List[Tuple[int, int]]:
+        self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
+    ) -> List[Tuple[int, int]]:
         return _four_neighbor_indices(self.shape, y, x)
 
 
 @overload
-def _reshape(array: Union[BoolArray1D, BoolArray2D],
-             shape: Tuple[int, int]) -> BoolArray2D:
+def _reshape(array: Union[BoolArray1D, BoolArray2D], shape: Tuple[int, int]) -> BoolArray2D:
     ...
 
 
 @overload
-def _reshape(array: Union[IntArray1D, IntArray2D],
-             shape: Tuple[int, int]) -> IntArray2D:
+def _reshape(array: Union[IntArray1D, IntArray2D], shape: Tuple[int, int]) -> IntArray2D:
     ...
 
 
-def _reshape(array: Union[BoolArray1D, BoolArray2D, IntArray1D, IntArray2D],
-             shape: Tuple[int, int]) -> Union[BoolArray2D, IntArray2D]:
+def _reshape(
+    array: Union[BoolArray1D, BoolArray2D, IntArray1D, IntArray2D], shape: Tuple[int, int]
+) -> Union[BoolArray2D, IntArray2D]:
     data: Union[List[BoolExpr], List[IntExpr]] = array.data
     if len(data) != functools.reduce(lambda x, y: x * y, shape, 1):
-        raise ValueError(
-            f'reshaping array of total size {len(data)} into shape {shape}')
+        raise ValueError(f"reshaping array of total size {len(data)} into shape {shape}")
     if isinstance(array, (BoolArray1D, BoolArray2D)):
-        return BoolArray2D(cast('List[BoolExpr]', data),
-                           cast('Tuple[int, int]', shape))
+        return BoolArray2D(cast("List[BoolExpr]", data), cast("Tuple[int, int]", shape))
     else:
-        return IntArray2D(cast('List[IntExpr]', data),
-                          cast('Tuple[int, int]', shape))
+        return IntArray2D(cast("List[IntExpr]", data), cast("Tuple[int, int]", shape))
 
 
-def _four_neighbors(array: Union[BoolArray2D,
-                                 IntArray2D], y: Union[int, Tuple[int, int]],
-                    x: Optional[int]) -> List[Expr]:
+def _four_neighbors(
+    array: Union[BoolArray2D, IntArray2D], y: Union[int, Tuple[int, int]], x: Optional[int]
+) -> List[Expr]:
     if x is None:
         if isinstance(y, int):
-            raise TypeError(
-                'two integers must be provided to \'cell_neighbors\'')
+            raise TypeError("two integers must be provided to 'cell_neighbors'")
         y2, x2 = y
     else:
         if x is None or isinstance(y, tuple):
-            raise TypeError(
-                'two integers must be provided to \'cell_neighbors\'')
+            raise TypeError("two integers must be provided to 'cell_neighbors'")
         y2 = y
         x2 = x
     ret: List[Expr] = []
@@ -710,18 +709,16 @@ def _four_neighbors(array: Union[BoolArray2D,
     return ret
 
 
-def _four_neighbor_indices(shape: Tuple[int, int], y: Union[int, Tuple[int,
-                                                                       int]],
-                           x: Optional[int]) -> List[Tuple[int, int]]:
+def _four_neighbor_indices(
+    shape: Tuple[int, int], y: Union[int, Tuple[int, int]], x: Optional[int]
+) -> List[Tuple[int, int]]:
     if x is None:
         if isinstance(y, int):
-            raise TypeError(
-                'two integers must be provided to \'cell_neighbors\'')
+            raise TypeError("two integers must be provided to 'cell_neighbors'")
         y2, x2 = y
     else:
         if x is None or isinstance(y, tuple):
-            raise TypeError(
-                'two integers must be provided to \'cell_neighbors\'')
+            raise TypeError("two integers must be provided to 'cell_neighbors'")
         y2 = y
         x2 = x
     ret = []

@@ -11,12 +11,7 @@ from cspuz.grid_frame import BoolGridFrame
 from cspuz.puzzle import util
 
 
-def solve_slalom(height,
-                 width,
-                 origin,
-                 is_black,
-                 gates,
-                 reference_sol_loop=None):
+def solve_slalom(height, width, origin, is_black, gates, reference_sol_loop=None):
     solver = Solver()
     loop = BoolGridFrame(solver, height - 1, width - 1)
     loop_dir = BoolGridFrame(solver, height - 1, width - 1)
@@ -35,8 +30,7 @@ def solve_slalom(height,
             gate_cells = [(y + i, x) for i in range(l)]
         for y2, x2 in gate_cells:
             gate_id[y2][x2] = n
-        solver.ensure(
-            count_true([passed[y2, x2] for y2, x2 in gate_cells]) == 1)
+        solver.ensure(count_true([passed[y2, x2] for y2, x2 in gate_cells]) == 1)
     solver.ensure(passed[origin])
     for y in range(height):
         for x in range(width):
@@ -52,17 +46,23 @@ def solve_slalom(height,
 
             # in-degree, out-degree
             solver.ensure(
-                count_true([
-                    loop[y + y2, x + x2]
-                    & (loop_dir[y + y2, x + x2] != ((y2, x2) < (y, x)))
-                    for y2, x2 in neighbors
-                ]) == passed[y, x].cond(1, 0))
+                count_true(
+                    [
+                        loop[y + y2, x + x2] & (loop_dir[y + y2, x + x2] != ((y2, x2) < (y, x)))
+                        for y2, x2 in neighbors
+                    ]
+                )
+                == passed[y, x].cond(1, 0)
+            )
             solver.ensure(
-                count_true([
-                    loop[y + y2, x + x2]
-                    & (loop_dir[y + y2, x + x2] == ((y2, x2) < (y, x)))
-                    for y2, x2 in neighbors
-                ]) == passed[y, x].cond(1, 0))
+                count_true(
+                    [
+                        loop[y + y2, x + x2] & (loop_dir[y + y2, x + x2] == ((y2, x2) < (y, x)))
+                        for y2, x2 in neighbors
+                    ]
+                )
+                == passed[y, x].cond(1, 0)
+            )
 
             if is_black[y][x]:
                 solver.ensure(~passed[y, x])
@@ -71,31 +71,38 @@ def solve_slalom(height,
                 continue
             if gate_id[y][x] is None:
                 for y2, x2 in neighbors:
-                    solver.ensure((loop[y + y2, x + x2] &
-                                   (loop_dir[y + y2, x + x2] !=
-                                    ((y2, x2) < (y, x)))).then(
-                                        (gate_ord[y2, x2] == gate_ord[y, x])))
+                    solver.ensure(
+                        (
+                            loop[y + y2, x + x2]
+                            & (loop_dir[y + y2, x + x2] != ((y2, x2) < (y, x)))
+                        ).then((gate_ord[y2, x2] == gate_ord[y, x]))
+                    )
             else:
                 for y2, x2 in neighbors:
-                    solver.ensure((loop[y + y2, x + x2] &
-                                   (loop_dir[y + y2, x + x2] !=
-                                    ((y2, x2) < (y, x)))).then(
-                                        (gate_ord[y2,
-                                                  x2] == gate_ord[y, x] - 1)))
+                    solver.ensure(
+                        (
+                            loop[y + y2, x + x2]
+                            & (loop_dir[y + y2, x + x2] != ((y2, x2) < (y, x)))
+                        ).then((gate_ord[y2, x2] == gate_ord[y, x] - 1))
+                    )
                 if gate_id[y][x] >= 1:
-                    solver.ensure(passed[y,
-                                         x].then(gate_ord[y,
-                                                          x] == gate_id[y][x]))
+                    solver.ensure(passed[y, x].then(gate_ord[y, x] == gate_id[y][x]))
 
     # auxiliary constraint
     for y0 in range(height):
         for x0 in range(width):
             for y1 in range(height):
                 for x1 in range(width):
-                    if (y0, x0) < (y1, x1) and gate_id[y0][
-                            x0] is not None and gate_id[y1][x1] is not None:
-                        solver.ensure((passed[y0, x0] & passed[y1, x1]).then(
-                            gate_ord[y0, x0] != gate_ord[y1, x1]))
+                    if (
+                        (y0, x0) < (y1, x1)
+                        and gate_id[y0][x0] is not None
+                        and gate_id[y1][x1] is not None
+                    ):
+                        solver.ensure(
+                            (passed[y0, x0] & passed[y1, x1]).then(
+                                gate_ord[y0, x0] != gate_ord[y1, x1]
+                            )
+                        )
 
     if reference_sol_loop is not None:
         avoid_reference_sol = []
@@ -103,12 +110,12 @@ def solve_slalom(height,
             for x in range(width):
                 if y < height - 1:
                     avoid_reference_sol.append(
-                        loop.vertical[y,
-                                      x] != reference_sol_loop.vertical[y,
-                                                                        x].sol)
+                        loop.vertical[y, x] != reference_sol_loop.vertical[y, x].sol
+                    )
                 if x < width - 1:
-                    avoid_reference_sol.append(loop.horizontal[
-                        y, x] != reference_sol_loop.horizontal[y, x].sol)
+                    avoid_reference_sol.append(
+                        loop.horizontal[y, x] != reference_sol_loop.horizontal[y, x].sol
+                    )
         solver.ensure(fold_or(avoid_reference_sol))
 
         is_sat = solver.find_answer()
@@ -118,16 +125,18 @@ def solve_slalom(height,
         return is_sat, loop
 
 
-def generate_slalom_initial_placement(height,
-                                      width,
-                                      n_min_gates=None,
-                                      n_max_gates=None,
-                                      n_max_isolated_black_cells=None,
-                                      no_adjacent_black_cell=False,
-                                      no_facing_length_two=False,
-                                      no_space_2x2=False,
-                                      black_cell_in_every_3x3=False,
-                                      min_go_through=0):
+def generate_slalom_initial_placement(
+    height,
+    width,
+    n_min_gates=None,
+    n_max_gates=None,
+    n_max_isolated_black_cells=None,
+    no_adjacent_black_cell=False,
+    no_facing_length_two=False,
+    no_space_2x2=False,
+    black_cell_in_every_3x3=False,
+    min_go_through=0,
+):
     solver = Solver()
     loop = BoolGridFrame(solver, height - 1, width - 1)
     is_black = solver.bool_array((height, width))
@@ -157,21 +166,16 @@ def generate_slalom_initial_placement(height,
                 solver.ensure(is_vertical[y, x].then(~loop.vertical[y, x]))
             if x > 0:
                 solver.ensure(is_black[y, x].then(~loop.horizontal[y, x - 1]))
-                solver.ensure(
-                    is_horizontal[y, x].then(~loop.horizontal[y, x - 1]))
+                solver.ensure(is_horizontal[y, x].then(~loop.horizontal[y, x - 1]))
             if x < width - 1:
                 solver.ensure(is_black[y, x].then(~loop.horizontal[y, x]))
                 solver.ensure(is_horizontal[y, x].then(~loop.horizontal[y, x]))
 
     # gates must be closed
-    solver.ensure(is_vertical[1:, :].then(is_vertical[:-1, :]
-                                          | is_black[:-1, :]))
-    solver.ensure(is_vertical[:-1, :].then(is_vertical[1:, :]
-                                           | is_black[1:, :]))
-    solver.ensure(is_horizontal[:, 1:].then(is_horizontal[:, :-1]
-                                            | is_black[:, :-1]))
-    solver.ensure(is_horizontal[:, :-1].then(is_horizontal[:, 1:]
-                                             | is_black[:, 1:]))
+    solver.ensure(is_vertical[1:, :].then(is_vertical[:-1, :] | is_black[:-1, :]))
+    solver.ensure(is_vertical[:-1, :].then(is_vertical[1:, :] | is_black[1:, :]))
+    solver.ensure(is_horizontal[:, 1:].then(is_horizontal[:, :-1] | is_black[:, :-1]))
+    solver.ensure(is_horizontal[:, :-1].then(is_horizontal[:, 1:] | is_black[:, 1:]))
     # each horizontal gate must be passed exactly once
     for y in range(1, height - 1):
         for x in range(width):
@@ -207,87 +211,104 @@ def generate_slalom_initial_placement(height,
         for x in range(width):
             if 0 < y < height - 1:
                 if x == 0 or x == width - 1:
-                    solver.ensure(is_horizontal[y,
-                                                x].then(~is_black[y - 1, x]
-                                                        & ~is_black[y + 1, x]))
-                else:
-                    solver.ensure((is_horizontal[y, x] &
-                                   (is_black[y - 1, x] | is_black[y + 1, x])
-                                   ).then(is_horizontal[y, x - 1]
-                                          & is_horizontal[y, x + 1]
-                                          & ~is_black[y - 1, x - 1]
-                                          & ~is_black[y + 1, x - 1]
-                                          & ~is_black[y + 1, x - 1]
-                                          & ~is_black[y + 1, x + 1]))
-            if 0 < x < width - 1:
-                if y == 0 or y == height - 1:
-                    solver.ensure(is_vertical[y,
-                                              x].then(~is_black[y, x - 1]
-                                                      & ~is_black[y, x + 1]))
+                    solver.ensure(
+                        is_horizontal[y, x].then(~is_black[y - 1, x] & ~is_black[y + 1, x])
+                    )
                 else:
                     solver.ensure(
-                        (is_vertical[y, x] &
-                         (is_black[y, x - 1] | is_black[y, x + 1])
-                         ).then(is_vertical[y - 1, x] & is_vertical[y + 1, x]
-                                & ~is_black[y - 1, x - 1]
-                                & ~is_black[y + 1, x - 1]
-                                & ~is_black[y + 1, x - 1]
-                                & ~is_black[y + 1, x + 1]))
+                        (is_horizontal[y, x] & (is_black[y - 1, x] | is_black[y + 1, x])).then(
+                            is_horizontal[y, x - 1]
+                            & is_horizontal[y, x + 1]
+                            & ~is_black[y - 1, x - 1]
+                            & ~is_black[y + 1, x - 1]
+                            & ~is_black[y + 1, x - 1]
+                            & ~is_black[y + 1, x + 1]
+                        )
+                    )
+            if 0 < x < width - 1:
+                if y == 0 or y == height - 1:
+                    solver.ensure(
+                        is_vertical[y, x].then(~is_black[y, x - 1] & ~is_black[y, x + 1])
+                    )
+                else:
+                    solver.ensure(
+                        (is_vertical[y, x] & (is_black[y, x - 1] | is_black[y, x + 1])).then(
+                            is_vertical[y - 1, x]
+                            & is_vertical[y + 1, x]
+                            & ~is_black[y - 1, x - 1]
+                            & ~is_black[y + 1, x - 1]
+                            & ~is_black[y + 1, x - 1]
+                            & ~is_black[y + 1, x + 1]
+                        )
+                    )
 
     # no detour
     for y in range(height - 1):
         for x in range(width - 1):
             solver.ensure(count_true(loop.cell_neighbors(y, x)) <= 2)
             solver.ensure(
-                fold_and(~is_black[y:y + 2, x:x + 2],
-                         ~is_horizontal[y:y + 2, x:x + 2],
-                         ~is_vertical[y:y + 2, x:x + 2]).then(
-                             count_true(loop.cell_neighbors(y, x)) +
-                             1 < count_true(is_passed[y:y + 2, x:x + 2])))
+                fold_and(
+                    ~is_black[y : y + 2, x : x + 2],
+                    ~is_horizontal[y : y + 2, x : x + 2],
+                    ~is_vertical[y : y + 2, x : x + 2],
+                ).then(
+                    count_true(loop.cell_neighbors(y, x)) + 1
+                    < count_true(is_passed[y : y + 2, x : x + 2])
+                )
+            )
 
     # no ambiguous L-shaped turning
     for y in range(height - 1):
         for x in range(width - 1):
             for dy in [0, 1]:
                 for dx in [0, 1]:
-                    solver.ensure(~fold_and([
-                        loop.horizontal[y + dy, x], loop.vertical[
-                            y, x + dx], ~is_vertical[y + dy, x + 1 - dx],
-                        ~is_horizontal[y + 1 - dx, x +
-                                       dx], ~is_black[y + 1 - dy, x + 1 - dx],
-                        count_true(is_passed[y:y + 2, x:x + 2]) == 3
-                    ]))
+                    solver.ensure(
+                        ~fold_and(
+                            [
+                                loop.horizontal[y + dy, x],
+                                loop.vertical[y, x + dx],
+                                ~is_vertical[y + dy, x + 1 - dx],
+                                ~is_horizontal[y + 1 - dx, x + dx],
+                                ~is_black[y + 1 - dy, x + 1 - dx],
+                                count_true(is_passed[y : y + 2, x : x + 2]) == 3,
+                            ]
+                        )
+                    )
 
     # no ambiguous L-shaped turning involving gates
     for y in range(height - 1):
         for x in range(width - 2):
             solver.ensure(
-                fold_and(
-                    is_vertical[y:y + 2, x + 1],
-                    ~is_black[y:y + 2, x:x + 3]).then(
-                        count_true(loop.horizontal[y, x], loop.horizontal[
-                            y + 1,
-                            x], loop.vertical[y, x], loop.vertical[y, x + 2]) +
-                        1 < count_true(is_passed[y:y + 2,
-                                                 x], is_passed[y:y + 2,
-                                                               x + 2])))
+                fold_and(is_vertical[y : y + 2, x + 1], ~is_black[y : y + 2, x : x + 3]).then(
+                    count_true(
+                        loop.horizontal[y, x],
+                        loop.horizontal[y + 1, x],
+                        loop.vertical[y, x],
+                        loop.vertical[y, x + 2],
+                    )
+                    + 1
+                    < count_true(is_passed[y : y + 2, x], is_passed[y : y + 2, x + 2])
+                )
+            )
     for y in range(height - 2):
         for x in range(width - 1):
             solver.ensure(
-                fold_and(is_horizontal[y + 1, x:x + 2],
-                         ~is_black[y:y + 3, x:x + 2]).
-                then(
-                    count_true(loop.vertical[y, x], loop.vertical[y, x + 1],
-                               loop.horizontal[y, x], loop.horizontal[y + 2,
-                                                                      x]) +
-                    1 < count_true(is_passed[y, x:x + 2], is_passed[y + 2,
-                                                                    x:x + 2])))
+                fold_and(is_horizontal[y + 1, x : x + 2], ~is_black[y : y + 3, x : x + 2]).then(
+                    count_true(
+                        loop.vertical[y, x],
+                        loop.vertical[y, x + 1],
+                        loop.horizontal[y, x],
+                        loop.horizontal[y + 2, x],
+                    )
+                    + 1
+                    < count_true(is_passed[y, x : x + 2], is_passed[y + 2, x : x + 2])
+                )
+            )
 
     # no dead ends
     for y in range(height):
         for x in range(width):
-            solver.ensure((~is_black[y, x]).then(
-                count_true(~is_black.four_neighbors(y, x)) >= 2))
+            solver.ensure((~is_black[y, x]).then(count_true(~is_black.four_neighbors(y, x)) >= 2))
 
     # --------- avoid "trivial" problems ---------
     solver.ensure(count_true(is_vertical) > 5)
@@ -307,28 +328,36 @@ def generate_slalom_initial_placement(height,
                 if x < width - 1:
                     cond.append(~is_horizontal[y, x + 1])
                 lonely_black_cell.append(fold_and(cond))
-        solver.ensure(
-            count_true(lonely_black_cell) <= n_max_isolated_black_cells)
+        solver.ensure(count_true(lonely_black_cell) <= n_max_isolated_black_cells)
 
     short_gates = []
     for y in range(height):
         for x in range(width):
-            g1 = fold_and([
-                is_vertical[y, x], ~is_vertical[y - 1, x] if y > 0 else True,
-                ~is_vertical[y + 1, x] if y < height - 1 else True
-            ])
-            g2 = fold_and([
-                is_horizontal[y,
-                              x], ~is_horizontal[y, x - 1] if x > 0 else True,
-                ~is_horizontal[y, x + 1] if x < width - 1 else True
-            ])
+            g1 = fold_and(
+                [
+                    is_vertical[y, x],
+                    ~is_vertical[y - 1, x] if y > 0 else True,
+                    ~is_vertical[y + 1, x] if y < height - 1 else True,
+                ]
+            )
+            g2 = fold_and(
+                [
+                    is_horizontal[y, x],
+                    ~is_horizontal[y, x - 1] if x > 0 else True,
+                    ~is_horizontal[y, x + 1] if x < width - 1 else True,
+                ]
+            )
             if 0 < y < height - 1 and 0 < x < width - 1:
                 short_gates.append(g1)
                 short_gates.append(g2)
-                solver.ensure((g1 | g2).then(~is_black[y - 1, x - 1]
-                                             & ~is_black[y - 1, x + 1]
-                                             & ~is_black[y + 1, x - 1]
-                                             & ~is_black[y + 1, x + 1]))
+                solver.ensure(
+                    (g1 | g2).then(
+                        ~is_black[y - 1, x - 1]
+                        & ~is_black[y - 1, x + 1]
+                        & ~is_black[y + 1, x - 1]
+                        & ~is_black[y + 1, x + 1]
+                    )
+                )
             else:
                 solver.ensure(~g1)
                 solver.ensure(~g2)
@@ -337,22 +366,21 @@ def generate_slalom_initial_placement(height,
         for x in range(1, width - 1):
             solver.ensure(
                 count_true(
-                    is_horizontal[y - 1, x] & is_black[y - 1, x - 1]
-                    & is_black[y - 1, x + 1],
-                    is_horizontal[y + 1, x] & is_black[y + 1, x - 1]
-                    & is_black[y + 1, x + 1],
-                    is_vertical[y, x - 1] & is_black[y - 1, x - 1]
-                    & is_black[y + 1, x - 1],
-                    is_vertical[y, x + 1] & is_black[y - 1, x + 1]
-                    & is_black[y + 1, x + 1],
-                ) <= 1)
+                    is_horizontal[y - 1, x] & is_black[y - 1, x - 1] & is_black[y - 1, x + 1],
+                    is_horizontal[y + 1, x] & is_black[y + 1, x - 1] & is_black[y + 1, x + 1],
+                    is_vertical[y, x - 1] & is_black[y - 1, x - 1] & is_black[y + 1, x - 1],
+                    is_vertical[y, x + 1] & is_black[y - 1, x + 1] & is_black[y + 1, x + 1],
+                )
+                <= 1
+            )
     # --------- ensure randomness ---------
 
     passed_constraints = [[0 for _ in range(width)] for _ in range(height)]
     for y in range(height):
         for x in range(width):
             if (y > 0 and passed_constraints[y - 1][x] != 0) or (
-                    x > 0 and passed_constraints[y][x - 1] != 0):
+                x > 0 and passed_constraints[y][x - 1] != 0
+            ):
                 continue
             passed_constraints[y][x] = max(0, random.randint(-20, 2))
     for y in range(height):
@@ -367,10 +395,12 @@ def generate_slalom_initial_placement(height,
         gate_representative = []
         for y in range(height):
             for x in range(width):
-                gate_representative.append(is_horizontal[y, x] & (
-                    ~is_horizontal[y, x - 1] if x > 0 else True))
-                gate_representative.append(is_vertical[y, x] & (
-                    ~is_vertical[y - 1, x] if y > 0 else True))
+                gate_representative.append(
+                    is_horizontal[y, x] & (~is_horizontal[y, x - 1] if x > 0 else True)
+                )
+                gate_representative.append(
+                    is_vertical[y, x] & (~is_vertical[y - 1, x] if y > 0 else True)
+                )
         if n_min_gates is not None:
             solver.ensure(n_min_gates <= count_true(gate_representative))
         if n_max_gates is not None:
@@ -383,23 +413,27 @@ def generate_slalom_initial_placement(height,
                 if y < height - 4 and 0 < x < width - 1:
                     go_through.append(
                         fold_and(
-                            is_horizontal[y + 1,
-                                          x], is_horizontal[y + 1, x - 1]
-                            | is_horizontal[y + 1, x + 1],
-                            ~is_black[y + 2, x - 1], ~is_black[y + 2, x + 1],
-                            is_horizontal[y + 3,
-                                          x], is_horizontal[y + 3, x - 1]
-                            | is_horizontal[y + 3, x + 1],
-                            loop.vertical[y:y + 4, x]))
+                            is_horizontal[y + 1, x],
+                            is_horizontal[y + 1, x - 1] | is_horizontal[y + 1, x + 1],
+                            ~is_black[y + 2, x - 1],
+                            ~is_black[y + 2, x + 1],
+                            is_horizontal[y + 3, x],
+                            is_horizontal[y + 3, x - 1] | is_horizontal[y + 3, x + 1],
+                            loop.vertical[y : y + 4, x],
+                        )
+                    )
                 if x < width - 4 and 0 < y < height - 1:
                     go_through.append(
                         fold_and(
-                            is_vertical[y, x + 1], is_vertical[y - 1, x + 1]
-                            | is_vertical[y + 1, x + 1],
-                            ~is_black[y - 1, x + 2], ~is_black[y + 1, x + 2],
-                            is_vertical[y, x + 3], is_vertical[y - 1, x + 3]
-                            | is_vertical[y + 1, x + 3],
-                            loop.horizontal[y, x:x + 4]))
+                            is_vertical[y, x + 1],
+                            is_vertical[y - 1, x + 1] | is_vertical[y + 1, x + 1],
+                            ~is_black[y - 1, x + 2],
+                            ~is_black[y + 1, x + 2],
+                            is_vertical[y, x + 3],
+                            is_vertical[y - 1, x + 3] | is_vertical[y + 1, x + 3],
+                            loop.horizontal[y, x : x + 4],
+                        )
+                    )
         solver.ensure(count_true(go_through) >= 2)
 
     if no_adjacent_black_cell:
@@ -412,29 +446,46 @@ def generate_slalom_initial_placement(height,
         for y in range(height):
             for x in range(width):
                 if y <= height - 3 and x <= width - 4:
-                    solver.ensure(~fold_and(
-                        is_black[y, x], is_black[y + 2, x], is_black[y, x + 3],
-                        is_black[y + 2, x + 3], is_horizontal[
-                            y, x + 1], is_horizontal[y, x + 2], is_horizontal[
-                                y + 2, x + 1], is_horizontal[y + 2, x + 2]))
+                    solver.ensure(
+                        ~fold_and(
+                            is_black[y, x],
+                            is_black[y + 2, x],
+                            is_black[y, x + 3],
+                            is_black[y + 2, x + 3],
+                            is_horizontal[y, x + 1],
+                            is_horizontal[y, x + 2],
+                            is_horizontal[y + 2, x + 1],
+                            is_horizontal[y + 2, x + 2],
+                        )
+                    )
                 if y <= height - 4 and x <= width - 3:
                     solver.ensure(
-                        ~fold_and(is_black[y, x], is_black[y, x + 2], is_black[
-                            y + 3, x], is_black[y + 3, x + 2], is_vertical[
-                                y + 1, x], is_vertical[y + 2, x], is_vertical[
-                                    y + 1, x + 2], is_vertical[y + 2, x + 2]))
+                        ~fold_and(
+                            is_black[y, x],
+                            is_black[y, x + 2],
+                            is_black[y + 3, x],
+                            is_black[y + 3, x + 2],
+                            is_vertical[y + 1, x],
+                            is_vertical[y + 2, x],
+                            is_vertical[y + 1, x + 2],
+                            is_vertical[y + 2, x + 2],
+                        )
+                    )
 
     if no_space_2x2:
         has_some = is_black | is_vertical | is_horizontal
-        solver.ensure(has_some[:-1, :-1] | has_some[1:, :-1]
-                      | has_some[:-1, 1:] | has_some[1:, 1:])
+        solver.ensure(
+            has_some[:-1, :-1] | has_some[1:, :-1] | has_some[:-1, 1:] | has_some[1:, 1:]
+        )
 
     if black_cell_in_every_3x3:
         for y in range(-1, height - 2):
             for x in range(-1, width - 2):
                 solver.ensure(
-                    fold_or(is_black[max(0, y):min(height, y + 3),
-                                     max(0, x):min(width, x + 3)]))
+                    fold_or(
+                        is_black[max(0, y) : min(height, y + 3), max(0, x) : min(width, x + 3)]
+                    )
+                )
 
     is_sat = solver.find_answer()
     if not is_sat:
@@ -448,8 +499,7 @@ def generate_slalom(height, width, minify=True, **kwargs):
         return None
     loop, is_passed, is_black, is_horizontal, is_vertical = initial
 
-    is_black_problem = [[is_black[y, x].sol for x in range(width)]
-                        for y in range(height)]
+    is_black_problem = [[is_black[y, x].sol for x in range(width)] for y in range(height)]
     gate_id = [[-1 for _ in range(width)] for _ in range(height)]
     id_last = 0
     extra_black = []
@@ -457,8 +507,7 @@ def generate_slalom(height, width, minify=True, **kwargs):
 
     for y in range(height):
         for x in range(width):
-            if is_horizontal[y, x].sol and (x == 0 or
-                                            not is_horizontal[y, x - 1].sol):
+            if is_horizontal[y, x].sol and (x == 0 or not is_horizontal[y, x - 1].sol):
                 gate_len = 0
                 for x2 in range(x, width):
                     if is_horizontal[y, x2].sol:
@@ -468,8 +517,7 @@ def generate_slalom(height, width, minify=True, **kwargs):
                         break
                 id_last += 1
                 gates.append((y, x, 0, gate_len, -1))
-            if is_vertical[y, x].sol and (y == 0
-                                          or not is_vertical[y - 1, x].sol):
+            if is_vertical[y, x].sol and (y == 0 or not is_vertical[y - 1, x].sol):
                 gate_len = 0
                 for y2 in range(y, height):
                     if is_vertical[y2, x].sol:
@@ -480,10 +528,12 @@ def generate_slalom(height, width, minify=True, **kwargs):
                 id_last += 1
                 gates.append((y, x, 1, gate_len, -1))
             if is_black[y, x].sol:
-                if not ((y > 0 and is_vertical[y - 1, x].sol) or
-                        (y < height - 1 and is_vertical[y + 1, x].sol) or
-                        (x > 0 and is_horizontal[y, x - 1].sol) or
-                        (x < width - 1 and is_horizontal[y, x + 1].sol)):
+                if not (
+                    (y > 0 and is_vertical[y - 1, x].sol)
+                    or (y < height - 1 and is_vertical[y + 1, x].sol)
+                    or (x > 0 and is_horizontal[y, x - 1].sol)
+                    or (x < width - 1 and is_horizontal[y, x + 1].sol)
+                ):
                     extra_black.append((y, x))
 
     traverse_base = None
@@ -536,25 +586,24 @@ def generate_slalom(height, width, minify=True, **kwargs):
                 gate_ord += 1
                 if random.random() < 0.2:
                     gate_ord_constraints[gate_id[y][x]] = gate_ord
-        actual_gates = [(*(gates[i][0:4]), gate_ord_constraints[i])
-                        for i in range(len(gates))]
+        actual_gates = [(*(gates[i][0:4]), gate_ord_constraints[i]) for i in range(len(gates))]
 
-        if problem_to_pzv_url(height, width,
-                              ((oy, ox), extra_black, actual_gates)) is None:
+        if problem_to_pzv_url(height, width, ((oy, ox), extra_black, actual_gates)) is None:
             continue
 
-        has_multiple_ans, _ = solve_slalom(height,
-                                           width, (oy, ox),
-                                           is_black_problem,
-                                           actual_gates,
-                                           reference_sol_loop=loop)
+        has_multiple_ans, _ = solve_slalom(
+            height, width, (oy, ox), is_black_problem, actual_gates, reference_sol_loop=loop
+        )
         if not has_multiple_ans:
             if minify:
-                minify_problem(height,
-                               width, (oy, ox),
-                               is_black_problem,
-                               actual_gates,
-                               reference_sol_loop=loop)
+                minify_problem(
+                    height,
+                    width,
+                    (oy, ox),
+                    is_black_problem,
+                    actual_gates,
+                    reference_sol_loop=loop,
+                )
             return (oy, ox), extra_black, actual_gates
     return None
 
@@ -564,8 +613,7 @@ def minify_problem(height, width, origin, is_black, gates, reference_sol_loop):
         y, x, d, l, n = gates[i]
         if n != -1:
             gates[i] = (y, x, d, l, -1)
-            is_sat, _ = solve_slalom(height, width, origin, is_black, gates,
-                                     reference_sol_loop)
+            is_sat, _ = solve_slalom(height, width, origin, is_black, gates, reference_sol_loop)
             if is_sat:
                 gates[i] = (y, x, d, l, n)
 
@@ -626,8 +674,7 @@ def instantiate_problem(height, width, problem_base):
     if board[oy][ox] != 0:
         return None
 
-    is_black = [[board[y][x] <= -1 for x in range(width)]
-                for y in range(height)]
+    is_black = [[board[y][x] <= -1 for x in range(width)] for y in range(height)]
     return is_black
 
 
@@ -641,25 +688,25 @@ def problem_to_pzv_url(height, width, problem):
     required_clues_one = []
     required_clues_two = []
     for y, x in extra_black:
-        board[y][x] = '1'
+        board[y][x] = "1"
     for y, x, d, l, n in gates:
         ends = []
         if d == 0:
             for i in range(l):
-                board[y][x + i] = '3'
+                board[y][x + i] = "3"
             if x > 0:
                 ends.append((y, x - 1, 4))
             if x + l < width:
                 ends.append((y, x + l, 3))
         else:
             for i in range(l):
-                board[y + i][x] = '2'
+                board[y + i][x] = "2"
             if y > 0:
                 ends.append((y - 1, x, 2))
             if y + l < width:
                 ends.append((y + l, x, 1))
         for y2, x2, dir in ends:
-            board[y2][x2] = '1'
+            board[y2][x2] = "1"
         if n != -1:
             if len(ends) == 0:
                 return None
@@ -669,7 +716,7 @@ def problem_to_pzv_url(height, width, problem):
                 required_clues_two.append((n, ends))
     for n, c in required_clues_one:
         y, x, dir = c[0]
-        if board[y][x] != '1':
+        if board[y][x] != "1":
             return None
         board[y][x] = stringify_clue(y, x, dir, n)
     for n, cs in required_clues_two:
@@ -680,49 +727,52 @@ def problem_to_pzv_url(height, width, problem):
     for n, cs in required_clues_two:
         y1, x1, dir1 = cs[0]
         y2, x2, dir2 = cs[1]
-        if board[y1][x1] != stringify_clue(
-                y1, x1, dir1, n) and board[y2][x2] != stringify_clue(
-                    y2, x2, dir2, n):
+        if board[y1][x1] != stringify_clue(y1, x1, dir1, n) and board[y2][x2] != stringify_clue(
+            y2, x2, dir2, n
+        ):
             return None
     blocks = []
     for y in range(height):
         for x in range(width):
-            if board[y][x] == '1':
+            if board[y][x] == "1":
                 blocks.append(None)
             elif board[y][x] is not None and len(board[y][x]) >= 2:
                 blocks.append(board[y][x])
-                board[y][x] = '1'
-    return 'http://pzv.jp/p.html?slalom/d/{}/{}/{}{}/{}'.format(
-        width, height, util.encode_array(board, single_empty_marker='4'),
-        util.encode_array(blocks, single_empty_marker='g'),
-        origin_y * width + origin_x)
+                board[y][x] = "1"
+    return "http://pzv.jp/p.html?slalom/d/{}/{}/{}{}/{}".format(
+        width,
+        height,
+        util.encode_array(board, single_empty_marker="4"),
+        util.encode_array(blocks, single_empty_marker="g"),
+        origin_y * width + origin_x,
+    )
 
 
 def visualize_problem(height, width, problem_base):
     origin, extra_black, gates = problem_base
-    board = [['.' for _ in range(width)] for _ in range(height)]
+    board = [["." for _ in range(width)] for _ in range(height)]
 
-    board[origin[0]][origin[1]] = 'O'
+    board[origin[0]][origin[1]] = "O"
     for y, x in extra_black:
-        board[y][x] = '#'
+        board[y][x] = "#"
     for y, x, d, l, n in gates:
-        v = '#' if n == -1 else str(n)
+        v = "#" if n == -1 else str(n)
         if d == 0:
             if x > 0:
                 board[y][x - 1] = v
             for i in range(l):
-                board[y][x + i] = '-'
+                board[y][x + i] = "-"
             if x + l < width:
                 board[y][x + l] = v
         else:
             if y > 0:
                 board[y - 1][x] = v
             for i in range(l):
-                board[y + i][x] = '|'
+                board[y + i][x] = "|"
             if y + l < height:
                 board[y + l][x] = v
     for y in range(height):
-        print(''.join(board[y]), file=sys.stderr)
+        print("".join(board[y]), file=sys.stderr)
     print(file=sys.stderr)
 
 
@@ -733,12 +783,17 @@ def _main():
         width = 10
         origin = (5, 1)
         extra_black = [(9, 2)]
-        gates = [(1, 5, 0, 3, -1), (2, 3, 0, 1, -1), (3, 8, 0, 1, 1),
-                 (6, 3, 0, 4, 3), (7, 1, 0, 1, -1), (8, 6, 0, 4, 2)]
+        gates = [
+            (1, 5, 0, 3, -1),
+            (2, 3, 0, 1, -1),
+            (3, 8, 0, 1, 1),
+            (6, 3, 0, 4, 3),
+            (7, 1, 0, 1, -1),
+            (8, 6, 0, 4, 2),
+        ]
         visualize_problem(height, width, (origin, extra_black, gates))
 
-        is_black = instantiate_problem(height, width,
-                                       (origin, extra_black, gates))
+        is_black = instantiate_problem(height, width, (origin, extra_black, gates))
         is_sat, sol = solve_slalom(height, width, origin, is_black, gates)
         print(is_sat)
         print(util.stringify_grid_frame(sol))
@@ -746,17 +801,17 @@ def _main():
         sys.setrecursionlimit(2000)
 
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-h', '--height', type=int, required=True)
-        parser.add_argument('-w', '--width', type=int, required=True)
-        parser.add_argument('--min-gates', type=int)
-        parser.add_argument('--max-gates', type=int)
-        parser.add_argument('--max-isolated-black-cells', type=int)
-        parser.add_argument('--no-adjacent-black-cell', action='store_true')
-        parser.add_argument('--no-facing-length-two', action='store_true')
-        parser.add_argument('--no-space-2x2', action='store_true')
-        parser.add_argument('--black-cell-in-every-3x3', action='store_true')
-        parser.add_argument('--min-go-through', type=int, default=0)
-        parser.add_argument('--no-minify', action='store_true')
+        parser.add_argument("-h", "--height", type=int, required=True)
+        parser.add_argument("-w", "--width", type=int, required=True)
+        parser.add_argument("--min-gates", type=int)
+        parser.add_argument("--max-gates", type=int)
+        parser.add_argument("--max-isolated-black-cells", type=int)
+        parser.add_argument("--no-adjacent-black-cell", action="store_true")
+        parser.add_argument("--no-facing-length-two", action="store_true")
+        parser.add_argument("--no-space-2x2", action="store_true")
+        parser.add_argument("--black-cell-in-every-3x3", action="store_true")
+        parser.add_argument("--min-go-through", type=int, default=0)
+        parser.add_argument("--no-minify", action="store_true")
 
         args = parser.parse_args()
         height = args.height
@@ -776,14 +831,14 @@ def _main():
                     no_facing_length_two=args.no_facing_length_two,
                     no_space_2x2=args.no_space_2x2,
                     black_cell_in_every_3x3=args.black_cell_in_every_3x3,
-                    min_go_through=args.min_go_through)
+                    min_go_through=args.min_go_through,
+                )
                 if problem is not None:
-                    print(problem_to_pzv_url(height, width, problem),
-                          flush=True)
+                    print(problem_to_pzv_url(height, width, problem), flush=True)
 
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

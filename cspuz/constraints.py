@@ -1,13 +1,12 @@
 from typing import Any, List, Union, overload
 
-from .array import (BoolArray1D, BoolArray2D, IntArray1D, IntArray2D,
-                    _elementwise)
+from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _elementwise
 from .expr import BoolExpr, BoolExprLike, IntExpr, IntExprLike, Op
 
 
 def flatten_iterator(*args: Any) -> Any:
     for arg in args:
-        if hasattr(arg, '__iter__'):
+        if hasattr(arg, "__iter__"):
             for xs in arg:
                 for x in flatten_iterator(xs):
                     yield x
@@ -100,33 +99,33 @@ def cond(c: BoolExprLike, t: IntArray2D, f: IntArray2D) -> IntArray2D:
 
 
 @overload
-def cond(c: BoolExprLike, t: IntArray1D, f: Union[IntExprLike,
-                                                  IntArray1D]) -> IntArray1D:
+def cond(c: BoolExprLike, t: IntArray1D, f: Union[IntExprLike, IntArray1D]) -> IntArray1D:
     ...
 
 
 @overload
-def cond(c: BoolExprLike, t: IntArray2D, f: Union[IntExprLike,
-                                                  IntArray2D]) -> IntArray2D:
+def cond(c: BoolExprLike, t: IntArray2D, f: Union[IntExprLike, IntArray2D]) -> IntArray2D:
     ...
 
 
 @overload
-def cond(c: BoolArray1D, t: Union[IntExprLike, IntArray1D],
-         f: Union[IntExprLike, IntArray1D]) -> IntExpr:
+def cond(
+    c: BoolArray1D, t: Union[IntExprLike, IntArray1D], f: Union[IntExprLike, IntArray1D]
+) -> IntExpr:
     ...
 
 
 @overload
-def cond(c: BoolArray2D, t: Union[IntExprLike, IntArray2D],
-         f: Union[IntExprLike, IntArray2D]) -> IntExpr:
+def cond(
+    c: BoolArray2D, t: Union[IntExprLike, IntArray2D], f: Union[IntExprLike, IntArray2D]
+) -> IntExpr:
     ...
 
 
 def cond(
-    c: Union[BoolExprLike, BoolArray1D,
-             BoolArray2D], t: Union[IntExprLike, IntArray1D, IntArray2D],
-    f: Union[IntExprLike, IntArray1D, IntArray2D]
+    c: Union[BoolExprLike, BoolArray1D, BoolArray2D],
+    t: Union[IntExprLike, IntArray1D, IntArray2D],
+    f: Union[IntExprLike, IntArray1D, IntArray2D],
 ) -> Union[IntExpr, IntArray1D, IntArray2D]:
     if isinstance(c, (BoolArray1D, BoolArray2D)):
         shape = c.shape
@@ -166,8 +165,8 @@ def then(x: BoolArray2D, y: Union[BoolExprLike, BoolArray2D]) -> BoolArray2D:
 
 
 def then(
-    x: Union[BoolExprLike, BoolArray1D,
-             BoolArray2D], y: Union[BoolExprLike, BoolArray1D, BoolArray2D]
+    x: Union[BoolExprLike, BoolArray1D, BoolArray2D],
+    y: Union[BoolExprLike, BoolArray1D, BoolArray2D],
 ) -> Union[BoolExpr, BoolArray1D, BoolArray2D]:
     if isinstance(x, (BoolArray1D, BoolArray2D)):
         shape = x.shape

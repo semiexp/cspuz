@@ -53,31 +53,34 @@ def count_non_default_values(problem, default, weight=1):
             return 0
 
 
-def generate_problem(solver,
-                     initial_problem=None,
-                     neighbor_generator=None,
-                     builder_pattern=None,
-                     score=None,
-                     clue_penalty=None,
-                     uniqueness=None,
-                     pretest=None,
-                     initial_temperature=5.0,
-                     temperature_decay=0.995,
-                     max_steps=None,
-                     solve_initial_problem=False,
-                     verbose=False):
+def generate_problem(
+    solver,
+    initial_problem=None,
+    neighbor_generator=None,
+    builder_pattern=None,
+    score=None,
+    clue_penalty=None,
+    uniqueness=None,
+    pretest=None,
+    initial_temperature=5.0,
+    temperature_decay=0.995,
+    max_steps=None,
+    solve_initial_problem=False,
+    verbose=False,
+):
     if builder_pattern is not None:
         if initial_problem is not None or neighbor_generator is not None:
             raise ValueError(
-                'initial_problem and neighbor_generator must not be '
-                'specified if builder_pattern is specified')
-        initial_problem, neighbor_generator = build_neighbor_generator(
-            builder_pattern)
+                "initial_problem and neighbor_generator must not be "
+                "specified if builder_pattern is specified"
+            )
+        initial_problem, neighbor_generator = build_neighbor_generator(builder_pattern)
     else:
         if initial_problem is None or neighbor_generator is None:
             raise ValueError(
-                'initial_problem and neighbor_generator must be specified '
-                'if builder_pattern is not specified')
+                "initial_problem and neighbor_generator must be specified "
+                "if builder_pattern is not specified"
+            )
     if score is None:
         score = default_score_calculator
     if uniqueness is None:
@@ -111,7 +114,7 @@ def generate_problem(solver,
                 continue
 
             if uniqueness(*answer):
-                print('generated', file=sys.stderr)
+                print("generated", file=sys.stderr)
                 return next_problem
 
             next_score_base = score(*answer)
@@ -121,19 +124,23 @@ def generate_problem(solver,
                 next_score_penalty = clue_penalty(next_problem)
             next_score = next_score_base - next_score_penalty
 
-            update = current_score is None or current_score <= next_score \
-                or random.random() < math.exp(
-                    (next_score - current_score) / temperature)
+            update = (
+                current_score is None
+                or current_score <= next_score
+                or random.random() < math.exp((next_score - current_score) / temperature)
+            )
             if update:
                 if verbose:
-                    print('score: {} -> {} (base: {}, penalty: {})'.format(
-                        current_score, next_score, next_score_base,
-                        next_score_penalty),
-                          file=sys.stderr)
+                    print(
+                        "score: {} -> {} (base: {}, penalty: {})".format(
+                            current_score, next_score, next_score_base, next_score_penalty
+                        ),
+                        file=sys.stderr,
+                    )
                 problem = next_problem
                 current_score = next_score
                 break
         temperature *= temperature_decay
     if verbose:
-        print('failed', file=sys.stderr)
+        print("failed", file=sys.stderr)
     return None

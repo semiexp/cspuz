@@ -67,12 +67,14 @@ class Combinator:
     def __init__(self):
         pass
 
-    def serialize(self, env: CombinatorEnv, data: List[Any],
-                  idx: int) -> Optional[Tuple[int, str]]:
+    def serialize(
+        self, env: CombinatorEnv, data: List[Any], idx: int
+    ) -> Optional[Tuple[int, str]]:
         raise NotImplementedError()
 
-    def deserialize(self, env: CombinatorEnv, data: str,
-                    idx: int) -> Optional[Tuple[int, List[Any]]]:
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[Any]]]:
         raise NotImplementedError()
 
 
@@ -87,7 +89,7 @@ class FixStr(Combinator):
     def deserialize(self, env, data, idx):
         if idx + len(self._s) > len(data):
             return None
-        if data[idx:idx + len(self._s)] == self._s:
+        if data[idx : idx + len(self._s)] == self._s:
             return len(self._s), []
         else:
             return None
@@ -100,8 +102,7 @@ class Dict(Combinator):
         self._after = _as_list(after)
 
         if len(self._before) != len(self._after):
-            raise ValueError(
-                "`before` and `after` should have the same number of elements")
+            raise ValueError("`before` and `after` should have the same number of elements")
 
     def serialize(self, env, data, idx):
         if idx == len(data):
@@ -115,9 +116,10 @@ class Dict(Combinator):
         if idx == len(data):
             return None
         for i in range(len(self._before)):
-            if idx + len(self._after[i]) <= len(
-                    data) and data[idx:idx +
-                                   len(self._after[i])] == self._after[i]:
+            if (
+                idx + len(self._after[i]) <= len(data)
+                and data[idx : idx + len(self._after[i])] == self._after[i]
+            ):
                 return len(self._after[i]), [self._before[i]]
         return None
 
@@ -139,8 +141,7 @@ class Spaces(Combinator):
         if data[idx] != self._space:
             return None
         i = 1
-        while i < self._max_consecutive and idx + i < len(data) and data[
-                idx + i] == self._space:
+        while i < self._max_consecutive and idx + i < len(data) and data[idx + i] == self._space:
             i += 1
         return i, _to_base36(self._offset + i)
 
@@ -176,7 +177,7 @@ class DecInt(Combinator):
             n_digits += 1
         if n_digits == 0:
             return None
-        return n_digits, [int(data[idx:idx + n_digits])]
+        return n_digits, [int(data[idx : idx + n_digits])]
 
 
 class HexInt(Combinator):
@@ -202,14 +203,14 @@ class HexInt(Combinator):
         if idx == len(data):
             return None
         c = data[idx]
-        if c == '-':
+        if c == "-":
             if idx + 3 > len(data):
                 return None
-            return 3, [_from_base16(data[idx + 1:idx + 3])]
-        elif c == '+':
+            return 3, [_from_base16(data[idx + 1 : idx + 3])]
+        elif c == "+":
             if idx + 4 > len(data):
                 return None
-            return 4, [_from_base16(data[idx + 1:idx + 4])]
+            return 4, [_from_base16(data[idx + 1 : idx + 4])]
         elif _is_hex(c):
             return 1, [_from_base16(c)]
         else:
@@ -220,7 +221,7 @@ class MultiDigit(Combinator):
     def __init__(self, base, digits):
         super(MultiDigit, self).__init__()
 
-        if base**digits > 36:
+        if base ** digits > 36:
             raise ValueError("base ** digits must be at most 36")
         self._base = base
         self._digits = digits
@@ -246,7 +247,7 @@ class MultiDigit(Combinator):
             return None
 
         value = _from_base36(data[idx])
-        if not 0 <= value < self._base**self._digits:
+        if not 0 <= value < self._base ** self._digits:
             return None
         unpacked = []
         for i in range(self._digits):
@@ -359,7 +360,7 @@ class Seq(Combinator):
             ofs, d = tmp
             n_read += ofs
             ret += d
-        return n_read, [ret[:self._n]]
+        return n_read, [ret[: self._n]]
 
 
 class Grid(Combinator):
@@ -367,8 +368,7 @@ class Grid(Combinator):
         super(Grid, self).__init__()
         self._base = base
         if (height is None) != (width is None):
-            raise ValueError(
-                "`height` and `width` must be specified at the same time")
+            raise ValueError("`height` and `width` must be specified at the same time")
         self._height = height
         self._width = width
 
@@ -423,44 +423,39 @@ class Rooms(Combinator):
             raise ValueError("index out of bounds")
         d = data[idx]
         if not isinstance(d, list):
-            raise ValueError(
-                "Rooms can serialize only List[List[Tuple[int, int]]]")
+            raise ValueError("Rooms can serialize only List[List[Tuple[int, int]]]")
         height = env.height
         width = env.width
         room_id = [[-1 for _ in range(width)] for _ in range(height)]
         for i, room in enumerate(d):
             if not isinstance(room, list):
-                raise ValueError(
-                    "Rooms can serialize only List[List[Tuple[int, int]]]")
+                raise ValueError("Rooms can serialize only List[List[Tuple[int, int]]]")
             for p in room:
                 if not isinstance(p, tuple) or len(p) != 2:
-                    raise ValueError(
-                        "Rooms can serialize only List[List[Tuple[int, int]]]")
+                    raise ValueError("Rooms can serialize only List[List[Tuple[int, int]]]")
                 y, x = p
                 if not 0 <= y < height and 0 <= x < width:
-                    raise ValueError(
-                        f"Cell position out of bounds: ({y}, {x})")
+                    raise ValueError(f"Cell position out of bounds: ({y}, {x})")
                 if room_id[y][x] != -1:
-                    raise ValueError(
-                        f"Cell ({y}, {x}) belongs to multiple rooms")
+                    raise ValueError(f"Cell ({y}, {x}) belongs to multiple rooms")
                 room_id[y][x] = i
         for y in range(height):
             for x in range(width):
                 if room_id[y][x] == -1:
-                    raise ValueError(
-                        f"Cell ({y}, {x}) does not belong to any room")
-        vertical = [[
-            1 if room_id[y][x] != room_id[y][x + 1] else 0
-            for x in range(width - 1)
-        ] for y in range(height)]
-        horizontal = [[
-            1 if room_id[y][x] != room_id[y + 1][x] else 0
-            for x in range(width)
-        ] for y in range(height - 1)]
+                    raise ValueError(f"Cell ({y}, {x}) does not belong to any room")
+        vertical = [
+            [1 if room_id[y][x] != room_id[y][x + 1] else 0 for x in range(width - 1)]
+            for y in range(height)
+        ]
+        horizontal = [
+            [1 if room_id[y][x] != room_id[y + 1][x] else 0 for x in range(width)]
+            for y in range(height - 1)
+        ]
 
         combinator = Tupl(
             Grid(MultiDigit(base=2, digits=5), height=height, width=width - 1),
-            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width))
+            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width),
+        )
         return combinator.serialize(env, [([vertical], [horizontal])], 0)
 
     def serialize(self, env, data, idx):
@@ -481,7 +476,8 @@ class Rooms(Combinator):
 
         combinator = Tupl(
             Grid(MultiDigit(base=2, digits=5), height=height, width=width - 1),
-            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width))
+            Grid(MultiDigit(base=2, digits=5), height=height - 1, width=width),
+        )
         res = combinator.deserialize(env, data, idx)
         if res is None:
             raise ValueError("border data could not be deserialized")
@@ -517,11 +513,9 @@ class Rooms(Combinator):
         if not self._allow_redundant_border:
             for y in range(height):
                 for x in range(width):
-                    if y < height - 1 and horizontal[y][x] and room_id[y][
-                            x] == room_id[y + 1][x]:
+                    if y < height - 1 and horizontal[y][x] and room_id[y][x] == room_id[y + 1][x]:
                         raise ValueError("redundant horizontal border found")
-                    if x < width - 1 and vertical[y][x] and room_id[y][
-                            x] == room_id[y][x + 1]:
+                    if x < width - 1 and vertical[y][x] and room_id[y][x] == room_id[y][x + 1]:
                         raise ValueError("redundant vertical border found")
 
         rooms = [[] for _ in range(last_id)]
@@ -558,8 +552,7 @@ class ValuedRooms(Combinator):
             return None
         rooms, values = list(map(list, zip(*sorted(zip(*d)))))
 
-        combinator = Tupl(self._room_combinator,
-                          Seq(self._value_combinator, len(rooms)))
+        combinator = Tupl(self._room_combinator, Seq(self._value_combinator, len(rooms)))
         res = combinator.serialize(env, [([rooms], [values])], 0)
         return res or (1, res[1])
 
@@ -597,21 +590,14 @@ def deserialize_problem(combinator, serialized, **kwargs):
     return problem[0]
 
 
-def serialize_problem_as_url(combinator,
-                             puzzle,
-                             height,
-                             width,
-                             problem,
-                             prefix="https://puzz.link/p?"):
-    serialized = serialize_problem(combinator,
-                                   problem,
-                                   height=height,
-                                   width=width)
+def serialize_problem_as_url(
+    combinator, puzzle, height, width, problem, prefix="https://puzz.link/p?"
+):
+    serialized = serialize_problem(combinator, problem, height=height, width=width)
     return f"{prefix}{puzzle}/{width}/{height}/{serialized}"
 
 
-_DESERIALIZE_URL_REG = re.compile(
-    "https?://[^/]+/p(?:\\.html)?\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
+_DESERIALIZE_URL_REG = re.compile("https?://[^/]+/p(?:\\.html)?\\?([^/]+)/(\\d+)/(\\d+)/(.*)")
 
 
 def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
@@ -622,11 +608,9 @@ def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
         return (m[1], int(m[3]), int(m[2]))
 
 
-def deserialize_problem_as_url(combinator,
-                               url,
-                               allowed_puzzles=None,
-                               allow_failure=False,
-                               return_size=False):
+def deserialize_problem_as_url(
+    combinator, url, allowed_puzzles=None, allow_failure=False, return_size=False
+):
     m = _DESERIALIZE_URL_REG.match(url)
     if allow_failure and m is None:
         return None

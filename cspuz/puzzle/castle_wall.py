@@ -18,16 +18,16 @@ def solve_castle_wall(height, width, arrow, inside):
     # arrow constraints
     for y in range(height):
         for x in range(width):
-            if arrow[y][x] == '..':
+            if arrow[y][x] == "..":
                 continue
             solver.ensure(~passed[y, x])
-            if arrow[y][x][0] == '^':
+            if arrow[y][x][0] == "^":
                 related_edges = grid_frame.vertical[:y, x]
-            elif arrow[y][x][0] == 'v':
+            elif arrow[y][x][0] == "v":
                 related_edges = grid_frame.vertical[y:, x]
-            elif arrow[y][x][0] == '<':
+            elif arrow[y][x][0] == "<":
                 related_edges = grid_frame.horizontal[y, :x]
-            elif arrow[y][x][0] == '>':
+            elif arrow[y][x][0] == ">":
                 related_edges = grid_frame.horizontal[y, x:]
             else:
                 continue
@@ -40,8 +40,9 @@ def solve_castle_wall(height, width, arrow, inside):
             if y == 0:
                 solver.ensure(is_inside[y, x] == grid_frame[0, x * 2 + 1])
             else:
-                solver.ensure(is_inside[y, x] == (
-                    is_inside[y - 1, x] != grid_frame[y * 2, x * 2 + 1]))
+                solver.ensure(
+                    is_inside[y, x] == (is_inside[y - 1, x] != grid_frame[y * 2, x * 2 + 1])
+                )
     for y in range(height):
         for x in range(width):
             if inside[y][x] is True:
@@ -68,21 +69,21 @@ def trivial_decision(height, width, arrow, max_clue_gap):
     def max_lines(seq):
         ret = 0
         for i in range(1, len(seq)):
-            if seq[i - 1] == '..' and seq[i] == '..':
+            if seq[i - 1] == ".." and seq[i] == "..":
                 ret += 1
         return ret
 
     for y in range(height):
         for x in range(width):
-            if arrow[y][x] == '..':
+            if arrow[y][x] == "..":
                 continue
-            if arrow[y][x][0] == '^':
+            if arrow[y][x][0] == "^":
                 related_cells = [arrow[y2][x] for y2 in range(0, y)]
-            elif arrow[y][x][0] == 'v':
+            elif arrow[y][x][0] == "v":
                 related_cells = [arrow[y2][x] for y2 in range(y + 1, height)]
-            elif arrow[y][x][0] == '<':
+            elif arrow[y][x][0] == "<":
                 related_cells = [arrow[y][x2] for x2 in range(0, x)]
-            elif arrow[y][x][0] == '>':
+            elif arrow[y][x][0] == ">":
                 related_cells = [arrow[y][x2] for x2 in range(x + 1, width)]
             else:
                 continue
@@ -91,13 +92,10 @@ def trivial_decision(height, width, arrow, max_clue_gap):
     return False
 
 
-def generate_castle_wall(height,
-                         width,
-                         min_clue=None,
-                         max_clue_gap=0,
-                         no_side_clue=False,
-                         verbose=False):
-    arrow = [['..' for _ in range(width)] for _ in range(height)]
+def generate_castle_wall(
+    height, width, min_clue=None, max_clue_gap=0, no_side_clue=False, verbose=False
+):
+    arrow = [[".." for _ in range(width)] for _ in range(height)]
     inside = [[None for _ in range(width)] for _ in range(height)]
     score = 0
     temperature = 5.0
@@ -112,37 +110,41 @@ def generate_castle_wall(height,
         cand = []
         for y in range(height):
             for x in range(width):
-                for d in ['^', 'v', '<', '>']:
+                for d in ["^", "v", "<", ">"]:
                     adj = False
                     for dy in range(-2, 3):
                         for dx in range(-2, 3):
                             y2 = y + dy
                             x2 = x + dx
-                            if abs(dy) + abs(dx) != 4 and (dy, dx) != (
-                                    0, 0
-                            ) and 0 <= y2 < height and 0 <= x2 < width and \
-                                    arrow[y2][x2] != '..':
+                            if (
+                                abs(dy) + abs(dx) != 4
+                                and (dy, dx) != (0, 0)
+                                and 0 <= y2 < height
+                                and 0 <= x2 < width
+                                and arrow[y2][x2] != ".."
+                            ):
                                 adj = True
                     if adj:
                         continue
-                    if (y <= 1 and d == '^') or (
-                            y >= height - 2
-                            and d == 'v') or (x <= 1
-                                              and d == '<') or (x >= width - 2
-                                                                and d == '>'):
+                    if (
+                        (y <= 1 and d == "^")
+                        or (y >= height - 2 and d == "v")
+                        or (x <= 1 and d == "<")
+                        or (x >= width - 2 and d == ">")
+                    ):
                         continue
                     for n in range(1, 10):
                         if min_clue is not None and n < min_clue:
                             continue
                         for i in side_clue_set:
                             a = d + str(n)
-                            if d == '^' and n >= y:
+                            if d == "^" and n >= y:
                                 continue
-                            if d == '<' and n >= x:
+                            if d == "<" and n >= x:
                                 continue
-                            if d == 'v' and n >= height - y - 1:
+                            if d == "v" and n >= height - y - 1:
                                 continue
-                            if d == '>' and n >= width - x - 1:
+                            if d == ">" and n >= width - x - 1:
                                 continue
                             if (a, i) != (arrow[y][x], inside[y][x]):
                                 cand.append((y, x, a, i))
@@ -154,14 +156,10 @@ def generate_castle_wall(height,
             arrow[y][x] = a
             inside[y][x] = i
 
-            if trivial_decision(height,
-                                width,
-                                arrow,
-                                max_clue_gap=max_clue_gap):
+            if trivial_decision(height, width, arrow, max_clue_gap=max_clue_gap):
                 sat = False
             else:
-                sat, grid_frame = solve_castle_wall(height, width, arrow,
-                                                    inside)
+                sat, grid_frame = solve_castle_wall(height, width, arrow, inside)
             if not sat:
                 score_next = -1
                 update = False
@@ -172,8 +170,8 @@ def generate_castle_wall(height,
                 clue_score = 0
                 for y2 in range(height):
                     for x2 in range(width):
-                        if arrow[y2][x2] != '..':
-                            if arrow[y2][x2][0] == '?':
+                        if arrow[y2][x2] != "..":
+                            if arrow[y2][x2][0] == "?":
                                 clue_score += 5
                             else:
                                 clue_score += 8
@@ -181,13 +179,13 @@ def generate_castle_wall(height,
                             clue_score += 2
                 clue_score = max(0, clue_score - 20)
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp(
-                    (score_next - score) / temperature))
+                update = score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature
+                )
 
             if update:
                 if verbose:
-                    print('update: {} -> {}'.format(score, score_next),
-                          file=sys.stderr)
+                    print("update: {} -> {}".format(score, score_next), file=sys.stderr)
                 score = score_next
                 break
             else:
@@ -196,7 +194,7 @@ def generate_castle_wall(height,
 
         temperature *= 0.995
     if verbose:
-        print('failed', file=sys.stderr)
+        print("failed", file=sys.stderr)
     return None
 
 
@@ -205,12 +203,12 @@ def _main():
         pass
     else:
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-h', '--height', type=int, required=True)
-        parser.add_argument('-w', '--width', type=int, required=True)
-        parser.add_argument('--max-clue-gap', type=int, default=0)
-        parser.add_argument('--min-clue', type=int)
-        parser.add_argument('--no-side-clue', action='store_true')
-        parser.add_argument('-v', '--verbose', action='store_true')
+        parser.add_argument("-h", "--height", type=int, required=True)
+        parser.add_argument("-w", "--width", type=int, required=True)
+        parser.add_argument("--max-clue-gap", type=int, default=0)
+        parser.add_argument("--min-clue", type=int)
+        parser.add_argument("--no-side-clue", action="store_true")
+        parser.add_argument("-v", "--verbose", action="store_true")
         args = parser.parse_args()
 
         cspuz.config.solver_timeout = 600.0
@@ -222,31 +220,33 @@ def _main():
         verbose = args.verbose
         while True:
             try:
-                problem = generate_castle_wall(height,
-                                               width,
-                                               min_clue=min_clue,
-                                               max_clue_gap=max_clue_gap,
-                                               no_side_clue=no_side_clue,
-                                               verbose=verbose)
+                problem = generate_castle_wall(
+                    height,
+                    width,
+                    min_clue=min_clue,
+                    max_clue_gap=max_clue_gap,
+                    no_side_clue=no_side_clue,
+                    verbose=verbose,
+                )
                 if problem is not None:
                     arrow, inside = problem
                     for y in range(height):
                         for x in range(width):
-                            if arrow[y][x] == '..':
-                                print('...', end=' ')
+                            if arrow[y][x] == "..":
+                                print("...", end=" ")
                             else:
                                 if inside[y][x] is None:
-                                    sgn = '?'
+                                    sgn = "?"
                                 elif inside[y][x]:
-                                    sgn = 'i'
+                                    sgn = "i"
                                 else:
-                                    sgn = 'o'
-                                print(arrow[y][x] + sgn, end=' ')
+                                    sgn = "o"
+                                print(arrow[y][x] + sgn, end=" ")
                         print()
                     print(flush=True)
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

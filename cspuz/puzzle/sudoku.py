@@ -4,8 +4,7 @@ import subprocess
 from cspuz import Solver
 from cspuz.constraints import alldifferent
 from cspuz.puzzle import util
-from cspuz.generator import (generate_problem, count_non_default_values,
-                             ArrayBuilder2D)
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_sudoku(problem, n=3):
@@ -18,8 +17,7 @@ def solve_sudoku(problem, n=3):
         solver.ensure(alldifferent(answer[:, i]))
     for y in range(n):
         for x in range(n):
-            solver.ensure(
-                alldifferent(answer[y * n:(y + 1) * n, x * n:(x + 1) * n]))
+            solver.ensure(alldifferent(answer[y * n : (y + 1) * n, x * n : (x + 1) * n]))
     for y in range(size):
         for x in range(size):
             if problem[y][x] >= 1:
@@ -36,20 +34,17 @@ def generate_sudoku(n, max_clue=None, symmetry=False, verbose=False):
         if max_clue is None:
             return True
         else:
-            return count_non_default_values(problem, default=0,
-                                            weight=1) <= max_clue
+            return count_non_default_values(problem, default=0, weight=1) <= max_clue
 
     generated = generate_problem(
         lambda problem: solve_sudoku(problem, n=n),
-        builder_pattern=ArrayBuilder2D(size,
-                                       size,
-                                       range(0, size + 1),
-                                       default=0,
-                                       symmetry=symmetry),
+        builder_pattern=ArrayBuilder2D(
+            size, size, range(0, size + 1), default=0, symmetry=symmetry
+        ),
         pretest=pretest,
-        clue_penalty=lambda problem: count_non_default_values(
-            problem, default=0, weight=5),
-        verbose=verbose)
+        clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=5),
+        verbose=verbose,
+    )
     return generated
 
 
@@ -71,8 +66,9 @@ def _main():
         if is_sat:
             print(
                 util.stringify_array(
-                    answer,
-                    dict([(None, '?')] + [(i, str(i)) for i in range(1, 10)])))
+                    answer, dict([(None, "?")] + [(i, str(i)) for i in range(1, 10)])
+                )
+            )
     else:
         n = int(sys.argv[1])
         if len(sys.argv) >= 3:
@@ -81,18 +77,16 @@ def _main():
             max_clue = None
         while True:
             try:
-                problem = generate_sudoku(n,
-                                          max_clue=max_clue,
-                                          symmetry=True,
-                                          verbose=True)
+                problem = generate_sudoku(n, max_clue=max_clue, symmetry=True, verbose=True)
                 if problem is not None:
-                    print(util.stringify_array(
-                        problem, lambda x: '.' if x == 0 else str(x)),
-                          flush=True)
+                    print(
+                        util.stringify_array(problem, lambda x: "." if x == 0 else str(x)),
+                        flush=True,
+                    )
                     print(flush=True)
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

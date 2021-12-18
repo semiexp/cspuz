@@ -5,8 +5,7 @@ from cspuz import graph, BoolGridFrame
 
 
 class TestGraph:
-    @pytest.fixture(autouse=True,
-                    params=[("sugar", False), ("sugar", True), ("z3", False)])
+    @pytest.fixture(autouse=True, params=[("sugar", False), ("sugar", True), ("z3", False)])
     def default_backend(self, request):
         default_backend, use_graph_primitive = request.param
         cspuz.config.default_backend = default_backend
@@ -68,12 +67,10 @@ class TestGraph:
         solver.ensure(is_active[7])
         assert not solver.find_answer()
 
-    def test_active_vertices_not_adjacent_and_not_segmenting_grid(
-            self, solver):
+    def test_active_vertices_not_adjacent_and_not_segmenting_grid(self, solver):
         is_active = solver.bool_array((3, 4))
         solver.add_answer_key(is_active)
-        graph.active_vertices_not_adjacent_and_not_segmenting(
-            solver, is_active)
+        graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_active)
 
         solver.ensure(is_active[1, 1])
         solver.ensure(is_active[2, 2])
@@ -82,12 +79,12 @@ class TestGraph:
         assert is_active[0, 2].sol is False
         assert is_active[0, 3].sol is None
 
-    def test_active_vertices_not_adjacent_and_not_segmenting_graph(
-            self, solver, default_graph):
+    def test_active_vertices_not_adjacent_and_not_segmenting_graph(self, solver, default_graph):
         is_active = solver.bool_array(8)
         solver.add_answer_key(is_active)
         graph.active_vertices_not_adjacent_and_not_segmenting(
-            solver, is_active, graph=default_graph)
+            solver, is_active, graph=default_graph
+        )
 
         solver.ensure(is_active[0])
         assert solver.find_answer()
@@ -128,10 +125,7 @@ class TestGraph:
     def test_division_connected_grid_roots(self, solver):
         division = solver.int_array((5, 5), 0, 3)
         solver.add_answer_key(division)
-        graph.division_connected(solver,
-                                 division,
-                                 4,
-                                 roots=[(2, 4), (1, 2), None, None])
+        graph.division_connected(solver, division, 4, roots=[(2, 4), (1, 2), None, None])
 
         solver.ensure(division[1, 3] == 3)
         solver.ensure(division[2, 1] == 2)
@@ -162,11 +156,7 @@ class TestGraph:
     def test_division_connected_graph_roots(self, solver, default_graph):
         division = solver.int_array(8, 0, 1)
         solver.add_answer_key(division)
-        graph.division_connected(solver,
-                                 division,
-                                 2,
-                                 graph=default_graph,
-                                 roots=[None, 7])
+        graph.division_connected(solver, division, 2, graph=default_graph, roots=[None, 7])
 
         solver.ensure(division[1] == 1)
         solver.ensure(division[2] == 0)
@@ -184,7 +174,8 @@ class TestGraph:
                 [None, None, None, None],
                 [None, None, 5, None],
                 [None, None, 6, None],
-            ])
+            ],
+        )
         solver.add_answer_key(group_id)
         assert solver.find_answer()
 
@@ -210,9 +201,7 @@ class TestGraph:
     def test_active_edges_single_cycle_graph(self, solver, default_graph):
         is_active_edge = solver.bool_array(10)
         solver.add_answer_key(is_active_edge)
-        graph.active_edges_single_cycle(solver,
-                                        is_active_edge,
-                                        graph=default_graph)
+        graph.active_edges_single_cycle(solver, is_active_edge, graph=default_graph)
 
         solver.ensure(is_active_edge[0])
         solver.ensure(~is_active_edge[5])

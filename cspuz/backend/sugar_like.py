@@ -9,55 +9,54 @@ from .backend import Backend
 from ._subproc import run_subprocess
 
 OP_TO_OPNAME = {
-    Op.NEG: '-',
-    Op.ADD: '+',
-    Op.SUB: '-',
-    Op.EQ: '=',
-    Op.NE: '!=',
-    Op.LE: '<=',
-    Op.LT: '<',
-    Op.GE: '>=',
-    Op.GT: '>',
-    Op.NOT: '!',
-    Op.AND: '&&',
-    Op.OR: '||',
-    Op.IFF: 'iff',
-    Op.XOR: 'xor',
-    Op.IMP: '=>',
-    Op.IF: 'if',
-    Op.ALLDIFF: 'alldifferent',
-    Op.GRAPH_ACTIVE_VERTICES_CONNECTED: 'graph-active-vertices-connected'
+    Op.NEG: "-",
+    Op.ADD: "+",
+    Op.SUB: "-",
+    Op.EQ: "=",
+    Op.NE: "!=",
+    Op.LE: "<=",
+    Op.LT: "<",
+    Op.GE: ">=",
+    Op.GT: ">",
+    Op.NOT: "!",
+    Op.AND: "&&",
+    Op.OR: "||",
+    Op.IFF: "iff",
+    Op.XOR: "xor",
+    Op.IMP: "=>",
+    Op.IF: "if",
+    Op.ALLDIFF: "alldifferent",
+    Op.GRAPH_ACTIVE_VERTICES_CONNECTED: "graph-active-vertices-connected",
 }
 
 
 def _convert_variable(v):
     if isinstance(v, BoolVar):
-        return '(bool b{})'.format(v.id)
+        return "(bool b{})".format(v.id)
     elif isinstance(v, IntVar):
-        return '(int i{} {} {})'.format(v.id, v.lo, v.hi)
+        return "(int i{} {} {})".format(v.id, v.lo, v.hi)
     else:
         raise TypeError()
 
 
 def _convert_expr(e):
     if isinstance(e, bool):
-        return ('true' if e else 'false')
+        return "true" if e else "false"
     if isinstance(e, int):
         return str(e)
     if not isinstance(e, Expr):
         raise TypeError()
 
     if isinstance(e, BoolVar):
-        return 'b{}'.format(e.id)
+        return "b{}".format(e.id)
     elif isinstance(e, IntVar):
-        return 'i{}'.format(e.id)
+        return "i{}".format(e.id)
     elif e.op == Op.BOOL_CONSTANT:
-        return 'true' if e.operands[0] else 'false'
+        return "true" if e.operands[0] else "false"
     elif e.op == Op.INT_CONSTANT:
         return str(e.operands[0])
     else:
-        return '({} {})'.format(OP_TO_OPNAME[e.op],
-                                ' '.join(map(_convert_expr, e.operands)))
+        return "({} {})".format(OP_TO_OPNAME[e.op], " ".join(map(_convert_expr, e.operands)))
 
 
 class SugarLikeBackend(Backend):
@@ -80,10 +79,9 @@ class SugarLikeBackend(Backend):
             self.converted_constraints.append(_convert_expr(constraint))
 
     def solve(self):
-        csp_description = '\n'.join(self.converted_variables +
-                                    self.converted_constraints)
-        out = self._call_solver(csp_description).split('\n')
-        if 'UNSATISFIABLE' in out[0]:
+        csp_description = "\n".join(self.converted_variables + self.converted_constraints)
+        out = self._call_solver(csp_description).split("\n")
+        if "UNSATISFIABLE" in out[0]:
             for v in self.variables:
                 v.sol = None
             return False
@@ -92,10 +90,10 @@ class SugarLikeBackend(Backend):
         for line in out[1:]:
             if len(line) <= 2:
                 break
-            var, val = line[2:].strip().split('\t')
-            if val == 'true':
+            var, val = line[2:].strip().split("\t")
+            if val == "true":
                 converted_val = True
-            elif val == 'false':
+            elif val == "false":
                 converted_val = False
             else:
                 converted_val = int(val)
@@ -109,30 +107,30 @@ class SugarLikeBackend(Backend):
         for i in range(len(self.variables)):
             if is_answer_key[i]:
                 if isinstance(self.variables[i], BoolVar):
-                    answer_keys.append('b{}'.format(self.variables[i].id))
+                    answer_keys.append("b{}".format(self.variables[i].id))
                 elif isinstance(self.variables[i], IntVar):
-                    answer_keys.append('i{}'.format(self.variables[i].id))
+                    answer_keys.append("i{}".format(self.variables[i].id))
                 else:
                     raise TypeError()
-        answer_keys_desc = '#' + ' '.join(answer_keys)
-        csp_description = '\n'.join(self.converted_variables +
-                                    self.converted_constraints +
-                                    [answer_keys_desc])
-        out = self._call_solver(csp_description).split('\n')
+        answer_keys_desc = "#" + " ".join(answer_keys)
+        csp_description = "\n".join(
+            self.converted_variables + self.converted_constraints + [answer_keys_desc]
+        )
+        out = self._call_solver(csp_description).split("\n")
         for v in self.variables:
             v.sol = None
 
-        if 'unsat' in out[0]:
+        if "unsat" in out[0]:
             return False
 
         assignment = [None] * (self.max_var_id + 1)
         for line in out[1:]:
             if len(line) <= 2:
                 break
-            var, val = line.split(' ')
-            if val == 'true':
+            var, val = line.split(" ")
+            if val == "true":
                 converted_val = True
-            elif val == 'false':
+            elif val == "false":
                 converted_val = False
             else:
                 converted_val = int(val)
@@ -150,29 +148,31 @@ class SugarBackend(SugarLikeBackend):
         raise NotImplementedError
 
     def _call_solver(self, csp_description: str) -> str:
-        sugar_path = config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'],
-                             csp_description,
-                             timeout=config.solver_timeout)
+        sugar_path = config.backend_path or "sugar"
+        out = run_subprocess(
+            [sugar_path, "/dev/stdin"], csp_description, timeout=config.solver_timeout
+        )
         return out
 
 
 class SugarExtendedBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
-        sugar_path = config.backend_path or 'sugar'
-        out = run_subprocess([sugar_path, '/dev/stdin'],
-                             csp_description,
-                             timeout=config.solver_timeout)
+        sugar_path = config.backend_path or "sugar"
+        out = run_subprocess(
+            [sugar_path, "/dev/stdin"], csp_description, timeout=config.solver_timeout
+        )
         return out
 
 
 class CSugarBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import pycsugar
+
         return pycsugar.solver(csp_description)
 
 
 class EnigmaCSPBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import enigma_csp
+
         return enigma_csp.solver(csp_description)

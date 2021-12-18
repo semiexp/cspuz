@@ -4,54 +4,44 @@ import subprocess
 import cspuz
 from cspuz import Solver, graph
 from cspuz.puzzle import util
-from cspuz.generator import (generate_problem, count_non_default_values,
-                             ArrayBuilder2D)
+from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
 
 
 def solve_fillomino(height, width, problem, checkered=False):
     solver = Solver()
     size = solver.int_array((height, width), 1, height * width)
     solver.add_answer_key(size)
-    group_id = graph.division_connected_variable_groups(solver,
-                                                        group_size=size)
-    solver.ensure(
-        (group_id[:, :-1] == group_id[:, 1:]) == (size[:, :-1] == size[:, 1:]))
-    solver.ensure(
-        (group_id[:-1, :] == group_id[1:, :]) == (size[:-1, :] == size[1:, :]))
+    group_id = graph.division_connected_variable_groups(solver, group_size=size)
+    solver.ensure((group_id[:, :-1] == group_id[:, 1:]) == (size[:, :-1] == size[:, 1:]))
+    solver.ensure((group_id[:-1, :] == group_id[1:, :]) == (size[:-1, :] == size[1:, :]))
     for y in range(height):
         for x in range(width):
             if problem[y][x] >= 1:
                 solver.ensure(size[y, x] == problem[y][x])
     if checkered:
         color = solver.bool_array((height, width))
-        solver.ensure(
-            (group_id[:, :-1] == group_id[:,
-                                          1:]) == (color[:, :-1] == color[:,
-                                                                          1:]))
-        solver.ensure((group_id[:-1, :] == group_id[1:, :]) == (
-            color[:-1, :] == color[1:, :]))
+        solver.ensure((group_id[:, :-1] == group_id[:, 1:]) == (color[:, :-1] == color[:, 1:]))
+        solver.ensure((group_id[:-1, :] == group_id[1:, :]) == (color[:-1, :] == color[1:, :]))
     is_sat = solver.solve()
     return is_sat, size
 
 
-def generate_fillomino(height,
-                       width,
-                       checkered=False,
-                       disallow_adjacent=False,
-                       symmetry=False,
-                       verbose=False):
+def generate_fillomino(
+    height, width, checkered=False, disallow_adjacent=False, symmetry=False, verbose=False
+):
     generated = generate_problem(
-        lambda problem: solve_fillomino(
-            height, width, problem, checkered=checkered),
-        builder_pattern=ArrayBuilder2D(height,
-                                       width,
-                                       range(0, 9),
-                                       default=0,
-                                       disallow_adjacent=disallow_adjacent,
-                                       symmetry=symmetry),
-        clue_penalty=lambda problem: count_non_default_values(
-            problem, default=0, weight=5),
-        verbose=verbose)
+        lambda problem: solve_fillomino(height, width, problem, checkered=checkered),
+        builder_pattern=ArrayBuilder2D(
+            height,
+            width,
+            range(0, 9),
+            default=0,
+            disallow_adjacent=disallow_adjacent,
+            symmetry=symmetry,
+        ),
+        clue_penalty=lambda problem: count_non_default_values(problem, default=0, weight=5),
+        verbose=verbose,
+    )
     return generated
 
 
@@ -72,7 +62,7 @@ def _main():
         ]
         #        """
         is_sat, ans = solve_fillomino(height, width, problem)
-        print('has answer:', is_sat)
+        print("has answer:", is_sat)
         if is_sat:
             print(util.stringify_array(ans, str))
     else:
@@ -80,19 +70,18 @@ def _main():
         height, width = map(int, sys.argv[1:])
         while True:
             try:
-                problem = generate_fillomino(height,
-                                             width,
-                                             disallow_adjacent=True,
-                                             symmetry=True,
-                                             verbose=True)
+                problem = generate_fillomino(
+                    height, width, disallow_adjacent=True, symmetry=True, verbose=True
+                )
                 if problem is not None:
-                    print(util.stringify_array(
-                        problem, lambda x: '.' if x == 0 else str(x)),
-                          flush=True)
+                    print(
+                        util.stringify_array(problem, lambda x: "." if x == 0 else str(x)),
+                        flush=True,
+                    )
                     print(flush=True)
             except subprocess.TimeoutExpired:
-                print('timeout', file=sys.stderr)
+                print("timeout", file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

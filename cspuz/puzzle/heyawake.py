@@ -7,9 +7,14 @@ import math
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or
 from cspuz.puzzle import util
-from cspuz.problem_serializer import (OneOf, ValuedRooms, HexInt, Spaces,
-                                      serialize_problem_as_url,
-                                      deserialize_problem_as_url)
+from cspuz.problem_serializer import (
+    OneOf,
+    ValuedRooms,
+    HexInt,
+    Spaces,
+    serialize_problem_as_url,
+    deserialize_problem_as_url,
+)
 
 RectangularRepr = List[Tuple[int, int, int, int, int]]
 RoomRepr = Tuple[List[List[Tuple[int, int]]], List[int]]
@@ -59,14 +64,14 @@ def solve_heyawake(height, width, *problem):
                 y2 = y + 1
                 while y2 < height - 1:
                     if room_id[y2][x] != room_id[y2 + 1][x]:
-                        solver.ensure(fold_or(is_black[y:(y2 + 2), x]))
+                        solver.ensure(fold_or(is_black[y : (y2 + 2), x]))
                         break
                     y2 += 1
             if x < width - 1 and room_id[y][x] != room_id[y][x + 1]:
                 x2 = x + 1
                 while x2 < width - 1:
                     if room_id[y][x2] != room_id[y][x2 + 1]:
-                        solver.ensure(fold_or(is_black[y, x:(x2 + 2)]))
+                        solver.ensure(fold_or(is_black[y, x : (x2 + 2)]))
                         break
                     x2 += 1
 
@@ -145,10 +150,7 @@ def num_max_black_cells(h, w):
             return (h * w + h + w - 2) // 3
 
 
-def enumerate_clue_update(problem,
-                          min_clue=None,
-                          max_clue=None,
-                          no_limit_clue=False):
+def enumerate_clue_update(problem, min_clue=None, max_clue=None, no_limit_clue=False):
     ret = []
     for i in range(len(problem)):
         if i == 0:
@@ -190,13 +192,15 @@ def compute_clue_score(problem):
     return clue_score
 
 
-def generate_heyawake(height,
-                      width,
-                      n_max_rooms=None,
-                      min_clue=None,
-                      max_clue=None,
-                      no_limit_clue=False,
-                      verbose=False):
+def generate_heyawake(
+    height,
+    width,
+    n_max_rooms=None,
+    min_clue=None,
+    max_clue=None,
+    no_limit_clue=False,
+    verbose=False,
+):
     if n_max_rooms is None:
         n_max_rooms = height * width
     problem = [(0, 0, height, width, -1)]
@@ -211,18 +215,15 @@ def generate_heyawake(height,
         for elim, app in cand:
             num_rooms = len(problem) + len(app) - len(elim)
             if num_rooms <= n_max_rooms:
-                problem2 = [x for i, x in enumerate(problem) if i not in elim
-                            ] + app
+                problem2 = [x for i, x in enumerate(problem) if i not in elim] + app
                 if num_thin_blocks(problem2) <= 3:
                     problem = problem2
                     break
 
     for step in range(height * width * 10):
         cand = enumerate_division_update(problem) + enumerate_clue_update(
-            problem,
-            min_clue=min_clue,
-            max_clue=max_clue,
-            no_limit_clue=no_limit_clue)
+            problem, min_clue=min_clue, max_clue=max_clue, no_limit_clue=no_limit_clue
+        )
         random.shuffle(cand)
 
         for elim, app in cand:
@@ -244,14 +245,18 @@ def generate_heyawake(height,
                     return problem2
                 clue_score = compute_clue_score(problem2)
                 score_next = raw_score - clue_score
-                update = (score < score_next or random.random() < math.exp(
-                    (score_next - score) / temperature))
+                update = score < score_next or random.random() < math.exp(
+                    (score_next - score) / temperature
+                )
 
             if update:
                 if verbose:
-                    print('update: {} -> {} ({} {})'.format(
-                        score, score_next, raw_score, clue_score),
-                          file=sys.stderr)
+                    print(
+                        "update: {} -> {} ({} {})".format(
+                            score, score_next, raw_score, clue_score
+                        ),
+                        file=sys.stderr,
+                    )
                 problem = problem2
                 score = score_next
                 break
@@ -259,13 +264,13 @@ def generate_heyawake(height,
                 continue
         temperature *= 0.995
     if verbose or True:
-        print('failed', file=sys.stderr)
+        print("failed", file=sys.stderr)
     return None
 
 
-HEYAWAKE_COMBINATOR = ValuedRooms(OneOf(HexInt(), Spaces(-1, 'g')),
-                                  skip_on_error=True,
-                                  allow_redundant_border=False)
+HEYAWAKE_COMBINATOR = ValuedRooms(
+    OneOf(HexInt(), Spaces(-1, "g")), skip_on_error=True, allow_redundant_border=False
+)
 
 
 def serialize_heyawake(height, width, *problem):
@@ -273,16 +278,13 @@ def serialize_heyawake(height, width, *problem):
         rooms, clues = convert_from_rectangular_repr(problem[0])
     else:
         rooms, clues = problem
-    return serialize_problem_as_url(HEYAWAKE_COMBINATOR, "heyawake", height,
-                                    width, (rooms, clues))
+    return serialize_problem_as_url(HEYAWAKE_COMBINATOR, "heyawake", height, width, (rooms, clues))
 
 
 def deserialize_heyawake(url) -> RoomRepr:
-    return deserialize_problem_as_url(HEYAWAKE_COMBINATOR,
-                                      url,
-                                      allowed_puzzles="heyawake",
-                                      allow_failure=True,
-                                      return_size=True)
+    return deserialize_problem_as_url(
+        HEYAWAKE_COMBINATOR, url, allowed_puzzles="heyawake", allow_failure=True, return_size=True
+    )
 
 
 def _main():
@@ -290,45 +292,51 @@ def _main():
         # original example: http://pzv.jp/p.html?heyawake/6/6/aa66aapv0fu0g2i3k
         height = 6
         width = 6
-        problem = [(0, 0, 1, 2, -1), (0, 2, 2, 4, 2), (0, 4, 1, 6, -1),
-                   (1, 0, 2, 2, -1), (1, 4, 3, 6, -1), (2, 0, 4, 3, 3),
-                   (2, 3, 4, 4, -1), (3, 4, 4, 6, -1), (4, 0, 6, 2, -1),
-                   (4, 2, 6, 4, -1), (4, 4, 6, 6, -1)]
+        problem = [
+            (0, 0, 1, 2, -1),
+            (0, 2, 2, 4, 2),
+            (0, 4, 1, 6, -1),
+            (1, 0, 2, 2, -1),
+            (1, 4, 3, 6, -1),
+            (2, 0, 4, 3, 3),
+            (2, 3, 4, 4, -1),
+            (3, 4, 4, 6, -1),
+            (4, 0, 6, 2, -1),
+            (4, 2, 6, 4, -1),
+            (4, 4, 6, 6, -1),
+        ]
         is_sat, is_black = solve_heyawake(height, width, problem)
-        print('has answer:', is_sat)
+        print("has answer:", is_sat)
         if is_sat:
-            print(
-                util.stringify_array(is_black, {
-                    None: '?',
-                    True: '#',
-                    False: '.'
-                }))
+            print(util.stringify_array(is_black, {None: "?", True: "#", False: "."}))
     else:
         parser = argparse.ArgumentParser(add_help=False)
-        parser.add_argument('-h', '--height', type=int, required=True)
-        parser.add_argument('-w', '--width', type=int, required=True)
-        parser.add_argument('--max-rooms', type=int)
-        parser.add_argument('--min-clue', type=int)
-        parser.add_argument('--max-clue', type=int)
-        parser.add_argument('--no-limit-clue', action='store_true')
-        parser.add_argument('-v', '--verbose', action='store_true')
+        parser.add_argument("-h", "--height", type=int, required=True)
+        parser.add_argument("-w", "--width", type=int, required=True)
+        parser.add_argument("--max-rooms", type=int)
+        parser.add_argument("--min-clue", type=int)
+        parser.add_argument("--max-clue", type=int)
+        parser.add_argument("--no-limit-clue", action="store_true")
+        parser.add_argument("-v", "--verbose", action="store_true")
 
         args = parser.parse_args()
         height = args.height
         width = args.width
         while True:
-            problem = generate_heyawake(height,
-                                        width,
-                                        n_max_rooms=args.max_rooms,
-                                        min_clue=args.min_clue,
-                                        max_clue=args.max_clue,
-                                        no_limit_clue=args.no_limit_clue,
-                                        verbose=args.verbose)
+            problem = generate_heyawake(
+                height,
+                width,
+                n_max_rooms=args.max_rooms,
+                min_clue=args.min_clue,
+                max_clue=args.max_clue,
+                no_limit_clue=args.no_limit_clue,
+                verbose=args.verbose,
+            )
             if problem is not None:
                 url = serialize_heyawake(height, width, problem)
                 print(url, flush=True)
                 print(problem, file=sys.stderr)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

@@ -7,27 +7,27 @@ from tests.util import check_equality_expr
 
 
 def apply_binary_operator(left, op, right):
-    if op == '+':
+    if op == "+":
         return left + right
-    elif op == '-':
+    elif op == "-":
         return left - right
-    elif op == '&':
+    elif op == "&":
         return left & right
-    elif op == '|':
+    elif op == "|":
         return left | right
-    elif op == 'then':
+    elif op == "then":
         return left.then(right)
-    elif op == '==':
+    elif op == "==":
         return left == right
-    elif op == '!=':
+    elif op == "!=":
         return left != right
-    elif op == '>=':
+    elif op == ">=":
         return left >= right
-    elif op == '>':
+    elif op == ">":
         return left > right
-    elif op == '<=':
+    elif op == "<=":
         return left <= right
-    elif op == '<':
+    elif op == "<":
         return left < right
     else:
         raise ValueError(f"unexpected operator: {op}")
@@ -40,10 +40,13 @@ ARRAY_INDEX_TEST_PATTERN = [
     (slice(None, None, -1), [9, 8, 7, 6, 5, 4, 3, 2, 1, 0]),
     (slice(None, None, -2), [9, 7, 5, 3, 1]),
     (slice(0, 10, None), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    (slice(4, 7, None), [4, 5, 6]), (slice(4, 2, None), []),
-    (slice(2, -2, None), [2, 3, 4, 5, 6, 7]), (slice(8, 0, -2), [8, 6, 4, 2]),
+    (slice(4, 7, None), [4, 5, 6]),
+    (slice(4, 2, None), []),
+    (slice(2, -2, None), [2, 3, 4, 5, 6, 7]),
+    (slice(8, 0, -2), [8, 6, 4, 2]),
     (slice(2, 11, 1), [2, 3, 4, 5, 6, 7, 8, 9]),
-    (slice(-5, None, 1), [5, 6, 7, 8, 9]), (slice(4, 8, -1), [])
+    (slice(-5, None, 1), [5, 6, 7, 8, 9]),
+    (slice(4, 8, -1), []),
 ]
 
 FOUR_NEIGHBOR_TEST_PATTERN = [
@@ -65,8 +68,7 @@ class TestArray:
         vars = []
         for i in range(6):
             vars.append(solver.bool_var())
-        array = BoolArray2D([[vars[0], vars[1], vars[2]],
-                             [vars[3], vars[4], vars[5]]])
+        array = BoolArray2D([[vars[0], vars[1], vars[2]], [vars[3], vars[4], vars[5]]])
         for i in range(2):
             for j in range(3):
                 assert check_equality_expr(array[i, j], vars[i * 3 + j])
@@ -75,8 +77,7 @@ class TestArray:
         vars = []
         for i in range(6):
             vars.append(solver.int_var(0, 3))
-        array = IntArray2D([[vars[0], vars[1], vars[2]],
-                            [vars[3], vars[4], vars[5]]])
+        array = IntArray2D([[vars[0], vars[1], vars[2]], [vars[3], vars[4], vars[5]]])
         for i in range(2):
             for j in range(3):
                 assert check_equality_expr(array[i, j], vars[i * 3 + j])
@@ -100,8 +101,7 @@ class TestArray:
         array_reshaped = array.reshape((3, 4))
         for i in range(3):
             for j in range(4):
-                assert check_equality_expr(array_reshaped[i, j],
-                                           array[i * 4 + j])
+                assert check_equality_expr(array_reshaped[i, j], array[i * 4 + j])
 
     def test_bool_array1d_reshape_bad_size(self, solver):
         array = solver.bool_array(14)
@@ -127,8 +127,7 @@ class TestArray:
         array_reshaped = array.reshape((3, 4))
         for i in range(3):
             for j in range(4):
-                assert check_equality_expr(array_reshaped[i, j],
-                                           array[i * 4 + j])
+                assert check_equality_expr(array_reshaped[i, j], array[i * 4 + j])
 
     def test_bool_array2d_len(self, solver):
         array = solver.bool_array((3, 4))
@@ -139,8 +138,7 @@ class TestArray:
         array_as_list = list(iter(array))
         for i in range(3):
             for j in range(4):
-                assert check_equality_expr(array[i, j],
-                                           array_as_list[i * 4 + j])
+                assert check_equality_expr(array[i, j], array_as_list[i * 4 + j])
 
     def test_int_array2d_len(self, solver):
         array = solver.int_array((3, 4), 0, 3)
@@ -151,8 +149,7 @@ class TestArray:
         array_as_list = list(iter(array))
         for i in range(3):
             for j in range(4):
-                assert check_equality_expr(array[i, j],
-                                           array_as_list[i * 4 + j])
+                assert check_equality_expr(array[i, j], array_as_list[i * 4 + j])
 
     def test_bool_array2d_flatten(self, solver):
         array = solver.bool_array((3, 5))
@@ -222,7 +219,7 @@ class TestArray:
     def test_bool_array2d_getitem_first_dim(self, solver, key, expected):
         array = solver.bool_array((10, 10))
         actual = array[key, 2]
-        assert actual.shape == (len(expected), )
+        assert actual.shape == (len(expected),)
         for i in range(len(actual)):
             assert check_equality_expr(actual[i], array[expected[i], 2])
 
@@ -230,7 +227,7 @@ class TestArray:
     def test_bool_array2d_getitem_second_dim(self, solver, key, expected):
         array = solver.bool_array((10, 10))
         actual = array[3, key]
-        assert actual.shape == (len(expected), )
+        assert actual.shape == (len(expected),)
         for i in range(len(actual)):
             assert check_equality_expr(actual[i], array[3, expected[i]])
 
@@ -238,7 +235,7 @@ class TestArray:
     def test_int_array2d_getitem_first_dim(self, solver, key, expected):
         array = solver.int_array((10, 10), 0, 5)
         actual = array[key, 2]
-        assert actual.shape == (len(expected), )
+        assert actual.shape == (len(expected),)
         for i in range(len(actual)):
             assert check_equality_expr(actual[i], array[expected[i], 2])
 
@@ -246,7 +243,7 @@ class TestArray:
     def test_int_array2d_getitem_second_dim(self, solver, key, expected):
         array = solver.int_array((10, 10), 0, 5)
         actual = array[3, key]
-        assert actual.shape == (len(expected), )
+        assert actual.shape == (len(expected),)
         for i in range(len(actual)):
             assert check_equality_expr(actual[i], array[3, expected[i]])
 
@@ -310,18 +307,14 @@ class TestArray:
             for j in range(8):
                 assert check_equality_expr(actual[i, j], array[i + 2, j])
 
-    @pytest.mark.parametrize("height,width,y,x,expected",
-                             FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_bool_array2d_four_neighbor_indices(self, solver, height, width, y,
-                                                x, expected):
+    @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_bool_array2d_four_neighbor_indices(self, solver, height, width, y, x, expected):
         array = solver.bool_array((height, width))
         actual = array.four_neighbor_indices(y, x)
         assert set(actual) == set(expected)
 
-    @pytest.mark.parametrize("height,width,y,x,expected",
-                             FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_bool_array2d_four_neighbors(self, solver, height, width, y, x,
-                                         expected):
+    @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_bool_array2d_four_neighbors(self, solver, height, width, y, x, expected):
         array = solver.bool_array((height, width))
         indices = array.four_neighbor_indices(y, x)
         actual = array.four_neighbors(y, x)
@@ -330,20 +323,16 @@ class TestArray:
         for i in range(len(indices)):
             assert check_equality_expr(array[indices[i]], actual[i])
 
-    @pytest.mark.parametrize("height,width,y,x,expected",
-                             FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_int_array2d_four_neighbor_indices(self, solver, height, width, y,
-                                               x, expected):
+    @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_int_array2d_four_neighbor_indices(self, solver, height, width, y, x, expected):
         array = solver.int_array((height, width), -5, -2)
         actual = array.four_neighbor_indices(y, x)
         assert set(actual) == set(expected)
         actual2 = array.four_neighbor_indices((y, x))
         assert set(actual2) == set(expected)
 
-    @pytest.mark.parametrize("height,width,y,x,expected",
-                             FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_int_array2d_four_neighbors(self, solver, height, width, y, x,
-                                        expected):
+    @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_int_array2d_four_neighbors(self, solver, height, width, y, x, expected):
         array = solver.int_array((height, width), 1, 4)
         indices = array.four_neighbor_indices(y, x)
         actual = array.four_neighbors(y, x)
@@ -352,10 +341,8 @@ class TestArray:
         for i in range(len(indices)):
             assert check_equality_expr(array[indices[i]], actual[i])
 
-    @pytest.mark.parametrize("height,width,y,x,expected",
-                             FOUR_NEIGHBOR_TEST_PATTERN)
-    def test_int_array2d_four_neighbors_as_tuple(self, solver, height, width,
-                                                 y, x, expected):
+    @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
+    def test_int_array2d_four_neighbors_as_tuple(self, solver, height, width, y, x, expected):
         array = solver.int_array((height, width), 1, 4)
         indices = array.four_neighbor_indices((y, x))
         actual = array.four_neighbors((y, x))
@@ -374,7 +361,7 @@ class TestArrayOperators:
         x = solver.int_array(7, 0, 5)
         res = -x
         assert isinstance(res, IntArray1D)
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
             assert check_equality_expr(res[i], -(x[i]))
 
@@ -387,40 +374,44 @@ class TestArrayOperators:
             for j in range(4):
                 assert check_equality_expr(res[i, j], -(x[i, j]))
 
-    @pytest.mark.parametrize("op",
-                             ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
+    @pytest.mark.parametrize("op", ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
     @pytest.mark.parametrize("int_operand", [False, True])
     def test_operator_ivar1d_ivar(self, solver, op, int_operand):
         x = solver.int_array(7, 0, 5)
         y = 3 if int_operand else solver.int_var(0, 5)
         res = apply_binary_operator(x, op, y)
         assert isinstance(res, (BoolArray1D, IntArray1D))
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
-            assert check_equality_expr(res[i],
-                                       apply_binary_operator(x[i], op, y))
+            assert check_equality_expr(res[i], apply_binary_operator(x[i], op, y))
 
-    @pytest.mark.parametrize("op,op_flip", [("+", None), ("-", None),
-                                            ("==", "=="), ("!=", "!="),
-                                            (">=", "<="), (">", "<"),
-                                            ("<=", ">="), ("<", ">")])
+    @pytest.mark.parametrize(
+        "op,op_flip",
+        [
+            ("+", None),
+            ("-", None),
+            ("==", "=="),
+            ("!=", "!="),
+            (">=", "<="),
+            (">", "<"),
+            ("<=", ">="),
+            ("<", ">"),
+        ],
+    )
     @pytest.mark.parametrize("int_operand", [False, True])
     def test_operator_ivar_ivar1d(self, solver, op, op_flip, int_operand):
         x = 3 if int_operand else solver.int_var(0, 5)
         y = solver.int_array(7, 0, 5)
         res = apply_binary_operator(x, op, y)
         assert isinstance(res, (BoolArray1D, IntArray1D))
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
             if op_flip is None:
-                assert check_equality_expr(res[i],
-                                           apply_binary_operator(x, op, y[i]))
+                assert check_equality_expr(res[i], apply_binary_operator(x, op, y[i]))
             else:
-                assert check_equality_expr(
-                    res[i], apply_binary_operator(y[i], op_flip, x))
+                assert check_equality_expr(res[i], apply_binary_operator(y[i], op_flip, x))
 
-    @pytest.mark.parametrize("op",
-                             ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
+    @pytest.mark.parametrize("op", ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
     @pytest.mark.parametrize("int_operand", [False, True])
     def test_operator_ivar2d_ivar(self, solver, op, int_operand):
         x = solver.int_array((4, 3), 0, 5)
@@ -430,13 +421,21 @@ class TestArrayOperators:
         assert res.shape == (4, 3)
         for i in range(4):
             for j in range(3):
-                assert check_equality_expr(
-                    res[i, j], apply_binary_operator(x[i, j], op, y))
+                assert check_equality_expr(res[i, j], apply_binary_operator(x[i, j], op, y))
 
-    @pytest.mark.parametrize("op,op_flip", [("+", None), ("-", None),
-                                            ("==", "=="), ("!=", "!="),
-                                            (">=", "<="), (">", "<"),
-                                            ("<=", ">="), ("<", ">")])
+    @pytest.mark.parametrize(
+        "op,op_flip",
+        [
+            ("+", None),
+            ("-", None),
+            ("==", "=="),
+            ("!=", "!="),
+            (">=", "<="),
+            (">", "<"),
+            ("<=", ">="),
+            ("<", ">"),
+        ],
+    )
     @pytest.mark.parametrize("int_operand", [False, True])
     def test_operator_ivar_ivar2d(self, solver, op, op_flip, int_operand):
         x = 3 if int_operand else solver.int_var(0, 5)
@@ -447,22 +446,20 @@ class TestArrayOperators:
         for i in range(4):
             for j in range(3):
                 if op_flip is None:
-                    assert check_equality_expr(
-                        res[i, j], apply_binary_operator(x, op, y[i, j]))
+                    assert check_equality_expr(res[i, j], apply_binary_operator(x, op, y[i, j]))
                 else:
                     assert check_equality_expr(
-                        res[i, j], apply_binary_operator(y[i, j], op_flip, x))
+                        res[i, j], apply_binary_operator(y[i, j], op_flip, x)
+                    )
 
-    @pytest.mark.parametrize("op",
-                             ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
+    @pytest.mark.parametrize("op", ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
     def test_operator_ivar2d_ivar1d(self, solver, op):
         x = solver.int_array((4, 3), 0, 5)
         y = solver.int_array(4, 0, 5)
         with pytest.raises(ValueError, match=r".*shape mismatch.*"):
             apply_binary_operator(x, op, y)
 
-    @pytest.mark.parametrize("op",
-                             ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
+    @pytest.mark.parametrize("op", ["+", "-", "==", "!=", ">=", ">", "<=", "<"])
     def test_operator_ivar1d_ivar2d(self, solver, op):
         x = solver.int_array(4, 0, 5)
         y = solver.int_array((4, 3), 0, 5)
@@ -473,7 +470,7 @@ class TestArrayOperators:
         x = solver.bool_array(7)
         res = ~x
         assert isinstance(res, BoolArray1D)
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
             assert check_equality_expr(res[i], ~(x[i]))
 
@@ -493,14 +490,13 @@ class TestArrayOperators:
         y = True if bool_operand else solver.bool_var()
         res = apply_binary_operator(x, op, y)
         assert isinstance(res, BoolArray1D)
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
-            assert check_equality_expr(res[i],
-                                       apply_binary_operator(x[i], op, y))
+            assert check_equality_expr(res[i], apply_binary_operator(x[i], op, y))
 
-    @pytest.mark.parametrize("op,op_flip", [("&", None), ("|", None),
-                                            ("==", "=="), ("!=", "!="),
-                                            ("then", None)])
+    @pytest.mark.parametrize(
+        "op,op_flip", [("&", None), ("|", None), ("==", "=="), ("!=", "!="), ("then", None)]
+    )
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar_bvar1d(self, solver, op, op_flip, bool_operand):
         if op == "then" and bool_operand:
@@ -509,14 +505,12 @@ class TestArrayOperators:
         y = solver.bool_array(7)
         res = apply_binary_operator(x, op, y)
         assert isinstance(res, BoolArray1D)
-        assert res.shape == (7, )
+        assert res.shape == (7,)
         for i in range(7):
             if op_flip is None:
-                assert check_equality_expr(res[i],
-                                           apply_binary_operator(x, op, y[i]))
+                assert check_equality_expr(res[i], apply_binary_operator(x, op, y[i]))
             else:
-                assert check_equality_expr(
-                    res[i], apply_binary_operator(y[i], op_flip, x))
+                assert check_equality_expr(res[i], apply_binary_operator(y[i], op_flip, x))
 
     @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
     @pytest.mark.parametrize("bool_operand", [False, True])
@@ -528,12 +522,11 @@ class TestArrayOperators:
         assert res.shape == (3, 4)
         for i in range(3):
             for j in range(4):
-                assert check_equality_expr(
-                    res[i, j], apply_binary_operator(x[i, j], op, y))
+                assert check_equality_expr(res[i, j], apply_binary_operator(x[i, j], op, y))
 
-    @pytest.mark.parametrize("op,op_flip", [("&", None), ("|", None),
-                                            ("==", "=="), ("!=", "!="),
-                                            ("then", None)])
+    @pytest.mark.parametrize(
+        "op,op_flip", [("&", None), ("|", None), ("==", "=="), ("!=", "!="), ("then", None)]
+    )
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar_bvar2d(self, solver, op, op_flip, bool_operand):
         if op == "then" and bool_operand:
@@ -546,11 +539,11 @@ class TestArrayOperators:
         for i in range(3):
             for j in range(4):
                 if op_flip is None:
-                    assert check_equality_expr(
-                        res[i, j], apply_binary_operator(x, op, y[i, j]))
+                    assert check_equality_expr(res[i, j], apply_binary_operator(x, op, y[i, j]))
                 else:
                     assert check_equality_expr(
-                        res[i, j], apply_binary_operator(y[i, j], op_flip, x))
+                        res[i, j], apply_binary_operator(y[i, j], op_flip, x)
+                    )
 
     @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
     def test_operator_bvar2d_bvar1d(self, solver, op):
@@ -561,7 +554,9 @@ class TestArrayOperators:
 
     @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
     def test_operator_bvar1d_bvar2d(self, solver, op):
-        x = solver.bool_array(4, )
+        x = solver.bool_array(
+            4,
+        )
         y = solver.bool_array((4, 3))
         with pytest.raises(ValueError, match=r".*shape mismatch.*"):
             apply_binary_operator(x, op, y)
