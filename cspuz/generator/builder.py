@@ -1,5 +1,23 @@
+from typing import Optional
+import cspuz.generator.deterministic_random as drandom
 import random
 import copy
+
+
+_use_deterministic_prng = False
+
+
+def use_deterministic_prng(enabled: bool, seed: Optional[int] = None) -> None:
+    global _use_deterministic_prng
+    _use_deterministic_prng = enabled
+    if enabled:
+        if seed is None:
+            seed = 0
+        drandom.seed(seed)
+
+
+def is_use_deterministic_prng() -> bool:
+    return _use_deterministic_prng
 
 
 def build_neighbor_generator(pattern):
@@ -41,13 +59,17 @@ def build_neighbor_generator(pattern):
             return ret
 
     def generator(problem):
+        global _use_deterministic_prng
         cands = []
         for pos, choice in variables:
             subproblem = get(problem, pos)
             subpattern = get(pattern, pos)
             for v in subpattern.candidates(subproblem):
                 cands.append((pos, v))
-        random.shuffle(cands)
+        if _use_deterministic_prng:
+            drandom.shuffle(cands)
+        else:
+            random.shuffle(cands)
         for pos, val in cands:
             next_problem = with_update(problem, pattern, pos, val)
             yield next_problem
@@ -107,6 +129,7 @@ class ArrayBuilder2D(Builder):
                 for _ in range(self.height)]
 
     def candidates(self, current):
+        global _use_deterministic_prng
         ret = []
         for y in range(self.height):
             for x in range(self.width):
@@ -128,7 +151,10 @@ class ArrayBuilder2D(Builder):
                     if not default_only:
                         if current[y][x] == self.default:
                             for v in self.non_default:
-                                v2 = random.choice(self.non_default)
+                                if _use_deterministic_prng:
+                                    v2 = drandom.choice(self.non_default)
+                                else:
+                                    v2 = random.choice(self.non_default)
                                 if current[y][x] != v or current[y2][x2] != v2:
                                     ret.append([(y, x, v), (y2, x2, v2)])
                         else:
