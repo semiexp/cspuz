@@ -1,11 +1,10 @@
 from multiprocessing import Pool
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
-from .solver import Solver
+from .solver import Solver, _get_backend
 from .array import BoolArray2D, IntArray2D
 from .expr import BoolExpr, BoolVar, IntVar
 from .constraints import flatten_iterator
-from .backend import sugar_extended
 
 
 class Analyzer(Solver):
@@ -41,15 +40,24 @@ class Analyzer(Solver):
                 height, width = var.shape
                 for y in range(height):
                     for x in range(width):
-                        new_name = name + "." + str(y) + "." + str(x)
+                        if name is None:
+                            new_name = None
+                        else:
+                            new_name = name + "." + str(y) + "." + str(x)
                         self.add_answer_key(var[y, x], name=new_name)
             else:
                 for i, elem in enumerate(var):
-                    new_name = name + "." + str(i)
+                    if name is None:
+                        new_name = None
+                    else:
+                        new_name = name + "." + str(i)
                     self.add_answer_key(elem, name=new_name)
         else:
             for i, elem in enumerate(variable):
-                new_name = name + "." + str(i)
+                if name is None:
+                    new_name = None
+                else:
+                    new_name = name + "." + str(i)
                 self.add_answer_key(elem, name=new_name)
 
     def ensure(self, *constraint: Any, name: Optional[str] = None):
@@ -66,12 +74,13 @@ class Analyzer(Solver):
             self.optional_constraints.append((name, new_ids))
         self.constraints += flat_constraints
 
-    def _test_unlearnt_fact(self, i, unlearnt_facts, learnt_facts):
+    def _test_unlearnt_fact(self, i, unlearnt_facts, learnt_facts, backend):
+        backend_type = _get_backend(backend)
         is_active_constraint = [True for _ in range(len(self.optional_constraints))]
         is_active_fact = [True for _ in range(len(learnt_facts))]
 
         def check():
-            csp_solver = sugar_extended.CSPSolver(self.variables)
+            csp_solver = backend_type(self.variables)
             csp_solver.add_constraint([self.constraints[j] for j in self.axiom_constraints])
             for k in range(len(self.optional_constraints)):
                 if is_active_constraint[k]:
@@ -102,8 +111,9 @@ class Analyzer(Solver):
         score = len(active_constraint_ids) + len(active_fact_ids)
         return score, active_constraint_ids, active_fact_ids
 
-    def analyze(self, n_workers: int = 0):
-        csp_solver = sugar_extended.CSPSolver(self.variables)
+    def analyze(self, n_workers: int = 0, backend: Union[None, str, type] = None):
+        backend_type = _get_backend(backend)
+        csp_solver = backend_type(self.variables)
         csp_solver.add_constraint(self.constraints)
 
         if not csp_solver.solve_irrefutably(self.is_answer_key):
@@ -113,24 +123,27 @@ class Analyzer(Solver):
         for i, v in enumerate(self.variables):
             if self.is_answer_key[i] and self.variables[i].sol is not None:
                 unlearnt_facts.append((i, self.variables[i].sol))
-        learnt_facts = []
+        learnt_facts: List[Tuple[int, Union[BoolVar, IntVar]]] = []
 
         res = []
         while len(unlearnt_facts) > 0:
             if n_workers >= 0:
                 with Pool(None if n_workers == 0 else n_workers) as pool:
-                    args = [(i, unlearnt_facts, learnt_facts) for i in range(len(unlearnt_facts))]
+                    args = [
+                        (i, unlearnt_facts, learnt_facts, backend)
+                        for i in range(len(unlearnt_facts))
+                    ]
                     cand_all = pool.starmap(self._test_unlearnt_fact, args)
             else:
                 cand_all = [
-                    self._test_unlearnt_fact(i, unlearnt_facts, learnt_facts)
+                    self._test_unlearnt_fact(i, unlearnt_facts, learnt_facts, backend)
                     for i in range(len(unlearnt_facts))
                 ]
 
             best_cand = min(cand_all)
 
             _, active_constraint_ids, active_fact_ids = best_cand
-            csp_solver = sugar_extended.CSPSolver(self.variables)
+            csp_solver = backend_type(self.variables)
             csp_solver.add_constraint([self.constraints[i] for i in self.axiom_constraints])
             for k in active_constraint_ids:
                 _, cs = self.optional_constraints[k]
