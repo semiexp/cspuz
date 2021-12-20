@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, List, Sequence
 
 
 class XorShift:
@@ -106,11 +106,11 @@ def choice(cand: Sequence[Any]) -> Any:
     return cand[idx]
 
 
-def shuffle(seq: Sequence[Any]):
+def shuffle(seq: List[Any]):
     """Shuffle :obj:`seq` uniformly at random. :obj:`seq` is modified.
 
     Args:
-        seq (:obj:`Sequence[Any]`): Sequence to be shuffled.
+        seq (:obj:`List[Any]`): Sequence to be shuffled.
     """
     for i in range(1, len(seq)):
         j = randint(0, i)

@@ -83,7 +83,7 @@ def _active_vertices_connected(
             BoolExpr(
                 Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
                 [graph.num_vertices, len(graph)]
-                + list(is_active)
+                + [is_active[i] for i in range(len(is_active))]  # type: ignore
                 + sum([[x, y] for x, y in graph.edges], []),  # type: ignore
             )
         )
@@ -501,8 +501,8 @@ def division_connected_variable_groups(
         if shape is not None:
             raise ValueError("`graph` and `shape` cannot be specified at the same time")
         return _division_connected_variable_groups(
-            solver, graph, group_size=group_size
-        )  # type: ignore
+            solver, graph, group_size=group_size  # type: ignore
+        )
 
 
 def _active_edges_single_cycle(
@@ -535,7 +535,7 @@ def _active_edges_single_cycle(
             BoolExpr(
                 Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
                 [len(graph), len(edge_graph)]
-                + list(is_active_edge)
+                + [is_active_edge[i] for i in range(len(is_active_edge))]  # type: ignore
                 + sum([[x, y] for x, y in edge_graph], []),  # type: ignore
             )
         )

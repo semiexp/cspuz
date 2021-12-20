@@ -166,13 +166,13 @@ class SugarExtendedBackend(SugarLikeBackend):
 
 class CSugarBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
-        import pycsugar
+        import pycsugar  # type: ignore
 
         return pycsugar.solver(csp_description)
 
 
 class EnigmaCSPBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
-        import enigma_csp
+        import enigma_csp  # type: ignore
 
         return enigma_csp.solver(csp_description)

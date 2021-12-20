@@ -1,5 +1,5 @@
 import random as pyrandom
-from typing import Any, Optional, Sequence
+from typing import Any, List, Optional, Sequence
 
 import cspuz.generator.deterministic_random as drandom
 
@@ -36,7 +36,7 @@ def choice(cand: Sequence[Any]) -> Any:
         return pyrandom.choice(cand)
 
 
-def shuffle(seq: Sequence[Any]) -> None:
+def shuffle(seq: List[Any]) -> None:
     global _use_deterministic_prng
     if _use_deterministic_prng:
         drandom.shuffle(seq)

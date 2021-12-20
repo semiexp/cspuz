@@ -27,7 +27,7 @@ def _to_base36(n: int) -> str:
         raise ValueError("`n` must be non-negative")
     if n == 0:
         return "0"
-    ret_rev = []
+    ret_rev: List[str] = []
     while n > 0:
         ret_rev += _BASE36_CHARS[n % 36]
         n //= 36

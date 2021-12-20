@@ -1,5 +1,15 @@
 from enum import Enum, auto
-from typing import Any, List, Literal, Optional, Sequence, TYPE_CHECKING, Union, cast, overload
+from typing import (
+    Any,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+    cast,
+    overload,
+)
 
 if TYPE_CHECKING:
     from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D
@@ -131,7 +141,7 @@ def _make_int_expr(op: IntOp, operands: List[ExprLike]) -> "IntExpr":
 
 
 class Expr:
-    def __init__(self, op: Op, operands: Sequence[ExprLike]):
+    def __init__(self, op: Op, operands: Iterable[ExprLike]):
         self.op: Op = op
         self.operands: List[ExprLike] = list(operands)
 
@@ -140,7 +150,7 @@ class Expr:
 
 
 class BoolExpr(Expr):
-    def __init__(self, op: Op, operands: Sequence[ExprLike]):
+    def __init__(self, op: Op, operands: Iterable[ExprLike]):
         super().__init__(op, operands)
 
     @overload
@@ -255,7 +265,7 @@ class BoolExpr(Expr):
 
 
 class IntExpr(Expr):
-    def __init__(self, op: Op, operands: Sequence[ExprLike]):
+    def __init__(self, op: Op, operands: Iterable[ExprLike]):
         super().__init__(op, operands)
 
     def __neg__(self) -> "IntExpr":
