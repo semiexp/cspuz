@@ -57,7 +57,7 @@ def solve_nurimisaki(height, width, problem):
     return is_sat, is_white
 
 
-def generate_fillomino(height, width, verbose=False):
+def generate_nurimisaki(height, width, verbose=False):
     generated = generate_problem(
         lambda problem: solve_nurimisaki(height, width, problem),
         builder_pattern=ArrayBuilder2D(height, width, [-1, 0], default=-1),
@@ -106,7 +106,7 @@ def _main():
     else:
         height, width = map(int, sys.argv[1:])
         while True:
-            problem = generate_fillomino(height, width, verbose=True)
+            problem = generate_nurimisaki(height, width, verbose=True)
             if problem is not None:
                 print(util.stringify_array(problem, {-1: ".", 0: "O"}), flush=True)
                 print(flush=True)

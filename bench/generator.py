@@ -1,6 +1,7 @@
 import time
 from cspuz.generator.srandom import use_deterministic_prng
 import cspuz.puzzle.masyu as masyu
+import cspuz.puzzle.nurimisaki as nurimisaki
 import cspuz.puzzle.slitherlink as slitherlink
 
 
@@ -80,9 +81,32 @@ def bench_slitherlink():
     )
 
 
+def bench_nurimisaki():
+    expected = [
+        "https://puzz.link/p?nurimisaki/10/10/g.i.w.j.i.h.k.h.g.y.h.i.i.h.g.h.n.k",
+        "https://puzz.link/p?nurimisaki/10/10/h.g.g.w.g.q.h.g.h.m.h.n.m.h.q.h.g.k",
+        "https://puzz.link/p?nurimisaki/10/10/h.n.j.m.j.zh.h.j.n.m.m.l.g.k",
+        "https://puzz.link/p?nurimisaki/10/10/w.i.j.h.h.h.m.l.j.r.g.i.j.h.h.s.",
+        "https://puzz.link/p?nurimisaki/10/10/h.l.g.j.k.g.j.g.g.h.w.h.n.g.g.g.h.g.z.g",
+        "https://puzz.link/p?nurimisaki/10/10/i.k.j.l.k.g.h.r.g.j.i.i.m.u.h.i.n",
+        "https://puzz.link/p?nurimisaki/10/10/g.n.l.l.j.h.i.r.l.j.q.g.l.k.l.j",
+        "https://puzz.link/p?nurimisaki/10/10/s.g.k.s.g.g.p.g.i.p.m.h.g.s.h.h",
+        "https://puzz.link/p?nurimisaki/10/10/j.r.n.h.i.i.h.g.z.g.g.g.g.p.j.p.g",
+        "https://puzz.link/p?nurimisaki/10/10/g.g.p.g.h.q.h.n.k.l.r.j.n.n.m",
+    ]
+    run_generator_bench(
+        "nurimisaki",
+        lambda: nurimisaki.generate_nurimisaki(10, 10, verbose=False),
+        nurimisaki.serialize_nurimisaki,
+        10,
+        expected,
+    )
+
+
 def main():
     bench_masyu()
     bench_slitherlink()
+    bench_nurimisaki()
 
 
 if __name__ == "__main__":
