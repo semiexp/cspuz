@@ -1,7 +1,12 @@
-from cspuz.expr import Expr, BoolVar, IntVar
+from cspuz.expr import Expr, ExprLike, BoolVar, IntVar
 
 
-def check_equality_expr(left: Expr, right: Expr):
+def check_equality_expr(left: ExprLike, right: ExprLike):
+    if not isinstance(left, Expr) or not isinstance(right, Expr):
+        if isinstance(left, Expr) or isinstance(right, Expr):
+            return False
+        return left == right
+
     if left.op != right.op:
         return False
     if len(left.operands) != len(right.operands):
@@ -11,14 +16,6 @@ def check_equality_expr(left: Expr, right: Expr):
             return False
         return left.id == right.id
     for i in range(len(left.operands)):
-        is_expr_left = isinstance(left.operands[i], Expr)
-        is_expr_right = isinstance(right.operands[i], Expr)
-        if is_expr_left != is_expr_right:
+        if not check_equality_expr(left.operands[i], right.operands[i]):
             return False
-        if is_expr_left:
-            if not check_equality_expr(left.operands[i], right.operands[i]):
-                return False
-        else:
-            if left.operands[i] != right.operands[i]:
-                return False
     return True

@@ -2,7 +2,7 @@ import random
 import math
 import sys
 
-import svgwrite
+import svgwrite  # type: ignore
 
 from cspuz import Solver
 from cspuz.constraints import count_true
