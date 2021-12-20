@@ -22,7 +22,7 @@ def solve_slitherlink(height, width, problem):
     return is_sat, grid_frame
 
 
-def generate_slitherlink(height, width, symmetry=False, verbose=False):
+def generate_slitherlink(height, width, symmetry=False, verbose=False, disallow_adjacent=False):
     def no_neighboring_zero(problem):
         for y in range(height):
             for x in range(width):
@@ -44,7 +44,12 @@ def generate_slitherlink(height, width, symmetry=False, verbose=False):
     generated = generate_problem(
         lambda problem: solve_slitherlink(height, width, problem),
         builder_pattern=ArrayBuilder2D(
-            height, width, range(-1, 4), default=-1, symmetry=symmetry, disallow_adjacent=True
+            height,
+            width,
+            range(-1, 4),
+            default=-1,
+            symmetry=symmetry,
+            disallow_adjacent=disallow_adjacent,
         ),
         clue_penalty=lambda problem: count_non_default_values(problem, default=-1, weight=5),
         pretest=no_neighboring_zero,
