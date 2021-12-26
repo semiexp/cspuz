@@ -7,6 +7,7 @@ from cspuz.problem_serializer import (
     Spaces,
     DecInt,
     HexInt,
+    IntSpaces,
     MultiDigit,
     OneOf,
     Tupl,
@@ -99,6 +100,25 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "g0000", 0) is None
         assert combinator.deserialize(env, ".1234", 0) is None
         assert combinator.deserialize(env, "-1", 0) is None
+
+    def test_int_spaces(self):
+        env = CombinatorEnv(height=1, width=1)
+        combinator = IntSpaces(-1, 4, 2)
+
+        assert combinator.serialize(env, [2, -1, 4], 0) == (2, "7")
+        assert combinator.serialize(env, [2, -1, 4], 1) is None
+        assert combinator.serialize(env, [2, -1, 4], 2) == (1, "4")
+        assert combinator.serialize(env, [2, -1, 4], 3) is None
+        assert combinator.serialize(env, [5, -1], 0) is None
+        assert combinator.serialize(env, [-1, -1, -1], 0) is None
+        assert combinator.serialize(env, [2, -1, -1, -1], 0) == (3, "c")
+
+        assert combinator.deserialize(env, "74", 0) == (1, [2, -1])
+        assert combinator.deserialize(env, "74", 1) == (1, [4])
+        assert combinator.deserialize(env, "74", 2) is None
+        assert combinator.deserialize(env, "f", 0) is None
+        assert combinator.deserialize(env, "f", 0) is None
+        assert combinator.deserialize(env, "c0", 0) == (1, [2, -1, -1])
 
     def test_multidigit(self):
         env = CombinatorEnv(height=1, width=1)

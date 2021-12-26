@@ -217,6 +217,45 @@ class HexInt(Combinator):
             return None
 
 
+class IntSpaces(Combinator):
+    def __init__(self, space, max_int, max_num_spaces):
+        super().__init__()
+
+        if (max_int + 1) * (max_num_spaces + 1) > 36:
+            raise ValueError("(max_int + 1) * (max_num_spaces + 1) must be at most 36")
+        self._space = space
+        self._max_int = max_int
+        self._max_num_spaces = max_num_spaces
+
+    def serialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        if not isinstance(data[idx], int):
+            return None
+        v = data[idx]
+        if not 0 <= v <= self._max_int:
+            return None
+        num_spaces = 0
+        while idx + num_spaces + 1 < len(data) and num_spaces < self._max_num_spaces:
+            if data[idx + num_spaces + 1] != self._space:
+                break
+            num_spaces += 1
+        return (1 + num_spaces), _to_base36(num_spaces * (self._max_int + 1) + v)
+
+    def deserialize(self, env, data, idx):
+        if idx == len(data):
+            return None
+        v = data[idx]
+        if not _is_alnum_lower(v):
+            return None
+        n = _from_base36(v)
+        if not 0 <= n < (self._max_int + 1) * (self._max_num_spaces + 1):
+            return None
+        num = n % (self._max_int + 1)
+        num_spaces = n // (self._max_int + 1)
+        return 1, ([num] + [self._space for _ in range(num_spaces)])
+
+
 class MultiDigit(Combinator):
     def __init__(self, base, digits):
         super(MultiDigit, self).__init__()
