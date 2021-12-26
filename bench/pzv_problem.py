@@ -3,7 +3,7 @@ import sys
 import time
 
 from cspuz import problem_serializer
-from cspuz.puzzle import heyawake, lits, masyu, nurikabe, nurimisaki
+from cspuz.puzzle import heyawake, lits, masyu, nurikabe, nurimisaki, slitherlink
 from cspuz.generator import default_uniqueness_checker
 
 
@@ -20,6 +20,16 @@ def solve_masyu(url):
     height = len(problem)
     width = len(problem[0])
     is_sat, ans = masyu.solve_masyu(height, width, problem)
+    return is_sat and default_uniqueness_checker(ans)
+
+
+def solve_slitherlink(url):
+    problem = slitherlink.deserialize_slitherlink(url)
+    if problem is None:
+        return None
+    height = len(problem)
+    width = len(problem[0])
+    is_sat, ans = slitherlink.solve_slitherlink(height, width, problem)
     return is_sat and default_uniqueness_checker(ans)
 
 
@@ -76,6 +86,8 @@ def solve_problem(url, height_lim=None, width_lim=None):
         return solve_nurikabe(url)
     elif kind == "masyu":
         return solve_masyu(url)
+    elif kind == "slither":
+        return solve_slitherlink(url)
     elif kind == "heyawake":
         return solve_heyawake(url)
     elif kind == "lits":
