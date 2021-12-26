@@ -19,6 +19,7 @@ from cspuz.problem_serializer import (
 from cspuz.puzzle.nurikabe import serialize_nurikabe, deserialize_nurikabe
 from cspuz.puzzle.masyu import serialize_masyu, deserialize_masyu
 from cspuz.puzzle.norinori import serialize_norinori, deserialize_norinori
+from cspuz.puzzle.slitherlink import serialize_slitherlink, deserialize_slitherlink
 
 
 class TestSerializerCombinators:
@@ -389,4 +390,17 @@ class TestSerializerPuzzles:
             ],
         )
         reserialized_url = serialize_norinori(*problem)
+        assert url == reserialized_url
+
+    def test_slitherlink(self):
+        # https://puzz.link/p.html?slither/4/4/dgdh2c7b
+        url = "https://puzz.link/p?slither/4/4/dgdh2c71"
+        problem = deserialize_slitherlink(url)
+        assert problem == [
+            [3, -1, -1, -1],
+            [3, -1, -1, -1],
+            [-1, 2, 2, -1],
+            [-1, 2, -1, 1],
+        ]
+        reserialized_url = serialize_slitherlink(problem)
         assert url == reserialized_url

@@ -7,6 +7,14 @@ from cspuz.grid_frame import BoolGridFrame
 from cspuz.constraints import count_true
 from cspuz.puzzle import util
 from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.problem_serializer import (
+    Grid,
+    OneOf,
+    Spaces,
+    IntSpaces,
+    serialize_problem_as_url,
+    deserialize_problem_as_url,
+)
 
 
 def solve_slitherlink(height, width, problem):
@@ -56,6 +64,19 @@ def generate_slitherlink(height, width, symmetry=False, verbose=False, disallow_
         verbose=verbose,
     )
     return generated
+
+
+SLITHERLINK_COMBINATOR = Grid(OneOf(Spaces(-1, "g"), IntSpaces(-1, max_int=4, max_num_spaces=2)))
+
+
+def serialize_slitherlink(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(SLITHERLINK_COMBINATOR, "slither", height, width, problem)
+
+
+def deserialize_slitherlink(url):
+    return deserialize_problem_as_url(SLITHERLINK_COMBINATOR, url, allowed_puzzles="slither")
 
 
 def _main():
