@@ -14,7 +14,7 @@ def solve_putteria(height, width, blocks):
     solver.ensure((~has_number[:, :-1]) | (~has_number[:, 1:]))
     solver.ensure((~has_number[:-1, :]) | (~has_number[1:, :]))
     for block in blocks:
-        solver.ensure(count_true([has_number[y, x] for y, x in block]) == 1)
+        solver.ensure(count_true(has_number[block]) == 1)
 
     block_size = [[0 for _ in range(width)] for _ in range(height)]
     for block in blocks:

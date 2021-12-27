@@ -47,14 +47,12 @@ def solve_heyawake(height, width, *problem):
 
     room_id = [[-1 for _ in range(width)] for _ in range(height)]
     for i in range(len(rooms)):
-        room_cells = []
         for y, x in rooms[i]:
             if room_id[y][x] != -1:
                 raise ValueError(f"cell ({y}, {x}) belongs to multiple rooms")
             room_id[y][x] = i
-            room_cells.append(is_black[y, x])
         if clues[i] >= 0:
-            solver.ensure(count_true(room_cells) == clues[i])
+            solver.ensure(count_true(is_black[rooms[i]]) == clues[i])
 
     for y in range(height):
         for x in range(width):

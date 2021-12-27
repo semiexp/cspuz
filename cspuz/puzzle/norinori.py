@@ -19,7 +19,7 @@ def solve_norinori(height, width, blocks):
             solver.ensure(is_black[y, x].then(count_true(is_black.four_neighbors(y, x)) == 1))
 
     for block in blocks:
-        solver.ensure(count_true(map(lambda p: is_black[p], block)) == 2)
+        solver.ensure(count_true(is_black[block]) == 2)
 
     is_sat = solver.solve()
     return is_sat, is_black

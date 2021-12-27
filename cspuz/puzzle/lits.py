@@ -29,7 +29,7 @@ def solve_lits(height, width, blocks):
     has_t = solver.bool_array(len(blocks))
 
     for i in range(len(blocks)):
-        solver.ensure(count_true([is_black[p] for p in blocks[i]]) == 4)
+        solver.ensure(count_true(is_black[blocks[i]]) == 4)
         adjacent_pairs = []
         is_straight = []
         is_t = []
@@ -40,7 +40,7 @@ def solve_lits(height, width, blocks):
                     neighbor_same_block.append((y2, x2))
                     if (y, x) < (y2, x2):
                         adjacent_pairs.append(is_black[y, x] & is_black[y2, x2])
-            solver.ensure(is_black[y, x].then(fold_or([is_black[p] for p in neighbor_same_block])))
+            solver.ensure(is_black[y, x].then(fold_or(is_black[neighbor_same_block])))
 
             tmp = []
             if 0 < y < height - 1 and block_id[y - 1][x] == i and block_id[y + 1][x] == i:
@@ -51,7 +51,7 @@ def solve_lits(height, width, blocks):
                 is_straight.append(fold_or(tmp))
 
             if len(neighbor_same_block) >= 3:
-                is_t.append(count_true([is_black[p] for p in neighbor_same_block]) >= 3)
+                is_t.append(count_true([is_black[neighbor_same_block]]) >= 3)
         solver.ensure(count_true(adjacent_pairs) == 3)
 
         solver.ensure(num_straight[i] == count_true(is_straight))
