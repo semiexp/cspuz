@@ -1,3 +1,4 @@
+import collections.abc
 import functools
 from typing import (
     Any,
@@ -144,7 +145,9 @@ class Array2D(Generic[T]):
         ...
 
     @overload
-    def _getitem_impl(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> Array1D[T]:
+    def _getitem_impl(
+        self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
+    ) -> Array1D[T]:
         ...
 
     @overload
@@ -154,9 +157,26 @@ class Array2D(Generic[T]):
     def _getitem_impl(
         self,
         key: Union[
-            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+            int,
+            slice,
+            Tuple[int, int],
+            Tuple[int, slice],
+            Tuple[slice, int],
+            Tuple[slice, slice],
+            Iterable[Tuple[int, int]],
         ],
     ) -> Union[T, Array1D[T], "Array2D[T]"]:
+        if not isinstance(key, tuple) and isinstance(key, collections.abc.Iterable):
+            data = []
+            for idx in key:
+                if not isinstance(idx, tuple) or len(idx) != 2:
+                    raise TypeError("values in index arrays must be tuples of 2 elements")
+                y, x = idx
+                if not isinstance(y, int) or not isinstance(x, int):
+                    raise TypeError("tuple elements for indexing must be of int type")
+                data.append(self._getitem_impl((y, x)))
+            return Array1D(data)
+
         if isinstance(key, (int, slice)):
             return self._getitem_impl(
                 cast(Union[Tuple[int, slice], Tuple[slice, slice]], (key, slice(None, None)))
@@ -299,7 +319,7 @@ IntOperand1D = Union[IntExprLike, "IntArray1D"]
 
 
 class BoolArray1D(Array1D[BoolExpr]):
-    def __init__(self, data: Union[Iterable[BoolExpr]]):
+    def __init__(self, data: Iterable[BoolExpr]):
         super().__init__(data)
 
     def cond(self, t: IntOperand1D, f: IntOperand1D) -> "IntArray1D":
@@ -366,7 +386,7 @@ class BoolArray1D(Array1D[BoolExpr]):
 
 
 class IntArray1D(Array1D[IntExpr]):
-    def __init__(self, data: Union[Iterable[IntExpr]]):
+    def __init__(self, data: Iterable[IntExpr]):
         super().__init__(data)
 
     def __neg__(self) -> "IntArray1D":
@@ -484,7 +504,9 @@ class BoolArray2D(Array2D[BoolExpr]):
         ...
 
     @overload
-    def __getitem__(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> BoolArray1D:
+    def __getitem__(
+        self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
+    ) -> BoolArray1D:
         ...
 
     @overload
@@ -494,7 +516,13 @@ class BoolArray2D(Array2D[BoolExpr]):
     def __getitem__(
         self,
         key: Union[
-            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+            int,
+            slice,
+            Tuple[int, int],
+            Tuple[int, slice],
+            Tuple[slice, int],
+            Tuple[slice, slice],
+            Iterable[Tuple[int, int]],
         ],
     ) -> Union[BoolExpr, BoolArray1D, "BoolArray2D"]:
         ret = super()._getitem_impl(key)
@@ -608,7 +636,9 @@ class IntArray2D(Array2D[IntExpr]):
         ...
 
     @overload
-    def __getitem__(self, key: Union[int, Tuple[int, slice], Tuple[slice, int]]) -> IntArray1D:
+    def __getitem__(
+        self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
+    ) -> IntArray1D:
         ...
 
     @overload
@@ -618,7 +648,13 @@ class IntArray2D(Array2D[IntExpr]):
     def __getitem__(
         self,
         key: Union[
-            int, slice, Tuple[int, int], Tuple[int, slice], Tuple[slice, int], Tuple[slice, slice]
+            int,
+            slice,
+            Tuple[int, int],
+            Tuple[int, slice],
+            Tuple[slice, int],
+            Tuple[slice, slice],
+            Iterable[Tuple[int, int]],
         ],
     ) -> Union[IntExpr, IntArray1D, "IntArray2D"]:
         ret = super()._getitem_impl(key)

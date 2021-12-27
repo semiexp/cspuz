@@ -307,6 +307,22 @@ class TestArray:
             for j in range(8):
                 assert check_equality_expr(actual[i, j], array[i + 2, j])
 
+    def test_bool_array2d_getitem_by_array(self, solver):
+        array = solver.bool_array((8, 10))
+        actual = array[[(1, 2), (-3, 7), (5, -5), (-1, -1)]]
+        expected = [array[1, 2], array[5, 7], array[5, 5], array[7, 9]]
+        assert actual.shape == (4,)
+        for i in range(4):
+            assert check_equality_expr(actual[i], expected[i])
+
+    def test_int_array2d_getitem_by_array(self, solver):
+        array = solver.int_array((8, 10), 0, 2)
+        actual = array[[(1, 2), (-3, 7), (5, -5), (-1, -1)]]
+        expected = [array[1, 2], array[5, 7], array[5, 5], array[7, 9]]
+        assert actual.shape == (4,)
+        for i in range(4):
+            assert check_equality_expr(actual[i], expected[i])
+
     @pytest.mark.parametrize("height,width,y,x,expected", FOUR_NEIGHBOR_TEST_PATTERN)
     def test_bool_array2d_four_neighbor_indices(self, solver, height, width, y, x, expected):
         array = solver.bool_array((height, width))
