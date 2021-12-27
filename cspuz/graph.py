@@ -137,6 +137,40 @@ def active_vertices_connected(
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that all "active" vertices are "connected" in the given `graph`.
+
+    `is_active` must have the same number of elements as the number of vertices in `graph` (or
+    `graph` must be able to be inferred from `is_active`; described later). Then, "active" vertices
+    are those whose corresponding boolean value in `is_active` is true. All active vertices are
+    "connected" if, for any active vertices u and v, v is reachable from u via a path in the graph
+    consisting only of active vertices, or more formally, the induced subgraph by all active
+    vertices are connected.
+
+    If `is_active` is :class:`BoolArray2D`, the grid graph is automatically inferred from it.
+    Vertices adjacent to (i, j) are (i - 1, j), (i + 1, j), (i, j - 1) and (i, j + 1) (some of
+    them may be absent because they are out of the grid). In this case, `graph` should not be
+    explicitly specified.
+
+    Args:
+        solver (Solver): The :class:`Solver` object to which this constraint should be added.
+        is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]): Sequence of boolean
+        values or :class:`BoolArray2D` representing whether vertices are active or not.
+        graph (Optional[Graph], optional): Graph for this constraint. If `is_active` is
+        :class:`BoolArray2D`, this is automatically inferred and should be omitted.
+        acyclic (bool, optional): If `True` is specified, not only active vertices are expected to
+        be connected, they should be "acyclic": there must be a unique path (consisting only of
+        active vetcies) between any pair of two active vertices. Note that if this option is
+        enabled, primitive graph operators are not used even if `use_graph_primitive` is `True`.
+        use_graph_primitive (Optional[bool], optional): Whether primitive graph operators are used
+        to represent this constraint. If omitted, the default configuration is used.
+        Such operators are available in `sugar`, `sugar_extended`, `csugar` and `enigma_csp`
+        backends, but depending on the configuration of the backend executable, they may not be
+        supported.
+
+    Raises:
+        TypeError: If `graph` is not inferred from `is_active` and unspecified, or inferred and
+        explicitly specified.
+    """
     if graph is None:
         if not isinstance(is_active, BoolArray2D):
             raise TypeError("'is_active' should be a BoolArray2D if graph is not " "specified")
