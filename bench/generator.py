@@ -1,3 +1,4 @@
+import sys
 import time
 from cspuz.generator.srandom import use_deterministic_prng
 import cspuz.puzzle.masyu as masyu
@@ -103,10 +104,20 @@ def bench_nurimisaki():
     )
 
 
+ALL_BENCHES = [
+    (bench_masyu, "masyu"),
+    (bench_slitherlink, "slitherlink"),
+    (bench_nurimisaki, "nurimisaki"),
+]
+
+
 def main():
-    bench_masyu()
-    bench_slitherlink()
-    bench_nurimisaki()
+    flt = None
+    if len(sys.argv) >= 2:
+        flt = sys.argv[1].split(",")
+    for bench, name in ALL_BENCHES:
+        if flt is None or name in flt:
+            bench()
 
 
 if __name__ == "__main__":
