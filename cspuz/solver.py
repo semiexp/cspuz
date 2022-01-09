@@ -114,6 +114,8 @@ class Solver(object):
     def add_answer_key(self, *variable: Any):
         for x in flatten_iterator(*variable):
             if isinstance(x, (BoolVar, IntVar)):
+                if self.is_answer_key[x.id]:
+                    raise ValueError(f"variable #{x.id} is already an answer key")
                 self.is_answer_key[x.id] = True
             else:
                 raise TypeError("each element in 'variable' must be BoolVar or IntVar")
