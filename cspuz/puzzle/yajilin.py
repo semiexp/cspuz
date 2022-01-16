@@ -6,6 +6,14 @@ from cspuz.constraints import count_true
 from cspuz.grid_frame import BoolGridFrame
 from cspuz.puzzle import util
 from cspuz.generator import generate_problem, count_non_default_values, Choice
+from cspuz.problem_serializer import (
+    Combinator,
+    Grid,
+    OneOf,
+    Spaces,
+    deserialize_problem_as_url,
+    serialize_problem_as_url,
+)
 
 
 def solve_yajilin(height, width, problem):
@@ -24,6 +32,8 @@ def solve_yajilin(height, width, problem):
                 solver.ensure(~is_passed[y, x])
                 solver.ensure(~black_cell[y, x])
 
+                if problem[y][x] == "??":
+                    continue
                 if problem[y][x][0] == "^":
                     solver.ensure(count_true(black_cell[0:y, x]) == int(problem[y][x][1:]))
                 elif problem[y][x][0] == "v":
@@ -66,6 +76,49 @@ def generate_yajilin(height, width, no_zero=False, no_max_clue=False, verbose=Fa
         verbose=verbose,
     )
     return generated
+
+
+class YajilinClue(Combinator):
+    def __init__(self):
+        super().__init__()
+
+    def serialize(self, env, data, idx):
+        if idx >= len(data):
+            return None
+        if data[idx] == "..":
+            return None
+        value = data[idx]
+        DIR_MAP = {"^": 1, "v": 2, "<": 3, ">": 4}
+        dir = DIR_MAP[value[0]]
+        n = int(value[1:])
+        return 1, f"{dir}{hex(n)[2:]}"
+
+    def deserialize(self, env, data, idx):
+        if idx + 1 >= len(data):
+            return None
+        dir = data[idx]
+        if dir == "0":
+            return 2, ["??"]
+        if dir not in "1234":
+            return None
+        DIR_MAP = {1: "^", 2: "v", 3: "<", 4: ">"}
+        n = data[idx + 1]
+        if n == ".":
+            return 2, ["??"]
+        return 2, [f"{DIR_MAP[int(dir)]}{int(n, 16)}"]
+
+
+YAJILIN_COMBINATOR = Grid(OneOf(YajilinClue(), Spaces("..", "a")))
+
+
+def serialize_yajilin(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(YAJILIN_COMBINATOR, "yajilin", height, width, problem)
+
+
+def deserialize_yajilin(url):
+    return deserialize_problem_as_url(YAJILIN_COMBINATOR, url, allowed_puzzles="yajilin")
 
 
 def _main():

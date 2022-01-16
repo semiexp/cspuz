@@ -3,7 +3,7 @@ import sys
 import time
 
 from cspuz import problem_serializer
-from cspuz.puzzle import heyawake, lits, masyu, nurikabe, nurimisaki, slitherlink
+from cspuz.puzzle import heyawake, lits, masyu, nurikabe, nurimisaki, slitherlink, yajilin
 from cspuz.generator import default_uniqueness_checker
 
 
@@ -63,6 +63,14 @@ def solve_nurimisaki(url):
     return is_sat and default_uniqueness_checker(ans)
 
 
+def solve_yajilin(url):
+    problem = yajilin.deserialize_yajilin(url)
+    height = len(problem)
+    width = len(problem[0])
+    is_sat, grid_frame, is_black = yajilin.solve_yajilin(height, width, problem)
+    return is_sat and default_uniqueness_checker(grid_frame, is_black)
+
+
 PUZZLE_KIND_ALIAS = {
     "mashu": "masyu",
 }
@@ -94,6 +102,8 @@ def solve_problem(url, height_lim=None, width_lim=None):
         return solve_lits(url)
     elif kind == "nurimisaki":
         return solve_nurimisaki(url)
+    elif kind == "yajilin":
+        return solve_yajilin(url)
     else:
         return None
 
