@@ -83,7 +83,9 @@ class Choice(Builder):
 
 
 class ArrayBuilder2D(Builder):
-    def __init__(self, height, width, choice, default, disallow_adjacent=False, symmetry=False):
+    def __init__(
+        self, height, width, choice, default, disallow_adjacent=False, symmetry=False, initial=None
+    ):
         self.height = height
         self.width = width
         self.choice = list(choice)
@@ -96,8 +98,11 @@ class ArrayBuilder2D(Builder):
         else:
             self.disallow_adjacent = disallow_adjacent
         self.symmetry = symmetry
+        self.initial_problem = initial
 
     def initial(self):
+        if self.initial_problem is not None:
+            return self.initial_problem
         return [[self.default for _ in range(self.width)] for _ in range(self.height)]
 
     def candidates(self, current):
