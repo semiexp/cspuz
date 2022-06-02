@@ -260,7 +260,7 @@ class MultiDigit(Combinator):
     def __init__(self, base, digits):
         super(MultiDigit, self).__init__()
 
-        if base ** digits > 36:
+        if base**digits > 36:
             raise ValueError("base ** digits must be at most 36")
         self._base = base
         self._digits = digits
@@ -286,7 +286,7 @@ class MultiDigit(Combinator):
             return None
 
         value = _from_base36(data[idx])
-        if not 0 <= value < self._base ** self._digits:
+        if not 0 <= value < self._base**self._digits:
             return None
         unpacked = []
         for i in range(self._digits):

@@ -179,19 +179,16 @@ class TestSerializerCombinators:
         env = CombinatorEnv(height=2, width=3)
         combinator = Grid(HexInt())
 
-        assert (
-            combinator.serialize(
-                env,
+        assert combinator.serialize(
+            env,
+            [
                 [
-                    [
-                        [1, 42, 256],
-                        [0, 1, 2],
-                    ]
-                ],
-                0,
-            )
-            == (1, "1-2a+100012")
-        )
+                    [1, 42, 256],
+                    [0, 1, 2],
+                ]
+            ],
+            0,
+        ) == (1, "1-2a+100012")
         assert (
             combinator.serialize(
                 env,
@@ -213,19 +210,16 @@ class TestSerializerCombinators:
         env = CombinatorEnv(height=1, width=1)
         combinator = Grid(HexInt(), height=2, width=3)
 
-        assert (
-            combinator.serialize(
-                env,
+        assert combinator.serialize(
+            env,
+            [
                 [
-                    [
-                        [1, 42, 256],
-                        [0, 1, 2],
-                    ]
-                ],
-                0,
-            )
-            == (1, "1-2a+100012")
-        )
+                    [1, 42, 256],
+                    [0, 1, 2],
+                ]
+            ],
+            0,
+        ) == (1, "1-2a+100012")
         assert (
             combinator.serialize(
                 env,
@@ -247,21 +241,18 @@ class TestSerializerCombinators:
         env = CombinatorEnv(height=4, width=3)
         combinator = Rooms()
 
-        assert (
-            combinator.serialize(
-                env,
+        assert combinator.serialize(
+            env,
+            [
                 [
-                    [
-                        [(0, 0), (0, 1)],
-                        [(0, 2), (1, 1), (1, 2)],
-                        [(1, 0), (2, 0), (3, 0), (3, 1)],
-                        [(2, 1), (2, 2), (3, 2)],
-                    ]
-                ],
-                0,
-            )
-            == (1, "d4pk")
-        )
+                    [(0, 0), (0, 1)],
+                    [(0, 2), (1, 1), (1, 2)],
+                    [(1, 0), (2, 0), (3, 0), (3, 1)],
+                    [(2, 1), (2, 2), (3, 2)],
+                ]
+            ],
+            0,
+        ) == (1, "d4pk")
 
         with pytest.raises(ValueError):
             combinator.serialize(
@@ -296,24 +287,21 @@ class TestSerializerCombinators:
         env = CombinatorEnv(height=4, width=3)
         combinator = ValuedRooms(OneOf(HexInt(), Spaces(-1, "g")))
 
-        assert (
-            combinator.serialize(
-                env,
-                [
-                    (
-                        [
-                            [(0, 0), (0, 1)],
-                            [(0, 2), (1, 2), (2, 1), (2, 2)],
-                            [(1, 0), (1, 1), (2, 0), (3, 0)],
-                            [(3, 1), (3, 2)],
-                        ],
-                        [1, 2, 0, -1],
-                    )
-                ],
-                0,
-            )
-            == (1, "b8p6120g")
-        )
+        assert combinator.serialize(
+            env,
+            [
+                (
+                    [
+                        [(0, 0), (0, 1)],
+                        [(0, 2), (1, 2), (2, 1), (2, 2)],
+                        [(1, 0), (1, 1), (2, 0), (3, 0)],
+                        [(3, 1), (3, 2)],
+                    ],
+                    [1, 2, 0, -1],
+                )
+            ],
+            0,
+        ) == (1, "b8p6120g")
 
         assert combinator.deserialize(env, "b8p6120g", 0) == (
             8,
