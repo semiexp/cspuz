@@ -5,6 +5,14 @@ from cspuz import Solver
 from cspuz.constraints import alldifferent
 from cspuz.puzzle import util
 from cspuz.generator import generate_problem, count_non_default_values, ArrayBuilder2D
+from cspuz.problem_serializer import (
+    Grid,
+    OneOf,
+    HexInt,
+    Spaces,
+    serialize_problem_as_url,
+    deserialize_problem_as_url,
+)
 
 
 def solve_sudoku(problem, n=3):
@@ -46,6 +54,19 @@ def generate_sudoku(n, max_clue=None, symmetry=False, verbose=False):
         verbose=verbose,
     )
     return generated
+
+
+SUDOKU_COMBINATOR = Grid(OneOf(Spaces(0, "g"), HexInt()))
+
+
+def serialize_sudoku(problem):
+    height = len(problem)
+    width = len(problem[0])
+    return serialize_problem_as_url(SUDOKU_COMBINATOR, "sudoku", height, width, problem)
+
+
+def deserialize_sudoku(url):
+    return deserialize_problem_as_url(SUDOKU_COMBINATOR, url, allowed_puzzles="sudoku")
 
 
 def _main():
