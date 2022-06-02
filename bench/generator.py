@@ -4,6 +4,7 @@ from cspuz.generator.srandom import use_deterministic_prng
 import cspuz.puzzle.masyu as masyu
 import cspuz.puzzle.nurimisaki as nurimisaki
 import cspuz.puzzle.slitherlink as slitherlink
+import cspuz.puzzle.sudoku as sudoku
 
 
 def run_generator_bench(bench_name, generator, serializer, num_problems, expected):
@@ -104,10 +105,33 @@ def bench_nurimisaki():
     )
 
 
+def bench_sudoku():
+    expected = [
+        "https://puzz.link/p?sudoku/9/9/l768g3g2g7o4h1j2h43h4g5h92h6j7h5o5g9g1g824l",
+        "https://puzz.link/p?sudoku/9/9/i1k7j659h6j7j13j8g5g7g8g4g6j42j2j7h372j1k5i",
+        "https://puzz.link/p?sudoku/9/9/i1g9k9j61j2h3i6h3g47j9j78g5h9i3h8j51j4k3g7i",
+        "https://puzz.link/p?sudoku/9/9/h72j6g1g93q4h4i7g53j6j98g4i2h3q54g1g2j87h",
+        "https://puzz.link/p?sudoku/9/9/g3m69i4l5g27h71m9g81g54g2m95h34g8l9i51m6g",
+        "https://puzz.link/p?sudoku/9/9/2h4i8k15h6g7j5g1g2h3l4i2l6h9g1g2j6g6h98k4i7h5",
+        "https://puzz.link/p?sudoku/9/9/4p8g2g9h21h6i8i4i5h53i47h8i9i7i3h46h5g4g7p5",
+        "https://puzz.link/p?sudoku/9/9/6g8h4h9m83i6j5k2g7h5h7h4h1g4k5j9i84m1h5h2g6",
+        "https://puzz.link/p?sudoku/9/9/7l3g16g9i2j65j3g6l4h8g9h7l1g6j25j8i3g65g7l2",
+        "https://puzz.link/p?sudoku/9/9/n5k37g8g6g7m3h7g4i59168i9g5h2m5g6g9g82k2n",
+    ]
+    run_generator_bench(
+        "sudoku",
+        lambda: sudoku.generate_sudoku(3, symmetry=True, max_clue=24, verbose=False),
+        sudoku.serialize_sudoku,
+        10,
+        expected,
+    )
+
+
 ALL_BENCHES = [
     (bench_masyu, "masyu"),
     (bench_slitherlink, "slitherlink"),
     (bench_nurimisaki, "nurimisaki"),
+    (bench_sudoku, "sudoku"),
 ]
 
 
