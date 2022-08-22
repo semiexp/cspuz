@@ -33,6 +33,23 @@ class Graph(object):
         self.incident_edges[i].append((j, edge_id))
         self.incident_edges[j].append((i, edge_id))
 
+    def line_graph(self) -> "Graph":
+        n = self.num_vertices
+        edges = set()
+        for v in range(n):
+            for i in range(len(self.incident_edges[v])):
+                for j in range(i):
+                    x = self.incident_edges[v][i][1]
+                    y = self.incident_edges[v][j][1]
+                    if x < y:
+                        edges.add((x, y))
+                    else:
+                        edges.add((y, x))
+        ret = Graph(len(self))
+        for x, y in edges:
+            ret.add_edge(x, y)
+        return ret
+
 
 def _get_array_shape_2d(array):
     if isinstance(array, Array2D):
@@ -555,23 +572,10 @@ def _active_edges_single_cycle(
         for i in range(n):
             degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
             solver.ensure(degree == is_passed[i].cond(2, 0))
-        edge_graph = set()
-        for v in range(n):
-            for i in range(len(graph.incident_edges[v])):
-                for j in range(i):
-                    x = graph.incident_edges[v][i][1]
-                    y = graph.incident_edges[v][j][1]
-                    if x < y:
-                        edge_graph.add((x, y))
-                    else:
-                        edge_graph.add((y, x))
-        solver.ensure(
-            BoolExpr(
-                Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
-                [len(graph), len(edge_graph)]
-                + [is_active_edge[i] for i in range(len(is_active_edge))]  # type: ignore
-                + sum([[x, y] for x, y in edge_graph], []),  # type: ignore
-            )
+
+        line_graph = graph.line_graph()
+        _active_vertices_connected(
+            solver, is_active_edge, line_graph, acyclic=False, use_graph_primitive=True
         )
     else:
         rank = solver.int_array(n, 0, n - 1)
