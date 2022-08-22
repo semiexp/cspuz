@@ -96,6 +96,10 @@ def _active_vertices_connected(
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     if use_graph_primitive and not acyclic:
+        if len(is_active) != graph.num_vertices:
+            raise ValueError(
+                "is_active must have the same number of items as that of vertices in graph"
+            )
         solver.ensure(
             BoolExpr(
                 Op.GRAPH_ACTIVE_VERTICES_CONNECTED,
