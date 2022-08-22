@@ -408,7 +408,7 @@ def division_connected(
             division,
             num_regions,
             graph,
-            roots=cast("Union[Sequence[Optional[int]]]", roots),
+            roots=cast("Sequence[Optional[int]]", roots),
             allow_empty_group=allow_empty_group,
         )
 

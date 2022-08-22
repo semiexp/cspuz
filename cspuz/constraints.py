@@ -50,7 +50,7 @@ def count_true(*args: Any) -> IntExpr:
 
 
 def fold_or(*args: Any) -> BoolExpr:
-    operands: List[Union[BoolExpr]] = []
+    operands: List[BoolExpr] = []
 
     for x in flatten_iterator(*args):
         if isinstance(x, bool):
@@ -67,7 +67,7 @@ def fold_or(*args: Any) -> BoolExpr:
 
 
 def fold_and(*args: Any) -> BoolExpr:
-    operands: List[Union[BoolExpr]] = []
+    operands: List[BoolExpr] = []
 
     for x in flatten_iterator(*args):
         if isinstance(x, bool):
