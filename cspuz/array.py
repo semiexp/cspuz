@@ -50,6 +50,13 @@ class Array1D(Generic[T]):
     def __len__(self) -> int:
         return self.shape[0]
 
+    def __bool__(self):
+        raise ValueError(
+            "CSP values cannot be converted to a bool value. "
+            "Perhaps you are using 'and', 'or' or 'not' on CSP values. "
+            "For logical operations, use '&', '|' or '~' instead, respectively."
+        )
+
 
 def _infer_shape(data: List[List[T]]) -> Tuple[int, int]:
     if len(data) == 0:
@@ -205,6 +212,13 @@ class Array2D(Generic[T]):
 
     def __len__(self) -> int:
         return self.shape[0]
+
+    def __bool__(self):
+        raise ValueError(
+            "CSP values cannot be converted to a bool value. "
+            "Perhaps you are using 'and', 'or' or 'not' on CSP values. "
+            "For logical operations, use '&', '|' or '~' instead, respectively."
+        )
 
 
 def _is_bool_like(value: Any) -> bool:

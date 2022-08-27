@@ -148,6 +148,13 @@ class Expr:
     def is_variable(self) -> bool:
         return False
 
+    def __bool__(self):
+        raise ValueError(
+            "CSP values cannot be converted to a bool value. "
+            "Perhaps you are using 'and', 'or' or 'not' on CSP values. "
+            "For logical operations, use '&', '|' or '~' instead, respectively."
+        )
+
 
 class BoolExpr(Expr):
     def __init__(self, op: Op, operands: Iterable[ExprLike]):
