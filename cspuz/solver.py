@@ -1,4 +1,5 @@
 import functools
+import warnings
 from typing import Any, List, Tuple, Union, cast, overload
 
 from . import backend
@@ -127,6 +128,8 @@ class Solver(object):
         return csp_solver.solve()
 
     def solve(self, backend: Union[None, str, type] = None) -> bool:
+        if not any(self.is_answer_key):
+            warnings.warn("no answer key is given")
         backend_type = _get_backend(backend)
         csp_solver = backend_type(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
