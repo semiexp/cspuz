@@ -253,6 +253,12 @@ class BoolExpr(Expr):
     def __ne__(self, other: BoolExprLike) -> "BoolExpr":  # type: ignore
         return _make_bool_expr(Op.XOR, [self, other])
 
+    def __xor__(self, other: BoolExprLike) -> "BoolExpr":
+        return _make_bool_expr(Op.XOR, [self, other])
+
+    def __rxor__(self, other: BoolExprLike) -> "BoolExpr":
+        return _make_bool_expr(Op.XOR, [other, self])
+
     def fold_or(self) -> "BoolExpr":
         return self
 

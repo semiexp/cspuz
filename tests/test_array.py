@@ -21,6 +21,8 @@ def apply_binary_operator(left, op, right):
         return left == right
     elif op == "!=":
         return left != right
+    elif op == "^":
+        return left ^ right
     elif op == ">=":
         return left >= right
     elif op == ">":
@@ -499,7 +501,7 @@ class TestArrayOperators:
             for j in range(4):
                 assert check_equality_expr(res[i, j], ~(x[i, j]))
 
-    @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
+    @pytest.mark.parametrize("op", ["&", "|", "^", "==", "!=", "then"])
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar1d_bvar(self, solver, op, bool_operand):
         x = solver.bool_array(7)
@@ -511,7 +513,8 @@ class TestArrayOperators:
             assert check_equality_expr(res[i], apply_binary_operator(x[i], op, y))
 
     @pytest.mark.parametrize(
-        "op,op_flip", [("&", None), ("|", None), ("==", "=="), ("!=", "!="), ("then", None)]
+        "op,op_flip",
+        [("&", None), ("|", None), ("^", None), ("==", "=="), ("!=", "!="), ("then", None)],
     )
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar_bvar1d(self, solver, op, op_flip, bool_operand):
@@ -528,7 +531,7 @@ class TestArrayOperators:
             else:
                 assert check_equality_expr(res[i], apply_binary_operator(y[i], op_flip, x))
 
-    @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
+    @pytest.mark.parametrize("op", ["&", "|", "^", "==", "!=", "then"])
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar2d_bvar(self, solver, op, bool_operand):
         x = solver.bool_array((3, 4))
@@ -541,7 +544,8 @@ class TestArrayOperators:
                 assert check_equality_expr(res[i, j], apply_binary_operator(x[i, j], op, y))
 
     @pytest.mark.parametrize(
-        "op,op_flip", [("&", None), ("|", None), ("==", "=="), ("!=", "!="), ("then", None)]
+        "op,op_flip",
+        [("&", None), ("|", None), ("^", None), ("==", "=="), ("!=", "!="), ("then", None)],
     )
     @pytest.mark.parametrize("bool_operand", [False, True])
     def test_operator_bvar_bvar2d(self, solver, op, op_flip, bool_operand):
@@ -561,14 +565,14 @@ class TestArrayOperators:
                         res[i, j], apply_binary_operator(y[i, j], op_flip, x)
                     )
 
-    @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
+    @pytest.mark.parametrize("op", ["&", "|", "^", "==", "!=", "then"])
     def test_operator_bvar2d_bvar1d(self, solver, op):
         x = solver.bool_array((4, 3))
         y = solver.bool_array(4)
         with pytest.raises(ValueError, match=r".*shape mismatch.*"):
             apply_binary_operator(x, op, y)
 
-    @pytest.mark.parametrize("op", ["&", "|", "==", "!=", "then"])
+    @pytest.mark.parametrize("op", ["&", "|", "^", "==", "!=", "then"])
     def test_operator_bvar1d_bvar2d(self, solver, op):
         x = solver.bool_array(
             4,

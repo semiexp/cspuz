@@ -80,6 +80,15 @@ class TestExprConstruction:
     def test_bne_bool_var(self, bx):
         assert check_equality_expr(True != bx, Expr(Op.XOR, [bx, True]))  # noqa: E501, E712
 
+    def test_bxor_var_var(self, bx, by):
+        assert check_equality_expr(bx ^ by, Expr(Op.XOR, [bx, by]))
+
+    def test_bxor_var_bool(self, bx):
+        assert check_equality_expr(bx ^ True, Expr(Op.XOR, [bx, True]))
+
+    def test_bxor_bool_var(self, bx):
+        assert check_equality_expr(True ^ bx, Expr(Op.XOR, [True, bx]))
+
     def test_fold_or(self, bx):
         assert check_equality_expr(bx.fold_or(), bx)
 
