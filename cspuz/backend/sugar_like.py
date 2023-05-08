@@ -27,6 +27,7 @@ OP_TO_OPNAME = {
     Op.IF: "if",
     Op.ALLDIFF: "alldifferent",
     Op.GRAPH_ACTIVE_VERTICES_CONNECTED: "graph-active-vertices-connected",
+    Op.GRAPH_DIVISION: "graph-division",
 }
 
 
@@ -40,6 +41,8 @@ def _convert_variable(v):
 
 
 def _convert_expr(e):
+    if e is None:
+        return "*"
     if isinstance(e, bool):
         return "true" if e else "false"
     if isinstance(e, int):

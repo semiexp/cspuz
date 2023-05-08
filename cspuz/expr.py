@@ -37,6 +37,7 @@ class Op(Enum):
     IF = auto()  # if (bool) { int } else { int } : int
     ALLDIFF = auto()  # alldifferent(int*) : bool
     GRAPH_ACTIVE_VERTICES_CONNECTED = auto()
+    GRAPH_DIVISION = auto()
 
 
 BoolOp = Literal[

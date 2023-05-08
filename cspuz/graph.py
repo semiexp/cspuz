@@ -560,6 +560,57 @@ def division_connected_variable_groups(
         )
 
 
+def _division_connected_variable_groups_with_borders(
+    solver: Solver,
+    graph: Graph,
+    group_size: Sequence[Optional[IntExprLike]],
+    is_border: Sequence[BoolExprLike],
+    use_graph_primitive: Optional[bool],
+):
+    if use_graph_primitive is None:
+        use_graph_primitive = config.use_graph_division_primitive
+
+    if len(group_size) != graph.num_vertices:
+        raise ValueError(
+            "group_size must have the same number of items as that of vertices in graph"
+        )
+    if len(is_border) != len(graph):
+        raise ValueError("group_size must have the same number of items as that of edges in graph")
+
+    if use_graph_primitive:
+        solver.ensure(
+            BoolExpr(
+                Op.GRAPH_DIVISION,
+                [graph.num_vertices, len(graph)]
+                + [group_size[i] for i in range(len(group_size))]  # type: ignore
+                + sum([[x, y] for x, y in graph.edges], [])  # type: ignore
+                + [is_border[i] for i in range(len(is_border))],  # type: ignore
+            )
+        )
+    else:
+        group_id = _division_connected_variable_groups(solver, graph, group_size)
+        for i, (u, v) in enumerate(graph):
+            solver.ensure(is_border[i] == (group_id[u] != group_id[v]))
+
+
+def division_connected_variable_groups_with_borders(
+    solver: Solver,
+    *,
+    graph: Graph,
+    group_size: Union[
+        None,
+        Sequence[Optional[IntExprLike]],
+    ],
+    is_border: Sequence[BoolExprLike],
+    use_graph_primitive: Optional[bool] = None,
+):
+    if group_size is None:
+        group_size = [None for _ in range(graph.num_vertices)]
+    _division_connected_variable_groups_with_borders(
+        solver, graph, group_size, is_border, use_graph_primitive
+    )
+
+
 def _active_edges_single_cycle(
     solver: Solver,
     is_active_edge: Sequence[BoolExprLike],

@@ -5,11 +5,20 @@ from cspuz import graph, BoolGridFrame
 
 
 class TestGraph:
-    @pytest.fixture(autouse=True, params=[("sugar", False), ("sugar", True), ("z3", False)])
+    @pytest.fixture(
+        autouse=True,
+        params=[
+            ("sugar", False, False),
+            ("sugar", True, False),
+            ("z3", False, False),
+            ("enigma_csp", True, True),
+        ],
+    )
     def default_backend(self, request):
-        default_backend, use_graph_primitive = request.param
+        default_backend, use_graph_primitive, use_graph_division_primitive = request.param
         cspuz.config.default_backend = default_backend
         cspuz.config.use_graph_primitive = use_graph_primitive
+        cspuz.config.use_graph_division_primitive = use_graph_division_primitive
 
     @pytest.fixture
     def solver(self):
@@ -208,3 +217,19 @@ class TestGraph:
         assert solver.solve()
         assert is_active_edge[4].sol is None
         assert is_active_edge[9].sol is True
+
+    def test_division_connected_variable_groups_with_borders(self, solver, default_graph):
+        v = solver.int_var(1, 8)
+        is_border = solver.bool_array(10)
+        solver.add_answer_key(is_border)
+        graph.division_connected_variable_groups_with_borders(
+            solver, graph=default_graph, group_size=[v] * 8, is_border=is_border
+        )
+
+        # TODO: with these constraints the solver does not terminate
+        solver.ensure(~is_border[1])
+        solver.ensure(is_border[9])
+
+        assert solver.solve()
+        assert is_border[4].sol is False
+        assert is_border[5].sol is True

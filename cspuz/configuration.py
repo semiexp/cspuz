@@ -63,6 +63,7 @@ class Config(object):
     backend_path: Optional[str]
     csugar_binding: Optional[str]
     use_graph_primitive: bool
+    use_graph_division_primitive: bool
     solver_timeout: Optional[float]
 
     def __init__(self, infer_from_env=True):
@@ -72,8 +73,19 @@ class Config(object):
             graph_primitive_default = "True"
         else:
             graph_primitive_default = "False"
+        if self.default_backend == "enigma_csp":
+            graph_division_primitive_default = "True"
+        else:
+            graph_division_primitive_default = "False"
         self.use_graph_primitive = _strtobool_optional(
             _get_default(infer_from_env, "CSPUZ_USE_GRAPH_PRIMITIVE", graph_primitive_default)
+        )
+        self.use_graph_division_primitive = _strtobool_optional(
+            _get_default(
+                infer_from_env,
+                "CSPUZ_USE_GRAPH_DIVISION_PRIMITIVE",
+                graph_division_primitive_default,
+            )
         )
         self.solver_timeout = None
 
