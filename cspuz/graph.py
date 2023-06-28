@@ -3,7 +3,7 @@ from typing import Iterator, List, Optional, Sequence, Tuple, Union, cast, overl
 from .array import Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _infer_shape
 from .constraints import IntExpr, BoolExpr, Op, count_true, then
 from .expr import BoolExprLike, IntExprLike
-from .grid_frame import BoolGridFrame
+from .grid_frame import BoolGridFrame, BoolInnerGridFrame
 from .configuration import config
 from .solver import Solver
 
@@ -596,19 +596,34 @@ def _division_connected_variable_groups_with_borders(
 def division_connected_variable_groups_with_borders(
     solver: Solver,
     *,
-    graph: Graph,
     group_size: Union[
         None,
         Sequence[Optional[IntExprLike]],
+        IntArray2D,
     ],
-    is_border: Sequence[BoolExprLike],
+    is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
+    graph: Graph = None,
     use_graph_primitive: Optional[bool] = None,
 ):
-    if group_size is None:
-        group_size = [None for _ in range(graph.num_vertices)]
-    _division_connected_variable_groups_with_borders(
-        solver, graph, group_size, is_border, use_graph_primitive
-    )
+    if graph is None:
+        if not isinstance(group_size, IntArray2D):
+            raise TypeError(
+                "`group_size` should be an IntArray2D if graph is not specified"
+            )
+        if not isinstance(is_border, BoolInnerGridFrame):
+            raise TypeError(
+                "`is_border` should be a BoolInnerGridFrame if graph is not specified"
+            )
+
+        group_size_flat = group_size.flatten()
+        edges, graph = _from_grid_frame(is_border.dual())
+        _division_connected_variable_groups_with_borders(solver, graph, group_size_flat, edges, use_graph_primitive)
+    else:
+        if group_size is None:
+            group_size = [None for _ in range(graph.num_vertices)]
+        _division_connected_variable_groups_with_borders(
+            solver, graph, group_size, is_border, use_graph_primitive
+        )
 
 
 def _active_edges_single_cycle(
