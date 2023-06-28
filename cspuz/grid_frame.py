@@ -11,12 +11,20 @@ class BoolGridFrame:
     a bool variable.
     """
 
-    def __init__(self, solver, height, width):
+    def __init__(self, solver, height, width, horizontal=None, vertical=None):
         self.solver = solver
         self.height = height
         self.width = width
-        self.horizontal = solver.bool_array((height + 1, width))
-        self.vertical = solver.bool_array((height, width + 1))
+
+        if horizontal is None:
+            self.horizontal = solver.bool_array((height + 1, width))
+        else:
+            self.horizontal = horizontal
+
+        if vertical is None:
+            self.vertical = solver.bool_array((height, width + 1))
+        else:
+            self.vertical = vertical
 
     def __getitem__(self, item: Tuple[int, int]) -> BoolExpr:
         y, x = item
@@ -58,7 +66,42 @@ class BoolGridFrame:
             ]
         )
 
+    def dual(self) -> "BoolInnerGridFrame":
+        return BoolInnerGridFrame(
+            solver=self.solver,
+            height=self.height + 1,
+            width=self.width + 1,
+            horizontal=self.vertical,
+            vertical=self.horizontal,
+        )
+
     def single_loop(self):
         from . import graph
 
         return graph.active_edges_single_cycle(self.solver, self)
+
+
+class BoolInnerGridFrame:
+    def __init__(self, solver, height, width, horizontal=None, vertical=None):
+        self.solver = solver
+        self.height = height
+        self.width = width
+
+        if horizontal is None:
+            self.horizontal = solver.bool_array((height - 1, width))
+        else:
+            self.horizontal = horizontal
+
+        if vertical is None:
+            self.vertical = solver.bool_array((height, width - 1))
+        else:
+            self.vertical = vertical
+
+    def dual(self) -> BoolGridFrame:
+        return BoolGridFrame(
+            solver=self.solver,
+            height=self.height - 1,
+            width=self.width - 1,
+            horizontal=self.vertical,
+            vertical=self.horizontal,
+        )
