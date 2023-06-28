@@ -11,17 +11,18 @@ def solve_fillomino(height, width, problem, checkered=False):
     solver = Solver()
     size = solver.int_array((height, width), 1, height * width)
     solver.add_answer_key(size)
-    group_id = graph.division_connected_variable_groups(solver, group_size=size)
-    solver.ensure((group_id[:, :-1] == group_id[:, 1:]) == (size[:, :-1] == size[:, 1:]))
-    solver.ensure((group_id[:-1, :] == group_id[1:, :]) == (size[:-1, :] == size[1:, :]))
+    border = graph.BoolInnerGridFrame(solver, height, width)
+    graph.division_connected_variable_groups_with_borders(solver, group_size=size, is_border=border)
+    solver.ensure(border.vertical == (size[:, :-1] != size[:, 1:]))
+    solver.ensure(border.horizontal == (size[:-1, :] != size[1:, :]))
     for y in range(height):
         for x in range(width):
             if problem[y][x] >= 1:
                 solver.ensure(size[y, x] == problem[y][x])
     if checkered:
         color = solver.bool_array((height, width))
-        solver.ensure((group_id[:, :-1] == group_id[:, 1:]) == (color[:, :-1] == color[:, 1:]))
-        solver.ensure((group_id[:-1, :] == group_id[1:, :]) == (color[:-1, :] == color[1:, :]))
+        solver.ensure(border.vertical == (color[:, :-1] != color[:, 1:]))
+        solver.ensure(border.horizontal == (color[:-1, :] != color[1:, :]))
     is_sat = solver.solve()
     return is_sat, size
 
