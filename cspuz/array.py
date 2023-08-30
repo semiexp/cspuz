@@ -459,6 +459,9 @@ class IntArray1D(Array1D[IntExpr]):
     def reshape(self, shape: Tuple[int, int]) -> "IntArray2D":
         return _reshape(self, shape)
 
+    def alldifferent(self) -> "BoolExpr":
+        return BoolExpr(Op.ALLDIFF, self.data)
+
 
 BoolOperand2D = Union[BoolExprLike, "BoolArray2D"]
 IntOperand2D = Union[IntExprLike, "IntArray2D"]
@@ -722,6 +725,9 @@ class IntArray2D(Array2D[IntExpr]):
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
     ) -> List[Tuple[int, int]]:
         return _four_neighbor_indices(self.shape, y, x)
+
+    def alldifferent(self) -> "BoolExpr":
+        return BoolExpr(Op.ALLDIFF, self.data)
 
 
 @overload
