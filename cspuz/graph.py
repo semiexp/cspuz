@@ -716,3 +716,92 @@ def active_edges_single_cycle(
         return _active_edges_single_cycle(
             solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
         )
+
+
+def active_edges_connected_crossable(
+    solver: Solver,
+    is_active_edge: BoolGridFrame,
+    *,
+    single_cycle: bool = False,
+    use_graph_primitive: Optional[bool] = None,
+) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    height = is_active_edge.height + 1
+    width = is_active_edge.width + 1
+
+    is_passed = solver.bool_array((height, width))
+    is_cross = solver.bool_array((height, width))
+
+    solver.ensure(is_cross.then(is_passed))
+
+    for y in range(height):
+        for x in range(width):
+            if y == 0 or y == height - 1 or x == 0 or x == width - 1:
+                solver.ensure(~is_cross[y, x])
+
+            d = count_true(is_active_edge.vertex_neighbors(y, x))
+            solver.ensure((~is_passed[y, x]).then(d == 0))
+            solver.ensure((is_passed[y, x] & is_cross[y, x]).then(d == 4))
+            if single_cycle:
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d == 2))
+            else:
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d >= 1))
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d <= 2))
+
+    is_passed_single = solver.bool_array((height, width))
+    is_passed_double_horizontal = solver.bool_array((height, width))
+    is_passed_double_vertical = solver.bool_array((height, width))
+
+    solver.ensure(is_passed_single == (is_passed & ~is_cross))
+    solver.ensure(is_passed_double_horizontal == is_cross)
+    solver.ensure(is_passed_double_vertical == is_cross)
+
+    g = Graph(height * width * 3 + (height - 1) * width + height * (width - 1))
+    gv = []
+
+    for y in range(height):
+        for x in range(width):
+            gv.append(is_passed_single[y, x])
+            gv.append(is_passed_double_horizontal[y, x])
+            gv.append(is_passed_double_vertical[y, x])
+
+    for y in range(height - 1):
+        for x in range(width):
+            gv.append(is_active_edge.vertical[y, x])
+    for y in range(height):
+        for x in range(width - 1):
+            gv.append(is_active_edge.horizontal[y, x])
+
+    for y in range(height - 1):
+        for x in range(width):
+            eid = height * width * 3 + y * width + x
+            v0 = (y * width + x) * 3
+            v1 = ((y + 1) * width + x) * 3
+            g.add_edge(eid, v0)
+            g.add_edge(eid, v0 + 2)
+            g.add_edge(eid, v1)
+            g.add_edge(eid, v1 + 2)
+
+    for y in range(height):
+        for x in range(width - 1):
+            eid = height * width * 3 + (height - 1) * width + y * (width - 1) + x
+            v0 = (y * width + x) * 3
+            v1 = (y * width + x + 1) * 3
+            g.add_edge(eid, v0)
+            g.add_edge(eid, v0 + 1)
+            g.add_edge(eid, v1)
+            g.add_edge(eid, v1 + 1)
+
+    active_vertices_connected(solver, gv, graph=g, use_graph_primitive=use_graph_primitive)
+
+    return is_passed, is_cross
+
+
+def active_edges_single_cycle_crossable(
+    solver: Solver,
+    is_active_edge: BoolGridFrame,
+    *,
+    use_graph_primitive: Optional[bool] = None,
+) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    return active_edges_connected_crossable(
+        solver, is_active_edge, single_cycle=True, use_graph_primitive=use_graph_primitive
+    )
