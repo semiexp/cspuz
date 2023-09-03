@@ -607,17 +607,15 @@ def division_connected_variable_groups_with_borders(
 ):
     if graph is None:
         if not isinstance(group_size, IntArray2D):
-            raise TypeError(
-                "`group_size` should be an IntArray2D if graph is not specified"
-            )
+            raise TypeError("`group_size` should be an IntArray2D if graph is not specified")
         if not isinstance(is_border, BoolInnerGridFrame):
-            raise TypeError(
-                "`is_border` should be a BoolInnerGridFrame if graph is not specified"
-            )
+            raise TypeError("`is_border` should be a BoolInnerGridFrame if graph is not specified")
 
         group_size_flat = group_size.flatten()
         edges, graph = _from_grid_frame(is_border.dual())
-        _division_connected_variable_groups_with_borders(solver, graph, group_size_flat, edges, use_graph_primitive)
+        _division_connected_variable_groups_with_borders(
+            solver, graph, group_size_flat, edges, use_graph_primitive
+        )
     else:
         if group_size is None:
             group_size = [None for _ in range(graph.num_vertices)]
