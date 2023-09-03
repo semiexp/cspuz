@@ -437,7 +437,7 @@ def division_connected(
 def _division_connected_variable_groups(
     solver: Solver,
     graph: Graph,
-    group_size: Union[None, IntExprLike, Sequence[Optional[IntExprLike]]] = None,
+    group_size: Union[None, IntArray1D, IntExprLike, Sequence[Optional[IntExprLike]]] = None,
 ) -> IntArray1D:
     n = graph.num_vertices
     m = len(graph)
@@ -563,7 +563,7 @@ def division_connected_variable_groups(
 def _division_connected_variable_groups_with_borders(
     solver: Solver,
     graph: Graph,
-    group_size: Sequence[Optional[IntExprLike]],
+    group_size: Union[IntArray1D, Sequence[Optional[IntExprLike]]],
     is_border: Sequence[BoolExprLike],
     use_graph_primitive: Optional[bool],
 ):
@@ -617,6 +617,12 @@ def division_connected_variable_groups_with_borders(
             solver, graph, group_size_flat, edges, use_graph_primitive
         )
     else:
+        if isinstance(group_size, IntArray2D):
+            raise TypeError("`group_size` should not be an IntArray2D if graph is specified")
+        if isinstance(is_border, BoolInnerGridFrame):
+            raise TypeError(
+                "`is_border` should not be an BoolInnerGridFrame if graph is specified"
+            )
         if group_size is None:
             group_size = [None for _ in range(graph.num_vertices)]
         _division_connected_variable_groups_with_borders(
