@@ -404,6 +404,11 @@ class BoolArray1D(Array1D[BoolExpr]):
     def reshape(self, shape: Tuple[int, int]) -> "BoolArray2D":
         return _reshape(self, shape)
 
+    def count_true(self) -> IntExpr:
+        import cspuz.constraints
+
+        return cspuz.constraints.count_true(self.data)
+
 
 class IntArray1D(Array1D[IntExpr]):
     def __init__(self, data: Iterable[IntExpr]):
@@ -609,6 +614,11 @@ class BoolArray2D(Array2D[BoolExpr]):
                 elif op == "or":
                     r_data.append(BoolExpr(Op.OR, component))
         return BoolArray2D(r_data, (r_height, r_width))
+
+    def count_true(self) -> IntExpr:
+        import cspuz.constraints
+
+        return cspuz.constraints.count_true(self.data)
 
 
 class IntArray2D(Array2D[IntExpr]):
