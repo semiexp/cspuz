@@ -376,10 +376,10 @@ class BoolArray1D(Array1D[BoolExpr]):
         return _elementwise(Op.XOR, self.shape, [other, self])
 
     def fold_or(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.OR, self.data)
 
     def fold_and(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.AND, self.data)
 
     @overload
     def __getitem__(self, key: int) -> BoolExpr:
@@ -528,10 +528,10 @@ class BoolArray2D(Array2D[BoolExpr]):
         return _elementwise(Op.XOR, self.shape, [other, self])
 
     def fold_or(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.OR, self.data)
 
     def fold_and(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.AND, self.data)
 
     @overload
     def __getitem__(self, key: Tuple[int, int]) -> BoolExpr:
