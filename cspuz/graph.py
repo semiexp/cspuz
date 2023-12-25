@@ -1,7 +1,7 @@
 from typing import Iterator, List, Optional, Sequence, Tuple, Union, cast, overload
 
 from .array import Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _infer_shape
-from .constraints import IntExpr, BoolExpr, Op, count_true, then
+from .constraints import IntExpr, BoolExpr, Op, count_true, then, fold_or
 from .expr import BoolExprLike, IntExprLike
 from .grid_frame import BoolGridFrame, BoolInnerGridFrame
 from .configuration import config
@@ -710,5 +710,78 @@ def active_edges_single_cycle(
         if isinstance(is_active_edge, BoolArray1D):
             is_active_edge = is_active_edge.data
         return _active_edges_single_cycle(
+            solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
+        )
+
+def _active_edges_single_path(
+    solver: Solver,
+    is_active_edge: Sequence[BoolExprLike],
+    graph: Graph,
+    use_graph_primitive: Optional[bool] = None,
+):
+    if use_graph_primitive is None:
+        use_graph_primitive = config.use_graph_primitive
+    n = graph.num_vertices
+
+    is_passed = solver.bool_array(n)
+    is_endpoint = []
+
+    if use_graph_primitive:
+        for i in range(n):
+            degree = count_true([is_active_edge[e] for j, e in graph.incident_edges[i]])
+            solver.ensure(is_passed[i].then((degree == 1) | (degree == 2)))
+            solver.ensure((~is_passed[i]).then(degree == 0))
+            is_endpoint.append(degree == 1)
+        solver.ensure(count_true(is_endpoint) == 2)
+        line_graph = graph.line_graph()
+        _active_vertices_connected(
+            solver, is_active_edge, line_graph, acyclic=False, use_graph_primitive=True
+        )
+    else:
+        raise RuntimeError('TODO')
+    return is_passed
+
+
+@overload
+def active_edges_single_path(
+    solver: Solver, is_active_edge: BoolGridFrame, *, use_graph_primitive: Optional[bool] = None
+):
+    ...
+
+
+@overload
+def active_edges_single_path(
+    solver: Solver,
+    is_active_edge: Union[Sequence[BoolExprLike], BoolArray1D],
+    graph: Graph,
+    *,
+    use_graph_primitive: Optional[bool] = None,
+):
+    ...
+
+
+def active_edges_single_path(
+    solver: Solver,
+    is_active_edge: Union[BoolGridFrame, Sequence[BoolExprLike], BoolArray1D],
+    graph: Optional[Graph] = None,
+    *,
+    use_graph_primitive: Optional[bool] = None,
+):
+    if graph is None:
+        if not isinstance(is_active_edge, BoolGridFrame):
+            raise TypeError(
+                "`is_active_edge` should be a BoolGridFrame if graph is not " "specified"
+            )
+        edges, graph = _from_grid_frame(is_active_edge)
+        is_passed_flat = _active_edges_single_path(
+            solver, edges, graph, use_graph_primitive=use_graph_primitive
+        )
+        return is_passed_flat.reshape((is_active_edge.height + 1, is_active_edge.width + 1))
+    else:
+        if isinstance(is_active_edge, BoolGridFrame):
+            raise TypeError("'is_active_edge' should be sequence-like if graph is " "specified")
+        if isinstance(is_active_edge, BoolArray1D):
+            is_active_edge = is_active_edge.data
+        return _active_edges_single_path(
             solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
         )
