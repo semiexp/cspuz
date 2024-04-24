@@ -131,3 +131,6 @@ class BoolInnerGridFrame:
             horizontal=self.vertical,
             vertical=self.horizontal,
         )
+
+    def __iter__(self) -> Iterator[BoolExpr]:
+        return iter(self.dual())
