@@ -84,7 +84,15 @@ class Choice(Builder):
 
 class ArrayBuilder2D(Builder):
     def __init__(
-        self, height, width, choice, default, disallow_adjacent=False, symmetry=False, initial=None
+        self,
+        height,
+        width,
+        choice,
+        default,
+        disallow_adjacent=False,
+        symmetry=False,
+        initial=None,
+        use_move=False,
     ):
         self.height = height
         self.width = width
@@ -99,6 +107,7 @@ class ArrayBuilder2D(Builder):
             self.disallow_adjacent = disallow_adjacent
         self.symmetry = symmetry
         self.initial_problem = initial
+        self.use_move = use_move
 
     def initial(self):
         if self.initial_problem is not None:
@@ -108,6 +117,51 @@ class ArrayBuilder2D(Builder):
     def candidates(self, current):
         global _use_deterministic_prng
         ret = []
+        if self.use_move:
+            if self.symmetry:
+                for y1 in range(self.height):
+                    for x1 in range(self.width):
+                        for _ in range(10):
+                            y2 = srandom.randint(0, self.height - 1)
+                            x2 = srandom.randint(0, self.width - 1)
+                            if (y1, x1) == (y2, x2):
+                                continue
+
+                            y1b = self.height - 1 - y1
+                            x1b = self.width - 1 - x1
+                            y2b = self.height - 1 - y2
+                            x2b = self.width - 1 - x2
+                            if (y1, x1) == (y1b, x1b):
+                                continue
+                            if (y1, x1) == (y2b, x2b):
+                                continue
+
+                            if current[y1][x1] != current[y2][x2]:
+                                ret.append(
+                                    [
+                                        (y1, x1, current[y2][x2]),
+                                        (y2, x2, current[y1][x1]),
+                                        (y1b, x1b, current[y2b][x2b]),
+                                        (y2b, x2b, current[y1b][x1b]),
+                                    ]
+                                )
+            else:
+                for y in range(self.height):
+                    for x in range(self.width):
+                        for _ in range(10):
+                            y2 = srandom.randint(0, self.height - 1)
+                            x2 = srandom.randint(0, self.width - 1)
+                            if (y, x) == (y2, x2):
+                                continue
+
+                            if current[y][x] != current[y2][x2]:
+                                ret.append(
+                                    [
+                                        (y, x, current[y2][x2]),
+                                        (y2, x2, current[y][x]),
+                                    ]
+                                )
+
         for y in range(self.height):
             for x in range(self.width):
                 default_only = False

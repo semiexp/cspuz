@@ -376,10 +376,10 @@ class BoolArray1D(Array1D[BoolExpr]):
         return _elementwise(Op.XOR, self.shape, [other, self])
 
     def fold_or(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.OR, self.data)
 
     def fold_and(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.AND, self.data)
 
     @overload
     def __getitem__(self, key: int) -> BoolExpr:
@@ -403,6 +403,11 @@ class BoolArray1D(Array1D[BoolExpr]):
 
     def reshape(self, shape: Tuple[int, int]) -> "BoolArray2D":
         return _reshape(self, shape)
+
+    def count_true(self) -> IntExpr:
+        import cspuz.constraints
+
+        return cspuz.constraints.count_true(self.data)
 
 
 class IntArray1D(Array1D[IntExpr]):
@@ -458,6 +463,9 @@ class IntArray1D(Array1D[IntExpr]):
 
     def reshape(self, shape: Tuple[int, int]) -> "IntArray2D":
         return _reshape(self, shape)
+
+    def alldifferent(self) -> "BoolExpr":
+        return BoolExpr(Op.ALLDIFF, self.data)
 
 
 BoolOperand2D = Union[BoolExprLike, "BoolArray2D"]
@@ -520,10 +528,10 @@ class BoolArray2D(Array2D[BoolExpr]):
         return _elementwise(Op.XOR, self.shape, [other, self])
 
     def fold_or(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.OR, self.data)
 
     def fold_and(self) -> BoolExpr:
-        return NotImplemented  # TODO
+        return BoolExpr(Op.AND, self.data)
 
     @overload
     def __getitem__(self, key: Tuple[int, int]) -> BoolExpr:
@@ -606,6 +614,11 @@ class BoolArray2D(Array2D[BoolExpr]):
                 elif op == "or":
                     r_data.append(BoolExpr(Op.OR, component))
         return BoolArray2D(r_data, (r_height, r_width))
+
+    def count_true(self) -> IntExpr:
+        import cspuz.constraints
+
+        return cspuz.constraints.count_true(self.data)
 
 
 class IntArray2D(Array2D[IntExpr]):
@@ -722,6 +735,9 @@ class IntArray2D(Array2D[IntExpr]):
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
     ) -> List[Tuple[int, int]]:
         return _four_neighbor_indices(self.shape, y, x)
+
+    def alldifferent(self) -> "BoolExpr":
+        return BoolExpr(Op.ALLDIFF, self.data)
 
 
 @overload

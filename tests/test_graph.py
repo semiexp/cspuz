@@ -233,3 +233,36 @@ class TestGraph:
         assert solver.solve()
         assert is_border[4].sol is False
         assert is_border[5].sol is True
+
+    def test_active_edges_single_cycle_crossable(self, solver):
+        grid_frame = BoolGridFrame(solver, 4, 3)
+        solver.add_answer_key(grid_frame)
+        is_passed, is_crossing = graph.active_edges_single_cycle_crossable(solver, grid_frame)
+
+        solver.ensure(grid_frame.horizontal[0, 0])
+        solver.ensure(is_passed[0, 2])
+        solver.ensure(is_crossing[1, 1])
+        solver.ensure(is_crossing[2, 2])
+        solver.ensure(is_crossing[3, 1])
+
+        assert solver.solve()
+        assert grid_frame.vertical[0, 0].sol is True
+        assert grid_frame.vertical[3, 3].sol is True
+        assert grid_frame.horizontal[4, 2].sol is True
+
+    def test_active_edges_connected_crossable(self, solver):
+        grid_frame = BoolGridFrame(solver, 4, 3)
+        solver.add_answer_key(grid_frame)
+        _, is_crossing = graph.active_edges_connected_crossable(solver, grid_frame)
+
+        solver.ensure(grid_frame.horizontal[0, 0])
+        solver.ensure(grid_frame.horizontal[0, 2])
+        solver.ensure(is_crossing[1, 1])
+        solver.ensure(~is_crossing[1, 2])
+        solver.ensure(~is_crossing[2, 1])
+        solver.ensure(is_crossing[2, 2])
+
+        assert solver.solve()
+        assert grid_frame.vertical[0, 0].sol is True
+        assert grid_frame.vertical[0, 3].sol is True
+        assert grid_frame.vertical[2, 0].sol is None

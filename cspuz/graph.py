@@ -437,7 +437,7 @@ def division_connected(
 def _division_connected_variable_groups(
     solver: Solver,
     graph: Graph,
-    group_size: Union[None, IntExprLike, Sequence[Optional[IntExprLike]]] = None,
+    group_size: Union[None, IntArray1D, IntExprLike, Sequence[Optional[IntExprLike]]] = None,
 ) -> IntArray1D:
     n = graph.num_vertices
     m = len(graph)
@@ -563,7 +563,7 @@ def division_connected_variable_groups(
 def _division_connected_variable_groups_with_borders(
     solver: Solver,
     graph: Graph,
-    group_size: Sequence[Optional[IntExprLike]],
+    group_size: Union[IntArray1D, Sequence[Optional[IntExprLike]]],
     is_border: Sequence[BoolExprLike],
     use_graph_primitive: Optional[bool],
 ):
@@ -607,18 +607,22 @@ def division_connected_variable_groups_with_borders(
 ):
     if graph is None:
         if not isinstance(group_size, IntArray2D):
-            raise TypeError(
-                "`group_size` should be an IntArray2D if graph is not specified"
-            )
+            raise TypeError("`group_size` should be an IntArray2D if graph is not specified")
         if not isinstance(is_border, BoolInnerGridFrame):
-            raise TypeError(
-                "`is_border` should be a BoolInnerGridFrame if graph is not specified"
-            )
+            raise TypeError("`is_border` should be a BoolInnerGridFrame if graph is not specified")
 
         group_size_flat = group_size.flatten()
         edges, graph = _from_grid_frame(is_border.dual())
-        _division_connected_variable_groups_with_borders(solver, graph, group_size_flat, edges, use_graph_primitive)
+        _division_connected_variable_groups_with_borders(
+            solver, graph, group_size_flat, edges, use_graph_primitive
+        )
     else:
+        if isinstance(group_size, IntArray2D):
+            raise TypeError("`group_size` should not be an IntArray2D if graph is specified")
+        if isinstance(is_border, BoolInnerGridFrame):
+            raise TypeError(
+                "`is_border` should not be an BoolInnerGridFrame if graph is specified"
+            )
         if group_size is None:
             group_size = [None for _ in range(graph.num_vertices)]
         _division_connected_variable_groups_with_borders(
@@ -713,6 +717,7 @@ def active_edges_single_cycle(
             solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
         )
 
+      
 def _active_edges_single_path(
     solver: Solver,
     is_active_edge: Sequence[BoolExprLike],
@@ -785,3 +790,92 @@ def active_edges_single_path(
         return _active_edges_single_path(
             solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
         )
+
+
+def active_edges_connected_crossable(
+    solver: Solver,
+    is_active_edge: BoolGridFrame,
+    *,
+    single_cycle: bool = False,
+    use_graph_primitive: Optional[bool] = None,
+) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    height = is_active_edge.height + 1
+    width = is_active_edge.width + 1
+
+    is_passed = solver.bool_array((height, width))
+    is_cross = solver.bool_array((height, width))
+
+    solver.ensure(is_cross.then(is_passed))
+
+    for y in range(height):
+        for x in range(width):
+            if y == 0 or y == height - 1 or x == 0 or x == width - 1:
+                solver.ensure(~is_cross[y, x])
+
+            d = count_true(is_active_edge.vertex_neighbors(y, x))
+            solver.ensure((~is_passed[y, x]).then(d == 0))
+            solver.ensure((is_passed[y, x] & is_cross[y, x]).then(d == 4))
+            if single_cycle:
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d == 2))
+            else:
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d >= 1))
+                solver.ensure((is_passed[y, x] & ~is_cross[y, x]).then(d <= 2))
+
+    is_passed_single = solver.bool_array((height, width))
+    is_passed_double_horizontal = solver.bool_array((height, width))
+    is_passed_double_vertical = solver.bool_array((height, width))
+
+    solver.ensure(is_passed_single == (is_passed & ~is_cross))
+    solver.ensure(is_passed_double_horizontal == is_cross)
+    solver.ensure(is_passed_double_vertical == is_cross)
+
+    g = Graph(height * width * 3 + (height - 1) * width + height * (width - 1))
+    gv = []
+
+    for y in range(height):
+        for x in range(width):
+            gv.append(is_passed_single[y, x])
+            gv.append(is_passed_double_horizontal[y, x])
+            gv.append(is_passed_double_vertical[y, x])
+
+    for y in range(height - 1):
+        for x in range(width):
+            gv.append(is_active_edge.vertical[y, x])
+    for y in range(height):
+        for x in range(width - 1):
+            gv.append(is_active_edge.horizontal[y, x])
+
+    for y in range(height - 1):
+        for x in range(width):
+            eid = height * width * 3 + y * width + x
+            v0 = (y * width + x) * 3
+            v1 = ((y + 1) * width + x) * 3
+            g.add_edge(eid, v0)
+            g.add_edge(eid, v0 + 2)
+            g.add_edge(eid, v1)
+            g.add_edge(eid, v1 + 2)
+
+    for y in range(height):
+        for x in range(width - 1):
+            eid = height * width * 3 + (height - 1) * width + y * (width - 1) + x
+            v0 = (y * width + x) * 3
+            v1 = (y * width + x + 1) * 3
+            g.add_edge(eid, v0)
+            g.add_edge(eid, v0 + 1)
+            g.add_edge(eid, v1)
+            g.add_edge(eid, v1 + 1)
+
+    active_vertices_connected(solver, gv, graph=g, use_graph_primitive=use_graph_primitive)
+
+    return is_passed, is_cross
+
+
+def active_edges_single_cycle_crossable(
+    solver: Solver,
+    is_active_edge: BoolGridFrame,
+    *,
+    use_graph_primitive: Optional[bool] = None,
+) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    return active_edges_connected_crossable(
+        solver, is_active_edge, single_cycle=True, use_graph_primitive=use_graph_primitive
+    )

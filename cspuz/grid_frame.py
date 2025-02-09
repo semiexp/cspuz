@@ -66,6 +66,32 @@ class BoolGridFrame:
             ]
         )
 
+    def vertex_neighbors(
+        self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
+    ) -> BoolArray1D:
+        if x is None:
+            if isinstance(y, int):
+                raise TypeError("two integers must be provided to 'cell_neighbors'")
+            y2, x2 = y
+        else:
+            if x is None or isinstance(y, tuple):
+                raise TypeError("two integers must be provided to 'cell_neighbors'")
+            y2 = y
+            x2 = x
+        if not (0 <= y2 <= self.height and 0 <= x2 <= self.width):
+            raise IndexError("index out of range")
+
+        res = []
+        if y2 > 0:
+            res.append(self.vertical[y2 - 1, x2])
+        if y2 < self.height:
+            res.append(self.vertical[y2, x2])
+        if x2 > 0:
+            res.append(self.horizontal[y2, x2 - 1])
+        if x2 < self.width:
+            res.append(self.horizontal[y2, x2])
+        return BoolArray1D(res)
+
     def dual(self) -> "BoolInnerGridFrame":
         return BoolInnerGridFrame(
             solver=self.solver,
@@ -105,3 +131,6 @@ class BoolInnerGridFrame:
             horizontal=self.vertical,
             vertical=self.horizontal,
         )
+
+    def __iter__(self) -> Iterator[BoolExpr]:
+        return iter(self.dual())

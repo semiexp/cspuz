@@ -12,7 +12,9 @@ def solve_fillomino(height, width, problem, checkered=False):
     size = solver.int_array((height, width), 1, height * width)
     solver.add_answer_key(size)
     border = graph.BoolInnerGridFrame(solver, height, width)
-    graph.division_connected_variable_groups_with_borders(solver, group_size=size, is_border=border)
+    graph.division_connected_variable_groups_with_borders(
+        solver, group_size=size, is_border=border
+    )
     solver.ensure(border.vertical == (size[:, :-1] != size[:, 1:]))
     solver.ensure(border.horizontal == (size[:-1, :] != size[1:, :]))
     for y in range(height):
