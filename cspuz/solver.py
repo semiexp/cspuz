@@ -20,6 +20,8 @@ def _get_backend_by_name(backend_name: str) -> type:
         return backend.sugar_like.CSugarBackend
     elif backend_name == "enigma_csp":
         return backend.sugar_like.EnigmaCSPBackend
+    elif backend_name == "cspuz_core":
+        return backend.sugar_like.CspuzCoreBackend
     else:
         raise ValueError("invalid backend {}".format(backend_name))
 

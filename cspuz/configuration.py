@@ -17,6 +17,34 @@ def _strtobool_optional(s: Optional[str]) -> Optional[bool]:
         return strtobool(s)
 
 
+def _detect_backend() -> str:
+    try:
+        import cspuz_core  # noqa
+        return "cspuz_core"
+    except ImportError:
+        pass
+
+    try:
+        import enigma_csp  # noqa
+        return "enigma_csp"
+    except ImportError:
+        pass
+
+    try:
+        import pycsugar  # noqa
+        return "csugar"
+    except ImportError:
+        pass
+
+    try:
+        import z3  # noqa
+        return "z3"
+    except ImportError:
+        pass
+
+    return "sugar"
+
+
 class Config(object):
     """
     Class for maintaining the solver configurations.
@@ -34,10 +62,21 @@ class Config(object):
     csugar CSP solver (https://github.com/semiexp/csugar) with Python
     interface.
     Prerequisite: `import pycsugar` succeeds.
-    - `enigma_csp`
-    enigma_csp CSP solver (https://github.com/semiexp/enigma_csp) with Python
+    - `cspuz_core`
+    cspuz_core CSP solver (https://github.com/semiexp/cspuz_core) with Python
     interface.
-    Prerequisite: `import enigma_csp` succeeds.
+    Prerequisite: `import cspuz_core` succeeds.
+    - `auto`
+    Automatically decide the backend based on availability of the libraries.
+    The priority is as follows:
+      - `cspuz_core`
+      - `enigma_csp`
+      - `csugar`
+      - `z3`
+      - `sugar`
+
+    For backward compatibility, `enigma_csp` (the former name of `cspuz_core`)
+    is also supported.
 
     `default_backend` is the name of a backend (listed above) which is used
     by default in `Solver`.
@@ -47,10 +86,10 @@ class Config(object):
     CSP solver like csugar) for `sugar` and `sugar_extended` backends.
 
     `use_graph_primitive` controls whether native graph constraints are used.
-    This feature is supported by csugar and enigma_csp CSP solver and is
-    enabled by default for `csugar` and `enigma_csp` backends.
+    This feature is supported by csugar and cspuz_core CSP solver and is
+    enabled by default for `csugar` and `cspuz_core` backends.
     You can use this for `sugar` and `sugar_extended` backends to work with
-    csugar or enigma_csp CLI, but cspuz does not check whether the backend
+    csugar or cspuz_core CLI, but cspuz does not check whether the backend
     actually supports native graph constraints.
     Note that `use_graph_primitive` affects how graph constraints are
     translated on the invocation of graph constraints methods (like
@@ -67,13 +106,19 @@ class Config(object):
     solver_timeout: Optional[float]
 
     def __init__(self, infer_from_env=True):
-        self.default_backend = _get_default(infer_from_env, "CSPUZ_DEFAULT_BACKEND", "sugar")
+        default_backend = _get_default(infer_from_env, "CSPUZ_DEFAULT_BACKEND", "auto")
+
+        if default_backend == "auto":
+            self.default_backend = _detect_backend()
+        else:
+            self.default_backend = default_backend
+
         self.backend_path = _get_default(infer_from_env, "CSPUZ_BACKEND_PATH", None)
-        if self.default_backend in ("csugar", "enigma_csp"):
+        if self.default_backend in ("csugar", "enigma_csp", "cspuz_core"):
             graph_primitive_default = "True"
         else:
             graph_primitive_default = "False"
-        if self.default_backend == "enigma_csp":
+        if self.default_backend in ("enigma_csp", "cspuz_core"):
             graph_division_primitive_default = "True"
         else:
             graph_division_primitive_default = "False"
