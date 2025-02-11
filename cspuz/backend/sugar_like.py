@@ -180,6 +180,7 @@ class EnigmaCSPBackend(SugarLikeBackend):
 
         return enigma_csp.solver(csp_description)
 
+
 class CspuzCoreBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import cspuz_core  # type: ignore

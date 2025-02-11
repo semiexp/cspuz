@@ -19,25 +19,29 @@ def _strtobool_optional(s: Optional[str]) -> Optional[bool]:
 
 def _detect_backend() -> str:
     try:
-        import cspuz_core  # noqa
+        import cspuz_core  # type: ignore  # noqa
+
         return "cspuz_core"
     except ImportError:
         pass
 
     try:
-        import enigma_csp  # noqa
+        import enigma_csp  # type: ignore  # noqa
+
         return "enigma_csp"
     except ImportError:
         pass
 
     try:
-        import pycsugar  # noqa
+        import pycsugar  # type: ignore  # noqa
+
         return "csugar"
     except ImportError:
         pass
 
     try:
-        import z3  # noqa
+        import z3  # type: ignore  # noqa
+
         return "z3"
     except ImportError:
         pass

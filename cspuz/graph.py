@@ -1,7 +1,7 @@
 from typing import Iterator, List, Optional, Sequence, Tuple, Union, cast, overload
 
 from .array import Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _infer_shape
-from .constraints import IntExpr, BoolExpr, Op, count_true, then, fold_or
+from .constraints import IntExpr, BoolExpr, Op, count_true, then
 from .expr import BoolExprLike, IntExprLike
 from .grid_frame import BoolGridFrame, BoolInnerGridFrame
 from .configuration import config
@@ -717,7 +717,7 @@ def active_edges_single_cycle(
             solver, is_active_edge, graph, use_graph_primitive=use_graph_primitive
         )
 
-      
+
 def _active_edges_single_path(
     solver: Solver,
     is_active_edge: Sequence[BoolExprLike],
@@ -743,7 +743,7 @@ def _active_edges_single_path(
             solver, is_active_edge, line_graph, acyclic=False, use_graph_primitive=True
         )
     else:
-        raise RuntimeError('TODO')
+        raise RuntimeError("TODO")
     return is_passed
 
 
