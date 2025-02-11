@@ -10,19 +10,27 @@ It offers:
 cspuz requires a CSP solver corresponding to the backend specified in the program.
 Currently, three backends are supported:
 
+- [cspuz_core](https://github.com/semiexp/cspuz_core)
+- [csugar](https://github.com/semiexp/csugar)
 - [z3](https://pypi.org/project/z3-solver/)
 - [Sugar](http://bach.istc.kobe-u.ac.jp/sugar/)
-- sugar-ext, which aims to reduce the overhead of invokation of `sugar` script of Sugar.
+- sugar-ext, which aims to reduce the overhead of invocation of `sugar` script of Sugar.
 
-In cspuz, Sugar backend is used by default.
-However, for better performance, sugar-ext is highly recommended.
-You can change the default backend to sugar-ext by setting the `$CSPUZ_DEFAULT_BACKEND` environment variable to `sugar_extended`.
+By default, cspuz automatically decided the backend based on its availability.
+You can explicitly set the default backend by setting the `$CSPUZ_DEFAULT_BACKEND` environment variable.
 
 ##  Setup
 
 Before installing cspuz, you need to setup a backend CSP solver.
 
-### z3 backend
+### cspuz_core backend (highly recommended)
+
+`cspuz_core` is a CSP solver supporting several features which accelerate solving logic puzzles.
+Among the supported backends, `cspuz_core` offers the best performance.
+
+To install `cspuz_core`, follow the instruction in the [repository](https://github.com/semiexp/cspuz_core).
+
+### z3 backend (easy)
 
 Installing z3 will be as easy as just running
 
