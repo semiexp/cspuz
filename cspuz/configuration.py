@@ -69,11 +69,11 @@ class Config(object):
     def __init__(self, infer_from_env=True):
         self.default_backend = _get_default(infer_from_env, "CSPUZ_DEFAULT_BACKEND", "sugar")
         self.backend_path = _get_default(infer_from_env, "CSPUZ_BACKEND_PATH", None)
-        if self.default_backend in ("csugar", "enigma_csp"):
+        if self.default_backend in ("csugar", "enigma_csp", "cspuz_core"):
             graph_primitive_default = "True"
         else:
             graph_primitive_default = "False"
-        if self.default_backend == "enigma_csp":
+        if self.default_backend in ("enigma_csp", "cspuz_core"):
             graph_division_primitive_default = "True"
         else:
             graph_division_primitive_default = "False"
