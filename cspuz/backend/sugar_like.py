@@ -179,3 +179,9 @@ class EnigmaCSPBackend(SugarLikeBackend):
         import enigma_csp  # type: ignore
 
         return enigma_csp.solver(csp_description)
+
+class CspuzCoreBackend(SugarLikeBackend):
+    def _call_solver(self, csp_description: str) -> str:
+        import cspuz_core  # type: ignore
+
+        return cspuz_core.solver(csp_description)
