@@ -1,0 +1,40 @@
+name: Run checks
+
+on:
+  push:
+    branches: ["main"]
+  pull_request: {}
+  schedule:
+    - cron: "0 15 * * FRI"  # weekly test: every Saturday 00:00 JST
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install
+      run: pip install .[check]
+    - name: Run checks
+      run: |
+        black cspuz tests
+        flake8 cspuz tests
+        mypy cspuz tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup environment
+      run: rustup update
+    - name: Build cspuz_core
+      run: |
+        cd ${{ runner.temp }}
+        git clone https://github.com/semiexp/cspuz_core.git
+        cd cspuz_core
+        pip install .
+    - name: Install cspuz
+      run: pip install .[test]
+    - name: Run tests
+      run: pytest
