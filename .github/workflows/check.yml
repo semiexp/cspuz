@@ -22,8 +22,40 @@ jobs:
         black cspuz tests
         flake8 cspuz tests
         mypy cspuz tests
-  test:
+  test-ubuntu:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup environment
+      run: rustup update
+    - name: Build cspuz_core
+      run: |
+        cd ${{ runner.temp }}
+        git clone --recursive https://github.com/semiexp/cspuz_core.git
+        cd cspuz_core
+        pip install .
+    - name: Install cspuz
+      run: pip install .[test]
+    - name: Run tests
+      run: pytest
+  test-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup environment
+      run: rustup update
+    - name: Build cspuz_core
+      run: |
+        cd ${{ runner.temp }}
+        git clone --recursive https://github.com/semiexp/cspuz_core.git
+        cd cspuz_core
+        pip install .
+    - name: Install cspuz
+      run: pip install .[test]
+    - name: Run tests
+      run: pytest
+  test-macos:
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
     - name: Setup environment
