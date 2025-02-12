@@ -7,7 +7,7 @@ name = "cspuz"
 version = "0.1.0"
 
 [project.optional-dependencies]
-check = ["black", "flake8", "mypy"]
+check = ["black", "flake8", "mypy", "pytest"]
 test = ["pytest", "z3-solver"]
 
 [tool.setuptools]
