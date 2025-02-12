@@ -1,7 +1,11 @@
 import random
 import math
 import sys
-import numpy as np
+
+try:
+    import numpy as np  # type: ignore
+except ImportError:
+    pass
 
 from cspuz import Solver
 from cspuz.constraints import count_true

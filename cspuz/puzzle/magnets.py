@@ -387,10 +387,14 @@ def emit_svg(height, width, to_right, to_down, cond_row, cond_col):
                     )
                 )
     dwg.add(
-        dwg.text("＋", x=[boundary + 0.5 * cell_size], y=[boundary + 0.5 * cell_size], **text_style)
+        dwg.text(
+            "＋", x=[boundary + 0.5 * cell_size], y=[boundary + 0.5 * cell_size], **text_style
+        )
     )
     dwg.add(
-        dwg.text("－", x=[boundary + 1.5 * cell_size], y=[boundary + 1.5 * cell_size], **text_style)
+        dwg.text(
+            "－", x=[boundary + 1.5 * cell_size], y=[boundary + 1.5 * cell_size], **text_style
+        )
     )
     return dwg
 

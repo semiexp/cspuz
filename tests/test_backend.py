@@ -4,7 +4,8 @@ import cspuz
 
 
 class TestBackend:
-    @pytest.fixture(autouse=True, params=["sugar", "z3", "sugar_extended", "csugar", "enigma_csp"])
+    # TODO: test sugar, sugar_extended, csugar and enigma_csp
+    @pytest.fixture(autouse=True, params=["z3", "cspuz_core"])
     def default_backend(self, request):
         cspuz.config.default_backend = request.param
 

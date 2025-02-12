@@ -3,7 +3,10 @@ import random
 import math
 import sys
 
-import svgwrite  # type: ignore
+try:
+    import svgwrite  # type: ignore
+except ImportError:
+    pass
 
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or
@@ -159,7 +162,7 @@ def generate_compass(
 
 def to_puzz_link_url(height, width, pos):
     problem = [[None for _ in range(width)] for _ in range(height)]
-    for (y, x, u, l, d, r) in pos:
+    for y, x, u, l, d, r in pos:
         problem[y][x] = tuple(map(lambda x: "." if x == -1 else x, (u, d, l, r)))
     return "https://puzz.link/p?compass/{}/{}/{}".format(width, height, util.encode_array(problem))
 
@@ -310,7 +313,7 @@ def emit_svg(height, width, problem):
     )
 
     # clues
-    for (y, x, up, lf, dw, rg) in problem:
+    for y, x, up, lf, dw, rg in problem:
         dwg.add(
             dwg.line(
                 (boundary + x * cell_size, boundary + y * cell_size),

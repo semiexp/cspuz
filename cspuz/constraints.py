@@ -84,42 +84,35 @@ def fold_and(*args: Any) -> BoolExpr:
 
 
 @overload
-def cond(c: BoolExprLike, t: IntExprLike, f: IntExprLike) -> IntExpr:
-    ...
+def cond(c: BoolExprLike, t: IntExprLike, f: IntExprLike) -> IntExpr: ...
 
 
 @overload
-def cond(c: BoolExprLike, t: IntExprLike, f: IntArray1D) -> IntArray1D:
-    ...
+def cond(c: BoolExprLike, t: IntExprLike, f: IntArray1D) -> IntArray1D: ...
 
 
 @overload
-def cond(c: BoolExprLike, t: IntArray2D, f: IntArray2D) -> IntArray2D:
-    ...
+def cond(c: BoolExprLike, t: IntArray2D, f: IntArray2D) -> IntArray2D: ...
 
 
 @overload
-def cond(c: BoolExprLike, t: IntArray1D, f: Union[IntExprLike, IntArray1D]) -> IntArray1D:
-    ...
+def cond(c: BoolExprLike, t: IntArray1D, f: Union[IntExprLike, IntArray1D]) -> IntArray1D: ...
 
 
 @overload
-def cond(c: BoolExprLike, t: IntArray2D, f: Union[IntExprLike, IntArray2D]) -> IntArray2D:
-    ...
+def cond(c: BoolExprLike, t: IntArray2D, f: Union[IntExprLike, IntArray2D]) -> IntArray2D: ...
 
 
 @overload
 def cond(
     c: BoolArray1D, t: Union[IntExprLike, IntArray1D], f: Union[IntExprLike, IntArray1D]
-) -> IntExpr:
-    ...
+) -> IntExpr: ...
 
 
 @overload
 def cond(
     c: BoolArray2D, t: Union[IntExprLike, IntArray2D], f: Union[IntExprLike, IntArray2D]
-) -> IntExpr:
-    ...
+) -> IntExpr: ...
 
 
 def cond(
@@ -140,28 +133,23 @@ def cond(
 
 
 @overload
-def then(x: BoolExprLike, y: BoolExprLike) -> BoolExpr:
-    ...
+def then(x: BoolExprLike, y: BoolExprLike) -> BoolExpr: ...
 
 
 @overload
-def then(x: BoolExprLike, y: BoolArray1D) -> BoolArray1D:
-    ...
+def then(x: BoolExprLike, y: BoolArray1D) -> BoolArray1D: ...
 
 
 @overload
-def then(x: BoolExprLike, y: BoolArray2D) -> BoolArray2D:
-    ...
+def then(x: BoolExprLike, y: BoolArray2D) -> BoolArray2D: ...
 
 
 @overload
-def then(x: BoolArray1D, y: Union[BoolExprLike, BoolArray1D]) -> BoolArray1D:
-    ...
+def then(x: BoolArray1D, y: Union[BoolExprLike, BoolArray1D]) -> BoolArray1D: ...
 
 
 @overload
-def then(x: BoolArray2D, y: Union[BoolExprLike, BoolArray2D]) -> BoolArray2D:
-    ...
+def then(x: BoolArray2D, y: Union[BoolExprLike, BoolArray2D]) -> BoolArray2D: ...
 
 
 def then(

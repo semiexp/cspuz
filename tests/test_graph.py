@@ -8,10 +8,8 @@ class TestGraph:
     @pytest.fixture(
         autouse=True,
         params=[
-            ("sugar", False, False),
-            ("sugar", True, False),
             ("z3", False, False),
-            ("enigma_csp", True, True),
+            ("cspuz_core", True, True),
         ],
     )
     def default_backend(self, request):

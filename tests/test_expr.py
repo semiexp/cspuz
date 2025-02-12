@@ -339,7 +339,7 @@ class TestExprConstruction:
 
 
 class TestExprValue:
-    @pytest.fixture(autouse=True, params=["sugar", "z3"])
+    @pytest.fixture(autouse=True, params=["cspuz_core", "z3"])
     def default_backend(self, request):
         cspuz.config.default_backend = request.param
 

@@ -135,8 +135,7 @@ def active_vertices_connected(
     *,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-):
-    ...
+): ...
 
 
 @overload
@@ -146,8 +145,7 @@ def active_vertices_connected(
     *,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-):
-    ...
+): ...
 
 
 def active_vertices_connected(
@@ -215,13 +213,11 @@ def active_vertices_connected(
 @overload
 def active_vertices_not_adjacent(
     solver: Solver, is_active: Union[Sequence[BoolExprLike], BoolArray1D], graph: Graph
-):
-    ...
+): ...
 
 
 @overload
-def active_vertices_not_adjacent(solver: Solver, is_active: BoolArray2D):
-    ...
+def active_vertices_not_adjacent(solver: Solver, is_active: BoolArray2D): ...
 
 
 def active_vertices_not_adjacent(
@@ -244,13 +240,11 @@ def active_vertices_not_adjacent(
 @overload
 def active_vertices_not_adjacent_and_not_segmenting(
     solver: Solver, is_active: BoolArray1D, graph: Graph
-):
-    ...
+): ...
 
 
 @overload
-def active_vertices_not_adjacent_and_not_segmenting(solver: Solver, is_active: BoolArray2D):
-    ...
+def active_vertices_not_adjacent_and_not_segmenting(solver: Solver, is_active: BoolArray2D): ...
 
 
 # TODO: support Sequence[BoolExprLike]
@@ -365,12 +359,11 @@ def division_connected(
     solver: Solver,
     division: Union[Sequence[IntExprLike], IntArray1D],
     num_regions: int,
-    graph: Graph = None,
+    graph: Graph,
     *,
     roots: Optional[Sequence[Optional[int]]] = None,
     allow_empty_group=False,
-):
-    ...
+): ...
 
 
 @overload
@@ -381,8 +374,7 @@ def division_connected(
     *,
     roots: Optional[Sequence[Optional[int]]] = None,
     allow_empty_group=False,
-):
-    ...
+): ...
 
 
 def division_connected(
@@ -391,7 +383,7 @@ def division_connected(
     num_regions: int,
     graph: Optional[Graph] = None,
     *,
-    roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]]] = None,
+    roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]], None] = None,
     allow_empty_group=False,
 ):
     if graph is None:
@@ -502,8 +494,7 @@ def division_connected_variable_groups(
     group_size: Union[
         None, IntExprLike, IntArray2D, Sequence[Sequence[Optional[IntExprLike]]]
     ] = None,
-):
-    ...
+): ...
 
 
 @overload
@@ -512,8 +503,7 @@ def division_connected_variable_groups(
     *,
     graph: Graph,
     group_size: Union[None, IntExprLike, IntArray1D, Sequence[Optional[IntExprLike]]] = None,
-):
-    ...
+): ...
 
 
 def division_connected_variable_groups(
@@ -602,7 +592,7 @@ def division_connected_variable_groups_with_borders(
         IntArray2D,
     ],
     is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
-    graph: Graph = None,
+    graph: Graph | None = None,
     use_graph_primitive: Optional[bool] = None,
 ):
     if graph is None:
@@ -676,8 +666,7 @@ def _active_edges_single_cycle(
 @overload
 def active_edges_single_cycle(
     solver: Solver, is_active_edge: BoolGridFrame, *, use_graph_primitive: Optional[bool] = None
-):
-    ...
+): ...
 
 
 @overload
@@ -687,8 +676,7 @@ def active_edges_single_cycle(
     graph: Graph,
     *,
     use_graph_primitive: Optional[bool] = None,
-):
-    ...
+): ...
 
 
 def active_edges_single_cycle(
@@ -750,8 +738,7 @@ def _active_edges_single_path(
 @overload
 def active_edges_single_path(
     solver: Solver, is_active_edge: BoolGridFrame, *, use_graph_primitive: Optional[bool] = None
-):
-    ...
+): ...
 
 
 @overload
@@ -761,8 +748,7 @@ def active_edges_single_path(
     graph: Graph,
     *,
     use_graph_primitive: Optional[bool] = None,
-):
-    ...
+): ...
 
 
 def active_edges_single_path(
