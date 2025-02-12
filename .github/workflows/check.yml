@@ -31,7 +31,7 @@ jobs:
     - name: Build cspuz_core
       run: |
         cd ${{ runner.temp }}
-        git clone https://github.com/semiexp/cspuz_core.git
+        git clone --recursive https://github.com/semiexp/cspuz_core.git
         cd cspuz_core
         pip install .
     - name: Install cspuz
