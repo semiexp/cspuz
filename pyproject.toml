@@ -14,6 +14,3 @@ packages = ["cspuz", "cspuz.backend", "cspuz.generator", "cspuz.puzzle"]
 
 [tool.black]
 line-length = 99
-
-[tool.flake8]
-max-line-length = 99
