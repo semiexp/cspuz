@@ -359,7 +359,7 @@ def division_connected(
     solver: Solver,
     division: Union[Sequence[IntExprLike], IntArray1D],
     num_regions: int,
-    graph: Graph = None,
+    graph: Graph,
     *,
     roots: Optional[Sequence[Optional[int]]] = None,
     allow_empty_group=False,
@@ -383,7 +383,7 @@ def division_connected(
     num_regions: int,
     graph: Optional[Graph] = None,
     *,
-    roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]]] = None,
+    roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]], None] = None,
     allow_empty_group=False,
 ):
     if graph is None:
@@ -592,7 +592,7 @@ def division_connected_variable_groups_with_borders(
         IntArray2D,
     ],
     is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
-    graph: Graph = None,
+    graph: Graph | None = None,
     use_graph_primitive: Optional[bool] = None,
 ):
     if graph is None:

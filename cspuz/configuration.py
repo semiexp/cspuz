@@ -1,4 +1,3 @@
-from distutils.util import strtobool
 import os
 from typing import Optional
 
@@ -14,7 +13,13 @@ def _strtobool_optional(s: Optional[str]) -> Optional[bool]:
     if s is None:
         return None
     else:
-        return strtobool(s)
+        s = s.lower()
+        if s in ("true", "1"):
+            return True
+        elif s in ("false", "0"):
+            return False
+        else:
+            raise ValueError(f"Invalid value for boolean: {s}")
 
 
 def _detect_backend() -> str:

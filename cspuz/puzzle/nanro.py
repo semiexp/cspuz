@@ -2,7 +2,7 @@ import sys
 from collections import defaultdict
 import subprocess
 
-import numpy as np
+import numpy as np  # type: ignore
 
 import cspuz
 from cspuz import Solver, graph
