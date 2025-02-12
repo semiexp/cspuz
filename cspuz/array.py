@@ -148,18 +148,15 @@ class Array2D(Generic[T]):
             self.data = data_list
 
     @overload
-    def _getitem_impl(self, key: Tuple[int, int]) -> T:
-        ...
+    def _getitem_impl(self, key: Tuple[int, int]) -> T: ...
 
     @overload
     def _getitem_impl(
         self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
-    ) -> Array1D[T]:
-        ...
+    ) -> Array1D[T]: ...
 
     @overload
-    def _getitem_impl(self, key: Union[slice, Tuple[slice, slice]]) -> "Array2D[T]":
-        ...
+    def _getitem_impl(self, key: Union[slice, Tuple[slice, slice]]) -> "Array2D[T]": ...
 
     def _getitem_impl(
         self,
@@ -235,25 +232,25 @@ ElementwiseOperands = List[
 
 
 @overload
-def _elementwise(op: BoolOp, shape: Tuple[int], operands: ElementwiseOperands) -> "BoolArray1D":
-    ...
+def _elementwise(
+    op: BoolOp, shape: Tuple[int], operands: ElementwiseOperands
+) -> "BoolArray1D": ...
 
 
 @overload
-def _elementwise(op: IntOp, shape: Tuple[int], operands: ElementwiseOperands) -> "IntArray1D":
-    ...
+def _elementwise(op: IntOp, shape: Tuple[int], operands: ElementwiseOperands) -> "IntArray1D": ...
 
 
 @overload
 def _elementwise(
     op: BoolOp, shape: Tuple[int, int], operands: ElementwiseOperands
-) -> "BoolArray2D":
-    ...
+) -> "BoolArray2D": ...
 
 
 @overload
-def _elementwise(op: IntOp, shape: Tuple[int, int], operands: ElementwiseOperands) -> "IntArray2D":
-    ...
+def _elementwise(
+    op: IntOp, shape: Tuple[int, int], operands: ElementwiseOperands
+) -> "IntArray2D": ...
 
 
 def _elementwise(
@@ -382,12 +379,10 @@ class BoolArray1D(Array1D[BoolExpr]):
         return BoolExpr(Op.AND, self.data)
 
     @overload
-    def __getitem__(self, key: int) -> BoolExpr:
-        ...
+    def __getitem__(self, key: int) -> BoolExpr: ...
 
     @overload
-    def __getitem__(self, key: slice) -> "BoolArray1D":
-        ...
+    def __getitem__(self, key: slice) -> "BoolArray1D": ...
 
     def __getitem__(self, key: Union[int, slice]) -> Union[BoolExpr, "BoolArray1D"]:
         if isinstance(key, int):
@@ -448,12 +443,10 @@ class IntArray1D(Array1D[IntExpr]):
         return _elementwise(Op.LT, self.shape, [self, other])
 
     @overload
-    def __getitem__(self, key: int) -> IntExpr:
-        ...
+    def __getitem__(self, key: int) -> IntExpr: ...
 
     @overload
-    def __getitem__(self, key: slice) -> "IntArray1D":
-        ...
+    def __getitem__(self, key: slice) -> "IntArray1D": ...
 
     def __getitem__(self, key: Union[int, slice]) -> Union[IntExpr, "IntArray1D"]:
         if isinstance(key, int):
@@ -474,12 +467,10 @@ IntOperand2D = Union[IntExprLike, "IntArray2D"]
 
 class BoolArray2D(Array2D[BoolExpr]):
     @overload
-    def __init__(self, data: Iterable[Iterable[BoolExpr]]):
-        ...
+    def __init__(self, data: Iterable[Iterable[BoolExpr]]): ...
 
     @overload
-    def __init__(self, data: Iterable[BoolExpr], shape: Tuple[int, int]):
-        ...
+    def __init__(self, data: Iterable[BoolExpr], shape: Tuple[int, int]): ...
 
     def __init__(
         self,
@@ -534,18 +525,15 @@ class BoolArray2D(Array2D[BoolExpr]):
         return BoolExpr(Op.AND, self.data)
 
     @overload
-    def __getitem__(self, key: Tuple[int, int]) -> BoolExpr:
-        ...
+    def __getitem__(self, key: Tuple[int, int]) -> BoolExpr: ...
 
     @overload
     def __getitem__(
         self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
-    ) -> BoolArray1D:
-        ...
+    ) -> BoolArray1D: ...
 
     @overload
-    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "BoolArray2D":
-        ...
+    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "BoolArray2D": ...
 
     def __getitem__(
         self,
@@ -574,12 +562,10 @@ class BoolArray2D(Array2D[BoolExpr]):
         return _reshape(self, shape)
 
     @overload
-    def four_neighbors(self, y: int, x: int) -> BoolArray1D:
-        ...
+    def four_neighbors(self, y: int, x: int) -> BoolArray1D: ...
 
     @overload
-    def four_neighbors(self, y: Tuple[int, int]) -> BoolArray1D:
-        ...
+    def four_neighbors(self, y: Tuple[int, int]) -> BoolArray1D: ...
 
     def four_neighbors(
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
@@ -587,12 +573,10 @@ class BoolArray2D(Array2D[BoolExpr]):
         return BoolArray1D(cast("List[BoolExpr]", _four_neighbors(self, y, x)))
 
     @overload
-    def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]:
-        ...
+    def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]: ...
 
     @overload
-    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]:
-        ...
+    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]: ...
 
     def four_neighbor_indices(
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
@@ -623,12 +607,10 @@ class BoolArray2D(Array2D[BoolExpr]):
 
 class IntArray2D(Array2D[IntExpr]):
     @overload
-    def __init__(self, data: Iterable[Iterable[IntExpr]]):
-        ...
+    def __init__(self, data: Iterable[Iterable[IntExpr]]): ...
 
     @overload
-    def __init__(self, data: Iterable[IntExpr], shape: Tuple[int, int]):
-        ...
+    def __init__(self, data: Iterable[IntExpr], shape: Tuple[int, int]): ...
 
     def __init__(
         self,
@@ -671,18 +653,15 @@ class IntArray2D(Array2D[IntExpr]):
         return _elementwise(Op.LT, self.shape, [self, other])
 
     @overload
-    def __getitem__(self, key: Tuple[int, int]) -> IntExpr:
-        ...
+    def __getitem__(self, key: Tuple[int, int]) -> IntExpr: ...
 
     @overload
     def __getitem__(
         self, key: Union[int, Tuple[int, slice], Tuple[slice, int], Iterable[Tuple[int, int]]]
-    ) -> IntArray1D:
-        ...
+    ) -> IntArray1D: ...
 
     @overload
-    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "IntArray2D":
-        ...
+    def __getitem__(self, key: Union[slice, Tuple[slice, slice]]) -> "IntArray2D": ...
 
     def __getitem__(
         self,
@@ -711,12 +690,10 @@ class IntArray2D(Array2D[IntExpr]):
         return _reshape(self, shape)
 
     @overload
-    def four_neighbors(self, y: int, x: int) -> IntArray1D:
-        ...
+    def four_neighbors(self, y: int, x: int) -> IntArray1D: ...
 
     @overload
-    def four_neighbors(self, y: Tuple[int, int]) -> IntArray1D:
-        ...
+    def four_neighbors(self, y: Tuple[int, int]) -> IntArray1D: ...
 
     def four_neighbors(
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
@@ -724,12 +701,10 @@ class IntArray2D(Array2D[IntExpr]):
         return IntArray1D(cast("List[IntExpr]", _four_neighbors(self, y, x)))
 
     @overload
-    def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]:
-        ...
+    def four_neighbor_indices(self, y: int, x: int) -> List[Tuple[int, int]]: ...
 
     @overload
-    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]:
-        ...
+    def four_neighbor_indices(self, y: Tuple[int, int]) -> List[Tuple[int, int]]: ...
 
     def four_neighbor_indices(
         self, y: Union[int, Tuple[int, int]], x: Optional[int] = None
@@ -741,13 +716,11 @@ class IntArray2D(Array2D[IntExpr]):
 
 
 @overload
-def _reshape(array: Union[BoolArray1D, BoolArray2D], shape: Tuple[int, int]) -> BoolArray2D:
-    ...
+def _reshape(array: Union[BoolArray1D, BoolArray2D], shape: Tuple[int, int]) -> BoolArray2D: ...
 
 
 @overload
-def _reshape(array: Union[IntArray1D, IntArray2D], shape: Tuple[int, int]) -> IntArray2D:
-    ...
+def _reshape(array: Union[IntArray1D, IntArray2D], shape: Tuple[int, int]) -> IntArray2D: ...
 
 
 def _reshape(

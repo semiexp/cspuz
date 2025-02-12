@@ -63,12 +63,10 @@ class Solver(object):
         return v
 
     @overload
-    def bool_array(self, shape: Union[int, Tuple[int]]) -> BoolArray1D:
-        ...
+    def bool_array(self, shape: Union[int, Tuple[int]]) -> BoolArray1D: ...
 
     @overload
-    def bool_array(self, shape: Tuple[int, int]) -> BoolArray2D:
-        ...
+    def bool_array(self, shape: Tuple[int, int]) -> BoolArray2D: ...
 
     def bool_array(
         self, shape: Union[int, Tuple[int], Tuple[int, int]]
@@ -84,12 +82,10 @@ class Solver(object):
             return BoolArray2D(vars, cast(Tuple[int, int], shape))
 
     @overload
-    def int_array(self, shape: Union[int, Tuple[int]], lo: int, hi: int) -> IntArray1D:
-        ...
+    def int_array(self, shape: Union[int, Tuple[int]], lo: int, hi: int) -> IntArray1D: ...
 
     @overload
-    def int_array(self, shape: Tuple[int, int], lo: int, hi: int) -> IntArray2D:
-        ...
+    def int_array(self, shape: Tuple[int, int], lo: int, hi: int) -> IntArray2D: ...
 
     def int_array(
         self, shape: Union[int, Tuple[int], Tuple[int, int]], lo: int, hi: int
