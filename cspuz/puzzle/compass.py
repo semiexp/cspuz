@@ -3,7 +3,10 @@ import random
 import math
 import sys
 
-import svgwrite  # type: ignore
+try:
+    import svgwrite  # type: ignore
+except ImportError:
+    pass
 
 from cspuz import Solver, graph
 from cspuz.constraints import count_true, fold_or

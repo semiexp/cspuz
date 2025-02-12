@@ -8,6 +8,7 @@ version = "0.1.0"
 
 [project.optional-dependencies]
 check = ["black", "flake8", "mypy"]
+test = ["pytest", "z3-solver"]
 
 [tool.setuptools]
 packages = ["cspuz", "cspuz.backend", "cspuz.generator", "cspuz.puzzle"]
