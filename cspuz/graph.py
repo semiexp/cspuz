@@ -592,7 +592,7 @@ def division_connected_variable_groups_with_borders(
         IntArray2D,
     ],
     is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
-    graph: Graph | None = None,
+    graph: Optional[Graph] = None,
     use_graph_primitive: Optional[bool] = None,
 ):
     if graph is None:
