@@ -171,24 +171,28 @@ def active_vertices_connected(
     explicitly specified.
 
     Args:
-        solver (Solver): The :class:`Solver` object to which this constraint should be added.
-        is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]): Sequence of boolean
-        values or :class:`BoolArray2D` representing whether vertices are active or not.
-        graph (Optional[Graph], optional): Graph for this constraint. If `is_active` is
-        :class:`BoolArray2D`, this is automatically inferred and should be omitted.
-        acyclic (bool, optional): If `True` is specified, not only active vertices are expected to
-        be connected, they should be "acyclic": there must be a unique path (consisting only of
-        active vetcies) between any pair of two active vertices. Note that if this option is
-        enabled, primitive graph operators are not used even if `use_graph_primitive` is `True`.
-        use_graph_primitive (Optional[bool], optional): Whether primitive graph operators are used
-        to represent this constraint. If omitted, the default configuration is used.
-        Such operators are available in `sugar`, `sugar_extended`, `csugar` and `enigma_csp`
-        backends, but depending on the configuration of the backend executable, they may not be
-        supported.
+        solver (Solver):
+            The :class:`Solver` object to which this constraint should be added.
+        is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]):
+            Sequence of boolean values or :class:`BoolArray2D` representing whether
+            vertices are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active` is :class:`BoolArray2D`, this is
+            automatically inferred and should be omitted.
+        acyclic (bool, optional):
+            If `True` is specified, not only active vertices are expected to be connected, they
+            should be "acyclic": there must be a unique path (consisting only of active vetcies)
+            between any pair of two active vertices. Note that if this option is enabled,
+            primitive graph operators are not used even if `use_graph_primitive` is `True`.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar` and `enigma_csp` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
 
     Raises:
         TypeError: If `graph` is not inferred from `is_active` and unspecified, or inferred and
-        explicitly specified.
+            explicitly specified.
     """
     if graph is None:
         if not isinstance(is_active, BoolArray2D):
