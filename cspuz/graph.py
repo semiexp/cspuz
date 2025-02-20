@@ -399,6 +399,19 @@ def active_vertices_not_adjacent_and_not_segmenting(
 def active_edges_acyclic(
     solver: Solver, is_active_edge: Union[Sequence[BoolExprLike], BoolArray1D], graph: Graph
 ):
+    """Add a constraint that active edges form an acyclic graph (forest).
+
+    This constraint ensures that the subgraph induced by active edges does not contain any cycle.
+    That is, the subgraph is a forest.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (Union[Sequence[BoolExprLike], BoolArray1D]):
+            Sequence of boolean values representing whether edges are active or not.
+        graph (Graph):
+            The graph on which this constraint is applied.
+    """
     n = graph.num_vertices
 
     ranks = solver.int_array(n, 0, n - 1)
@@ -778,11 +791,50 @@ def division_connected_variable_groups_with_borders(
     graph: Optional[Graph] = None,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that partitions the vertices of a graph into connected components, where
+    each component has a size specified by `group_size`, and the boundaries between different
+    components are specified by `is_border`.
+
+    The constraint ensures that the vertices are divided into connected components. Different
+    from :func:`division_connected_variable_groups`, this function does not explicitly number
+    the connected components, but instead, the boundaries between different components are
+    specified by `is_border`. The connected components are implicitly defined by the boundaries
+    and the graph structure. No "extra" dividing edges are allowed: for an edge (u, v), the
+    corresponding value in `is_border` must be true if and only if u and v belong to different
+    connected components.
+
+    The size of each connected component must match the corresponding value in `group_size`.
+
+    If `graph` is specified, the constraint is applied to that graph. Otherwise, `group_size` and
+    `is_border` should be specified so that the grid graph can be inferred.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        group_size (Union[None, Sequence[Optional[IntExprLike], IntArray2D], optional):
+            The number of vertices in each connected component. If `None`, no size restrictions
+            are applied. If a 1D sequence, `group_size[i]` specifies the size of the component
+            containing vertex `i`. If a 2D sequence, `group_size[i][j]` specifies the size of the
+            component containing vertex `(i, j)`.
+        is_border (Union[Sequence[BoolExprLike], BoolInnerGridFrame]):
+            The boundaries between different connected components. If `is_border` is a
+            :class:`BoolInnerGridFrame`, the graph is automatically inferred from it.
+        graph (Optional[Graph], optional):
+            The graph on which this constraint is applied. If `is_border` is a
+            :class:`BoolInnerGridFrame`, this is automatically inferred and should be omitted.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `enigma_csp` and
+            `cspuz_core` backends.
+    """
     if graph is None:
         if not isinstance(group_size, IntArray2D):
             raise TypeError("`group_size` should be an IntArray2D if graph is not specified")
         if not isinstance(is_border, BoolInnerGridFrame):
             raise TypeError("`is_border` should be a BoolInnerGridFrame if graph is not specified")
+
+        # TODO: check that sizes are consistent
+        # TODO: `group_size` can be missing (so that we can utilize "no extra border" constraint)
 
         group_size_flat = group_size.flatten()
         edges, graph = _from_grid_frame(is_border.dual())
@@ -969,6 +1021,39 @@ def active_edges_single_path(
     *,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that the active edges form a single path in the given `graph`, or there
+    is no active edge.
+
+    `is_active_edge` defines a subset of edges of `graph` (or a grid graph inferred from
+    `is_active_edge`) by selecting edges with true values. This constraint ensures that the subset
+    satisfies either of the following conditions:
+
+    - The subset forms a single path in the graph (not necessarily spanning all vertices).
+    - The subset is empty.
+
+    If `is_active_edge` is a :class:`BoolGridFrame`, the graph is automatically inferred from it.
+    In this case, `graph` should be omitted.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (Union[BoolGridFrame, Sequence[BoolExprLike], BoolArray1D]):
+            Sequence of boolean values or :py:class:`BoolGridFrame` representing whether
+            edges are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active_edge` is :py:class:`BoolGridFrame`, this is
+            automatically inferred and should be omitted.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+            TODO: add implementation which does not use graph primitives
+
+    Returns:
+        ~cspuz.BoolArray2D: A 2D array representing whether the path passes through each vertex.
+    """
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError(
@@ -996,6 +1081,70 @@ def active_edges_connected_crossable(
     single_cycle: bool = False,
     use_graph_primitive: Optional[bool] = None,
 ) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    """Add a constraint that the active edges form a path or cycle that may cross itself, or there
+    is no active edge.
+
+    When self-crossing is not allowed, each vertex should be incident to at most two active edges.
+    On the other hand, when self-crossing is allowed, a vertex may be incident to four active
+    edges, making the vertex a crossing point. On crossing points, an incoming edge goes straight
+    through the crossing point.
+
+    In this constraint, a vertex which is incident to 3 active edges is NOT allowed, even when
+    it is an endpoint of the path. (TODO: allow this case)
+
+    For example, the following is a valid path with self-crossing::
+
+        +   +---+---+
+        |   |       |
+        +---+---+   +
+            |   |   |
+        +---+---+---+
+            |   |
+        +   +---+   +
+
+    Also, the following is a valid cycle with self-crossing::
+
+        +   +---+
+            |   |
+        +---+---+
+        |   |
+        +---+   +
+
+    However, the following is NOT a valid path (containing two paths)::
+
+        +   +---+
+            |
+        +---+---+
+        |   |
+        +   +---+
+
+    The following is not allowed, either (a vertex is incident to 3 active edges)::
+
+        +   +---+
+                |
+        +---+---+
+        |       |
+        +---+---+
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (~cspuz.BoolGridFrame):
+            A grid frame representing whether edges are active or not.
+        single_cycle (bool, optional):
+            Whether the path should form a cycle. If `True` is specified, the path should form a
+            cycle. Otherwise, the path should form a path or a cycle. (default: `False`)
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+    Returns:
+        Tuple[~cspuz.BoolArray2D, ~cspuz.BoolArray2D]:
+            A tuple of two :py:class:`~cspuz.BoolArray2D` objects representing whether the path
+            or the cycle passes through each vertex and whether it crosses itself, respectively.
+    """
     height = is_active_edge.height + 1
     width = is_active_edge.width + 1
 
@@ -1073,6 +1222,27 @@ def active_edges_single_cycle_crossable(
     *,
     use_graph_primitive: Optional[bool] = None,
 ) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    """Add a constraint that the active edges form a cycle that may cross itself, or there is no
+    active edge.
+
+    This equivalent to calling :func:`active_edges_connected_crossable` with `single_cycle=True`.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (~cspuz.BoolGridFrame):
+            A grid frame representing whether edges are active or not.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+    Returns:
+        Tuple[~cspuz.BoolArray2D, ~cspuz.BoolArray2D]:
+            A tuple of two :py:class:`~cspuz.BoolArray2D` objects representing whether the cycle
+            passes through each vertex and whether it crosses itself, respectively.
+    """
     return active_edges_connected_crossable(
         solver, is_active_edge, single_cycle=True, use_graph_primitive=use_graph_primitive
     )
