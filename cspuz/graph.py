@@ -1,3 +1,35 @@
+"""A module for graph-related constraints.
+
+This module provides constraints related to graphs, such as connectivity and division of vertices
+into connected components.
+
+.. _auto_inference_of_graph:
+
+Auto-inference of graph
+=======================
+
+For some constraints, the graph is automatically inferred from the input.
+
+2D array (:py:class:`BoolArray2D`, :py:class:`IntArray2D`)
+    For 2D arrays, the grid graph is automatically inferred from the array. Suppose the shape of
+    the array is (height, width). Cell (i, j) (0 <= i < height, 0 <= j < width) corresponds to
+    vertex i * width + j in the grid graph. The edges are added between horizontally and vertically
+    adjacent cells. That is, vertices adjacent to i * width + j are as follows:
+
+    - i * width + (j + 1) (if j < width - 1)
+    - i * width + (j - 1) (if j > 0)
+    - (i + 1) * width + j (if i < height - 1)
+    - (i - 1) * width + j (if i > 0)
+
+2D grid frame (:py:class:`BoolGridFrame`)
+    For 2D grid frames, the grid graph is automatically inferred from the frame. Suppose the grid
+    frame represents edges of a height * width grid. Then the inferred graph has
+    (height + 1) * (width + 1) vertices corresponding to the intersections of horizontal and
+    vertical edges. The edges are added between horizontally and vertically adjacent intersections.
+
+    (TODO: add formal definition)
+"""
+
 from typing import Iterator, List, Optional, Sequence, Tuple, Union, cast, overload
 
 from .array import Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _infer_shape
@@ -9,8 +41,17 @@ from .solver import Solver
 
 
 class Graph(object):
+    """Class for a undirected graph."""
+
+    #: The number of vertices in the graph.
     num_vertices: int
+
+    #: List of edges represented by pairs of vertex indices.
     edges: List[Tuple[int, int]]
+
+    #: List of incident edges for each vertex.
+    #:
+    #: Each element is a list of pairs of vertex. indices and edge indices.
     incident_edges: List[List[Tuple[int, int]]]
 
     def __init__(self, num_vertices):
@@ -28,12 +69,38 @@ class Graph(object):
         return self.edges[item]
 
     def add_edge(self, i: int, j: int):
+        """Add an edge connecting vertices `i` and `j`.
+
+        Args:
+            i (int): the index of the first vertex
+            j (int): the index of the second vertex
+        """
         edge_id = len(self.edges)
         self.edges.append((i, j))
         self.incident_edges[i].append((j, edge_id))
         self.incident_edges[j].append((i, edge_id))
 
     def line_graph(self) -> "Graph":
+        """Return the "line graph" of this graph.
+
+        The line graph of a graph is a graph whose vertices correspond to the edges of
+        the original graph, and two vertices are connected by an edge if the corresponding edges
+        share a vertex in the original graph.
+
+        In the returned graph, the vertices (corresponding to the edges of the original graph) are
+        numbered from 0 to (the number of edges) - 1 in the same order as the original graph.
+        On the other hand, the order of edges in the returned graph is not guaranteed.
+
+        Example:
+            >>> g = Graph(4)
+            >>> g.add_edge(0, 1)
+            >>> g.add_edge(1, 2)
+            >>> g.add_edge(0, 2)
+            >>> g.add_edge(2, 3)
+            >>> lg = g.line_graph()
+            >>> len(lg)
+            5
+        """
         n = self.num_vertices
         edges = set()
         for v in range(n):
@@ -165,14 +232,16 @@ def active_vertices_connected(
     consisting only of active vertices, or more formally, the induced subgraph by all active
     vertices are connected.
 
-    If `is_active` is :class:`BoolArray2D`, the grid graph is automatically inferred from it.
-    Vertices adjacent to (i, j) are (i - 1, j), (i + 1, j), (i, j - 1) and (i, j + 1) (some of
-    them may be absent because they are out of the grid). In this case, `graph` should not be
-    explicitly specified.
+    We note that, if all vertices are inactive (i.e., all elements in `is_active` are false), this
+    constaint is satisfied.
+
+    If `is_active` is :class:`BoolArray2D`, the graph is automatically inferred from it
+    (:ref:`auto_inference_of_graph`). In this case, the constraint states that all active cells
+    are connected.
 
     Args:
-        solver (Solver):
-            The :class:`Solver` object to which this constraint should be added.
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
         is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]):
             Sequence of boolean values or :class:`BoolArray2D` representing whether
             vertices are active or not.
@@ -229,6 +298,25 @@ def active_vertices_not_adjacent(
     is_active: Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D],
     graph: Optional[Graph] = None,
 ):
+    """Add a constraint that no two "active" vertices are adjacent in the given `graph`.
+
+    For each edge (u, v) in the graph, this constraint ensures that both u and v are not active,
+    that is, at least one of `is_active[u]` and `is_active[v]` is false.
+
+    If `is_active` is :class:`BoolArray2D`, the graph is automatically inferred from it
+    (:ref:`auto_inference_of_graph`). In this case, the constraint states that active cells are
+    not adjacent.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]):
+            Sequence of boolean values or :class:`BoolArray2D` representing whether
+            vertices are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active` is :class:`BoolArray2D`, this is
+            automatically inferred and should be omitted.
+    """
     if graph is None:
         if not isinstance(is_active, BoolArray2D):
             raise TypeError("'is_active' should be a BoolArray2D if graph is not " "specified")
@@ -255,6 +343,29 @@ def active_vertices_not_adjacent_and_not_segmenting(solver: Solver, is_active: B
 def active_vertices_not_adjacent_and_not_segmenting(
     solver: Solver, is_active: Union[BoolArray1D, BoolArray2D], graph: Optional[Graph] = None
 ):
+    """Add a constraint that no two "active" vertices are adjacent and the active vertices do not
+    segment the graph into multiple connected components.
+
+    Constraints added by this function are equivalent to the conjunction of those added by calling
+    :func:`active_vertices_not_adjacent` (same `is_active`) and :func:`active_vertices_connected`
+    (negated `is_active`). However, for :py:class:`BoolArray2D`, this function encodes the
+    constraints in a different way. For backend which does not support primitive graph operators
+    (e.g. z3), this function may be more efficient than calling the two functions separately.
+    However, for backends supporting primitive graph operators (e.g. cspuz_core), this function
+    may be less efficient.
+
+    TODO: switch encoding based on `use_graph_primitive`
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active (Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D]):
+            Sequence of boolean values or :py:class:`BoolArray2D` representing whether
+            vertices are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active` is :py:class:`BoolArray2D`, this is
+            automatically inferred and should be omitted.
+    """
     if graph is None:
         if not isinstance(is_active, BoolArray2D):
             raise TypeError("'is_active' should be a BoolArray2D if graph is not " "specified")
@@ -288,6 +399,19 @@ def active_vertices_not_adjacent_and_not_segmenting(
 def active_edges_acyclic(
     solver: Solver, is_active_edge: Union[Sequence[BoolExprLike], BoolArray1D], graph: Graph
 ):
+    """Add a constraint that active edges form an acyclic graph (forest).
+
+    This constraint ensures that the subgraph induced by active edges does not contain any cycle.
+    That is, the subgraph is a forest.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (Union[Sequence[BoolExprLike], BoolArray1D]):
+            Sequence of boolean values representing whether edges are active or not.
+        graph (Graph):
+            The graph on which this constraint is applied.
+    """
     n = graph.num_vertices
 
     ranks = solver.int_array(n, 0, n - 1)
@@ -390,6 +514,39 @@ def division_connected(
     roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]], None] = None,
     allow_empty_group=False,
 ):
+    """Add a constraint that vertices are divided into connected components represented by
+    `division`.
+
+    The constraint ensures that the vertices are divided into `num_regions` connected components.
+    Each connected component is numbered from 0 to `num_regions - 1`. `division` is a sequence of
+    numbers representing the connected component to which each vertex belongs.
+
+    If `division` is a :class:`IntArray2D`, the graph is automatically inferred from it
+    (:ref:`auto_inference_of_graph`).
+
+    Performance consideration
+        (TODO)
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        division (Union[Sequence[IntExprLike], IntArray1D, IntArray2D]):
+            Sequence of integer values or :py:class:`IntArray2D` representing the connected
+            components to which vertices belong.
+        num_regions (int):
+            The number of connected components.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `division` is :py:class:`IntArray2D`, this is
+            automatically inferred and should be omitted.
+        roots (Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]], None], optional):
+            If specified, it should be a sequence of vertices that must belong to the corresponding
+            connected component. Each element should be either an integer representing the vertex
+            index or a tuple of two integers representing the coordinates of the vertex in the
+            grid (if `division` is :py:class:`IntArray2D`).
+        allow_empty_group (bool, optional):
+            If `True` is specified, empty connected components are allowed. Otherwise, all
+            connected components must have at least one vertex. (default: `False`)
+    """  # noqa: E501
     if graph is None:
         if not isinstance(division, IntArray2D):
             raise TypeError("'division' should be a IntArray2D if graph is not " "specified")
@@ -524,6 +681,41 @@ def division_connected_variable_groups(
         Sequence[Sequence[Optional[IntExprLike]]],
     ] = None,
 ):
+    """Add a constraint that partitions the vertices of a graph into connected components, where
+    each component has a size specified by `group_size`.
+
+    If `graph` is specified, the constraint is applied to that graph. Otherwise, `shape` should be
+    given, and the constraint is applied to the grid graph of the specified shape.
+
+    This function returns a sequence or a 2D array of integer variables, where each variable
+    represents the connected component to which the corresponding vertex belongs. Two vertices
+    have the same value if and only if they are in the same connected component. The size of each
+    connected component must match the corresponding value in `group_size`.
+
+    Specifically, `group_size[i]` (for a 1D structure) or `group_size[i, j]` (for a 2D structure)
+    defines the number of vertices in the connected component that contains vertex `i` or `(i, j)`.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        graph (Optional[Graph], optional):
+            The graph on which this constraint is applied. If `shape` is specified, this must be
+            omitted.
+        shape (Optional[Tuple[int, int]], optional):
+            The shape of the grid graph on which the constraint is applied. If `graph` is
+            specified, this must be omitted.
+        group_size (optional):
+            The number of vertices in each connected component.
+
+            - If `group_size` is `None`, no size restrictions are applied.
+            - If `group_size` is a single value (`IntExprLike`), all components must have this
+              size.
+            - If `group_size` is a 1D sequence, `group_size[i]` specifies the size of the
+              component containing vertex `i`.
+            - If `group_size` is a 2D sequence, `group_size[i][j]` specifies the size of the
+              component containing vertex `(i, j)`.
+
+    """
     if graph is None:
         if shape is None:
             if group_size is None:
@@ -599,11 +791,50 @@ def division_connected_variable_groups_with_borders(
     graph: Optional[Graph] = None,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that partitions the vertices of a graph into connected components, where
+    each component has a size specified by `group_size`, and the boundaries between different
+    components are specified by `is_border`.
+
+    The constraint ensures that the vertices are divided into connected components. Different
+    from :func:`division_connected_variable_groups`, this function does not explicitly number
+    the connected components, but instead, the boundaries between different components are
+    specified by `is_border`. The connected components are implicitly defined by the boundaries
+    and the graph structure. No "extra" dividing edges are allowed: for an edge (u, v), the
+    corresponding value in `is_border` must be true if and only if u and v belong to different
+    connected components.
+
+    The size of each connected component must match the corresponding value in `group_size`.
+
+    If `graph` is specified, the constraint is applied to that graph. Otherwise, `group_size` and
+    `is_border` should be specified so that the grid graph can be inferred.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        group_size (Union[None, Sequence[Optional[IntExprLike], IntArray2D], optional):
+            The number of vertices in each connected component. If `None`, no size restrictions
+            are applied. If a 1D sequence, `group_size[i]` specifies the size of the component
+            containing vertex `i`. If a 2D sequence, `group_size[i][j]` specifies the size of the
+            component containing vertex `(i, j)`.
+        is_border (Union[Sequence[BoolExprLike], BoolInnerGridFrame]):
+            The boundaries between different connected components. If `is_border` is a
+            :class:`BoolInnerGridFrame`, the graph is automatically inferred from it.
+        graph (Optional[Graph], optional):
+            The graph on which this constraint is applied. If `is_border` is a
+            :class:`BoolInnerGridFrame`, this is automatically inferred and should be omitted.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `enigma_csp` and
+            `cspuz_core` backends.
+    """
     if graph is None:
         if not isinstance(group_size, IntArray2D):
             raise TypeError("`group_size` should be an IntArray2D if graph is not specified")
         if not isinstance(is_border, BoolInnerGridFrame):
             raise TypeError("`is_border` should be a BoolInnerGridFrame if graph is not specified")
+
+        # TODO: check that sizes are consistent
+        # TODO: `group_size` can be missing (so that we can utilize "no extra border" constraint)
 
         group_size_flat = group_size.flatten()
         edges, graph = _from_grid_frame(is_border.dual())
@@ -690,6 +921,34 @@ def active_edges_single_cycle(
     *,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that the active edges form a single cycle in the given `graph`, or there
+    is no active edge.
+
+    `is_active_edge` defines a subset of edges of `graph` (or a grid graph inferred from
+    `is_active_edge`) by selecting edges with true values. This constraint ensures that the subset
+    satisfies either of the following conditions:
+
+    - The subset forms a single cycle in the graph (not necessarily spanning all vertices).
+    - The subset is empty.
+
+    If `is_active_edge` is a :class:`BoolGridFrame`, the graph is automatically inferred from it.
+    In this case, `graph` should be omitted.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (Union[BoolGridFrame, Sequence[BoolExprLike], BoolArray1D]):
+            Sequence of boolean values or :py:class:`BoolGridFrame` representing whether
+            edges are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active_edge` is :py:class:`BoolGridFrame`, this is
+            automatically inferred and should be omitted.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+    """
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError(
@@ -762,6 +1021,39 @@ def active_edges_single_path(
     *,
     use_graph_primitive: Optional[bool] = None,
 ):
+    """Add a constraint that the active edges form a single path in the given `graph`, or there
+    is no active edge.
+
+    `is_active_edge` defines a subset of edges of `graph` (or a grid graph inferred from
+    `is_active_edge`) by selecting edges with true values. This constraint ensures that the subset
+    satisfies either of the following conditions:
+
+    - The subset forms a single path in the graph (not necessarily spanning all vertices).
+    - The subset is empty.
+
+    If `is_active_edge` is a :class:`BoolGridFrame`, the graph is automatically inferred from it.
+    In this case, `graph` should be omitted.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (Union[BoolGridFrame, Sequence[BoolExprLike], BoolArray1D]):
+            Sequence of boolean values or :py:class:`BoolGridFrame` representing whether
+            edges are active or not.
+        graph (Optional[Graph], optional):
+            Graph for this constraint. If `is_active_edge` is :py:class:`BoolGridFrame`, this is
+            automatically inferred and should be omitted.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+            TODO: add implementation which does not use graph primitives
+
+    Returns:
+        ~cspuz.BoolArray2D: A 2D array representing whether the path passes through each vertex.
+    """
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
             raise TypeError(
@@ -789,6 +1081,70 @@ def active_edges_connected_crossable(
     single_cycle: bool = False,
     use_graph_primitive: Optional[bool] = None,
 ) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    """Add a constraint that the active edges form a path or cycle that may cross itself, or there
+    is no active edge.
+
+    When self-crossing is not allowed, each vertex should be incident to at most two active edges.
+    On the other hand, when self-crossing is allowed, a vertex may be incident to four active
+    edges, making the vertex a crossing point. On crossing points, an incoming edge goes straight
+    through the crossing point.
+
+    In this constraint, a vertex which is incident to 3 active edges is NOT allowed, even when
+    it is an endpoint of the path. (TODO: allow this case)
+
+    For example, the following is a valid path with self-crossing::
+
+        +   +---+---+
+        |   |       |
+        +---+---+   +
+            |   |   |
+        +---+---+---+
+            |   |
+        +   +---+   +
+
+    Also, the following is a valid cycle with self-crossing::
+
+        +   +---+
+            |   |
+        +---+---+
+        |   |
+        +---+   +
+
+    However, the following is NOT a valid path (containing two paths)::
+
+        +   +---+
+            |
+        +---+---+
+        |   |
+        +   +---+
+
+    The following is not allowed, either (a vertex is incident to 3 active edges)::
+
+        +   +---+
+                |
+        +---+---+
+        |       |
+        +---+---+
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (~cspuz.BoolGridFrame):
+            A grid frame representing whether edges are active or not.
+        single_cycle (bool, optional):
+            Whether the path should form a cycle. If `True` is specified, the path should form a
+            cycle. Otherwise, the path should form a path or a cycle. (default: `False`)
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+    Returns:
+        Tuple[~cspuz.BoolArray2D, ~cspuz.BoolArray2D]:
+            A tuple of two :py:class:`~cspuz.BoolArray2D` objects representing whether the path
+            or the cycle passes through each vertex and whether it crosses itself, respectively.
+    """
     height = is_active_edge.height + 1
     width = is_active_edge.width + 1
 
@@ -866,6 +1222,27 @@ def active_edges_single_cycle_crossable(
     *,
     use_graph_primitive: Optional[bool] = None,
 ) -> Tuple[BoolArray2D, BoolArray2D]:  # is passed, is crossing
+    """Add a constraint that the active edges form a cycle that may cross itself, or there is no
+    active edge.
+
+    This equivalent to calling :func:`active_edges_connected_crossable` with `single_cycle=True`.
+
+    Args:
+        solver (~cspuz.solver.Solver):
+            The :py:class:`~cspuz.solver.Solver` object to which this constraint should be added.
+        is_active_edge (~cspuz.BoolGridFrame):
+            A grid frame representing whether edges are active or not.
+        use_graph_primitive (Optional[bool], optional):
+            Whether primitive graph operators are used to represent this constraint. If omitted,
+            the default configuration is used. Such operators are available in `sugar`,
+            `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
+            the configuration of the backend executable, they may not be supported.
+
+    Returns:
+        Tuple[~cspuz.BoolArray2D, ~cspuz.BoolArray2D]:
+            A tuple of two :py:class:`~cspuz.BoolArray2D` objects representing whether the cycle
+            passes through each vertex and whether it crosses itself, respectively.
+    """
     return active_edges_connected_crossable(
         solver, is_active_edge, single_cycle=True, use_graph_primitive=use_graph_primitive
     )
