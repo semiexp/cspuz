@@ -45,7 +45,7 @@ class Solver(object):
     is_answer_key: List[bool]
     constraints: List[BoolExprLike]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.variables = []
         self.is_answer_key = []
         self.constraints = []
@@ -56,7 +56,7 @@ class Solver(object):
         self.is_answer_key.append(False)
         return v
 
-    def int_var(self, lo, hi) -> IntVar:
+    def int_var(self, lo: int, hi: int) -> IntVar:
         v = IntVar(len(self.variables), lo, hi)
         self.variables.append(v)
         self.is_answer_key.append(False)
@@ -103,14 +103,14 @@ class Solver(object):
         else:
             return IntArray2D(vars, cast(Tuple[int, int], shape))
 
-    def ensure(self, *constraint: Any):
+    def ensure(self, *constraint: Any) -> None:
         for x in flatten_iterator(*constraint):
             if isinstance(x, (BoolExpr, bool)):
                 self.constraints.append(x)
             else:
                 raise TypeError("each element in 'constraint' must be BoolExpr-like")
 
-    def add_answer_key(self, *variable: Any):
+    def add_answer_key(self, *variable: Any) -> None:
         for x in flatten_iterator(*variable):
             if isinstance(x, (BoolVar, IntVar)):
                 if self.is_answer_key[x.id]:

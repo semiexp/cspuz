@@ -1,25 +1,25 @@
 import os
-from typing import Optional
+from typing import Optional, TypeVar, Union
 
 
-def _get_default(infer_from_env, env_key, default):
+T = TypeVar("T")
+
+
+def _get_default(infer_from_env: bool, env_key: str, default: T) -> Union[str, T]:
     if infer_from_env:
         return os.environ.get(env_key, default)
     else:
         return default
 
 
-def _strtobool_optional(s: Optional[str]) -> Optional[bool]:
-    if s is None:
-        return None
+def _strtobool(s: str) -> bool:
+    s = s.lower()
+    if s in ("true", "1"):
+        return True
+    elif s in ("false", "0"):
+        return False
     else:
-        s = s.lower()
-        if s in ("true", "1"):
-            return True
-        elif s in ("false", "0"):
-            return False
-        else:
-            raise ValueError(f"Invalid value for boolean: {s}")
+        raise ValueError(f"Invalid value for boolean: {s}")
 
 
 def _detect_backend() -> str:
@@ -114,7 +114,7 @@ class Config(object):
     use_graph_division_primitive: bool
     solver_timeout: Optional[float]
 
-    def __init__(self, infer_from_env=True):
+    def __init__(self, infer_from_env: bool = True) -> None:
         default_backend = _get_default(infer_from_env, "CSPUZ_DEFAULT_BACKEND", "auto")
 
         if default_backend == "auto":
@@ -131,10 +131,10 @@ class Config(object):
             graph_division_primitive_default = "True"
         else:
             graph_division_primitive_default = "False"
-        self.use_graph_primitive = _strtobool_optional(
+        self.use_graph_primitive = _strtobool(
             _get_default(infer_from_env, "CSPUZ_USE_GRAPH_PRIMITIVE", graph_primitive_default)
         )
-        self.use_graph_division_primitive = _strtobool_optional(
+        self.use_graph_division_primitive = _strtobool(
             _get_default(
                 infer_from_env,
                 "CSPUZ_USE_GRAPH_DIVISION_PRIMITIVE",

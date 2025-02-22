@@ -8,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     TypeVar,
     Union,
@@ -50,7 +51,7 @@ class Array1D(Generic[T]):
     def __len__(self) -> int:
         return self.shape[0]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         raise ValueError(
             "CSP values cannot be converted to a bool value. "
             "Perhaps you are using 'and', 'or' or 'not' on CSP values. "
@@ -58,7 +59,7 @@ class Array1D(Generic[T]):
         )
 
 
-def _infer_shape(data: List[List[T]]) -> Tuple[int, int]:
+def _infer_shape(data: Sequence[Sequence[T]]) -> Tuple[int, int]:
     if len(data) == 0:
         raise ValueError("shape cannot be inferred for empty lists")
     height = len(data)
@@ -107,7 +108,7 @@ def _parse_range(size: int, key: Union[int, slice]) -> Tuple[bool, int, int, int
         return False, start, stop, step
 
 
-def _range_size(start, stop, step):
+def _range_size(start: int, stop: int, step: int) -> int:
     if step == 0:
         raise ValueError("step must not be zero")
     elif step > 0:
@@ -210,7 +211,7 @@ class Array2D(Generic[T]):
     def __len__(self) -> int:
         return self.shape[0]
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         raise ValueError(
             "CSP values cannot be converted to a bool value. "
             "Perhaps you are using 'and', 'or' or 'not' on CSP values. "

@@ -30,7 +30,7 @@ For some constraints, the graph is automatically inferred from the input.
     (TODO: add formal definition)
 """
 
-from typing import Iterator, List, Optional, Sequence, Tuple, Union, cast, overload
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union, cast, overload
 
 from .array import Array2D, BoolArray1D, BoolArray2D, IntArray1D, IntArray2D, _infer_shape
 from .constraints import IntExpr, BoolExpr, Op, count_true, then
@@ -54,7 +54,7 @@ class Graph(object):
     #: Each element is a list of pairs of vertex. indices and edge indices.
     incident_edges: List[List[Tuple[int, int]]]
 
-    def __init__(self, num_vertices):
+    def __init__(self, num_vertices: int) -> None:
         self.num_vertices = num_vertices
         self.edges = []
         self.incident_edges = [[] for i in range(self.num_vertices)]
@@ -68,7 +68,7 @@ class Graph(object):
     def __getitem__(self, item: int) -> Tuple[int, int]:
         return self.edges[item]
 
-    def add_edge(self, i: int, j: int):
+    def add_edge(self, i: int, j: int) -> None:
         """Add an edge connecting vertices `i` and `j`.
 
         Args:
@@ -118,7 +118,7 @@ class Graph(object):
         return ret
 
 
-def _get_array_shape_2d(array):
+def _get_array_shape_2d(array: Union[Array2D, Sequence[Sequence[Any]]]) -> tuple[int, int]:
     if isinstance(array, Array2D):
         return array.shape
     else:
@@ -137,7 +137,7 @@ def _grid_graph(height: int, width: int) -> Graph:
     return graph
 
 
-def _from_grid_frame(grid_frame):
+def _from_grid_frame(grid_frame: BoolGridFrame) -> tuple[Sequence[BoolExprLike], Graph]:
     height = grid_frame.height
     width = grid_frame.width
     edges = []
@@ -159,7 +159,7 @@ def _active_vertices_connected(
     graph: Graph,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> None:
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     if use_graph_primitive and not acyclic:
@@ -202,7 +202,7 @@ def active_vertices_connected(
     *,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-): ...
+) -> None: ...
 
 
 @overload
@@ -212,7 +212,7 @@ def active_vertices_connected(
     *,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-): ...
+) -> None: ...
 
 
 def active_vertices_connected(
@@ -222,7 +222,7 @@ def active_vertices_connected(
     *,
     acyclic: bool = False,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> None:
     """Add a constraint that all "active" vertices are "connected" in the given `graph`.
 
     `is_active` must have the same number of elements as the number of vertices in `graph` (or
@@ -286,18 +286,18 @@ def active_vertices_connected(
 @overload
 def active_vertices_not_adjacent(
     solver: Solver, is_active: Union[Sequence[BoolExprLike], BoolArray1D], graph: Graph
-): ...
+) -> None: ...
 
 
 @overload
-def active_vertices_not_adjacent(solver: Solver, is_active: BoolArray2D): ...
+def active_vertices_not_adjacent(solver: Solver, is_active: BoolArray2D) -> None: ...
 
 
 def active_vertices_not_adjacent(
     solver: Solver,
     is_active: Union[Sequence[BoolExprLike], BoolArray1D, BoolArray2D],
     graph: Optional[Graph] = None,
-):
+) -> None:
     """Add a constraint that no two "active" vertices are adjacent in the given `graph`.
 
     For each edge (u, v) in the graph, this constraint ensures that both u and v are not active,
@@ -332,17 +332,19 @@ def active_vertices_not_adjacent(
 @overload
 def active_vertices_not_adjacent_and_not_segmenting(
     solver: Solver, is_active: BoolArray1D, graph: Graph
-): ...
+) -> None: ...
 
 
 @overload
-def active_vertices_not_adjacent_and_not_segmenting(solver: Solver, is_active: BoolArray2D): ...
+def active_vertices_not_adjacent_and_not_segmenting(
+    solver: Solver, is_active: BoolArray2D
+) -> None: ...
 
 
 # TODO: support Sequence[BoolExprLike]
 def active_vertices_not_adjacent_and_not_segmenting(
     solver: Solver, is_active: Union[BoolArray1D, BoolArray2D], graph: Optional[Graph] = None
-):
+) -> None:
     """Add a constraint that no two "active" vertices are adjacent and the active vertices do not
     segment the graph into multiple connected components.
 
@@ -398,7 +400,7 @@ def active_vertices_not_adjacent_and_not_segmenting(
 
 def active_edges_acyclic(
     solver: Solver, is_active_edge: Union[Sequence[BoolExprLike], BoolArray1D], graph: Graph
-):
+) -> None:
     """Add a constraint that active edges form an acyclic graph (forest).
 
     This constraint ensures that the subgraph induced by active edges does not contain any cycle.
@@ -433,7 +435,7 @@ def _division_connected(
     roots: Optional[Sequence[Optional[int]]] = None,
     allow_empty_group: bool = False,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> None:
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
 
@@ -490,8 +492,8 @@ def division_connected(
     graph: Graph,
     *,
     roots: Optional[Sequence[Optional[int]]] = None,
-    allow_empty_group=False,
-): ...
+    allow_empty_group: bool = False,
+) -> None: ...
 
 
 @overload
@@ -501,8 +503,8 @@ def division_connected(
     num_regions: int,
     *,
     roots: Optional[Sequence[Optional[int]]] = None,
-    allow_empty_group=False,
-): ...
+    allow_empty_group: bool = False,
+) -> None: ...
 
 
 def division_connected(
@@ -512,8 +514,8 @@ def division_connected(
     graph: Optional[Graph] = None,
     *,
     roots: Union[Sequence[Optional[int]], Sequence[Optional[Tuple[int, int]]], None] = None,
-    allow_empty_group=False,
-):
+    allow_empty_group: bool = False,
+) -> None:
     """Add a constraint that vertices are divided into connected components represented by
     `division`.
 
@@ -655,7 +657,7 @@ def division_connected_variable_groups(
     group_size: Union[
         None, IntExprLike, IntArray2D, Sequence[Sequence[Optional[IntExprLike]]]
     ] = None,
-): ...
+) -> IntArray2D: ...
 
 
 @overload
@@ -664,7 +666,7 @@ def division_connected_variable_groups(
     *,
     graph: Graph,
     group_size: Union[None, IntExprLike, IntArray1D, Sequence[Optional[IntExprLike]]] = None,
-): ...
+) -> IntArray1D: ...
 
 
 def division_connected_variable_groups(
@@ -680,7 +682,7 @@ def division_connected_variable_groups(
         IntArray2D,
         Sequence[Sequence[Optional[IntExprLike]]],
     ] = None,
-):
+) -> Union[IntArray1D, IntArray2D]:
     """Add a constraint that partitions the vertices of a graph into connected components, where
     each component has a size specified by `group_size`.
 
@@ -715,12 +717,22 @@ def division_connected_variable_groups(
             - If `group_size` is a 2D sequence, `group_size[i][j]` specifies the size of the
               component containing vertex `(i, j)`.
 
+    Returns:
+        IntArray1D or IntArray2D: The connected component to which each vertex belongs.
     """
     if graph is None:
         if shape is None:
             if group_size is None:
                 raise ValueError("grid size cannot be inferred")
-            shape = _get_array_shape_2d(group_size)
+            if isinstance(group_size, Array2D):
+                pass
+            elif isinstance(group_size, Sequence):
+                for row in group_size:
+                    if not isinstance(row, Sequence):
+                        raise TypeError("invalid type for 'group_size'")
+            else:
+                raise TypeError("invalid type for 'group_size'")
+            shape = _get_array_shape_2d(group_size)  # type: ignore
         if group_size is None:
             group_size_converted: Union[None, IntExprLike, Sequence[Optional[IntExprLike]]] = None
         elif isinstance(group_size, (int, IntExpr)):
@@ -752,7 +764,7 @@ def _division_connected_variable_groups_with_borders(
     group_size: Union[IntArray1D, Sequence[Optional[IntExprLike]]],
     is_border: Sequence[BoolExprLike],
     use_graph_primitive: Optional[bool],
-):
+) -> None:
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_division_primitive
 
@@ -790,7 +802,7 @@ def division_connected_variable_groups_with_borders(
     is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
     graph: Optional[Graph] = None,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> None:
     """Add a constraint that partitions the vertices of a graph into connected components, where
     each component has a size specified by `group_size`, and the boundaries between different
     components are specified by `is_border`.
@@ -860,7 +872,7 @@ def _active_edges_single_cycle(
     is_active_edge: Sequence[BoolExprLike],
     graph: Graph,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> BoolArray1D:
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     n = graph.num_vertices
@@ -901,7 +913,7 @@ def _active_edges_single_cycle(
 @overload
 def active_edges_single_cycle(
     solver: Solver, is_active_edge: BoolGridFrame, *, use_graph_primitive: Optional[bool] = None
-): ...
+) -> BoolArray2D: ...
 
 
 @overload
@@ -911,7 +923,7 @@ def active_edges_single_cycle(
     graph: Graph,
     *,
     use_graph_primitive: Optional[bool] = None,
-): ...
+) -> BoolArray1D: ...
 
 
 def active_edges_single_cycle(
@@ -920,7 +932,7 @@ def active_edges_single_cycle(
     graph: Optional[Graph] = None,
     *,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> Union[BoolArray1D, BoolArray2D]:
     """Add a constraint that the active edges form a single cycle in the given `graph`, or there
     is no active edge.
 
@@ -948,6 +960,11 @@ def active_edges_single_cycle(
             the default configuration is used. Such operators are available in `sugar`,
             `sugar_extended`, `csugar`, `enigma_csp` and `cspuz_core` backends, but depending on
             the configuration of the backend executable, they may not be supported.
+
+    Returns:
+        Union[BoolArray1D, BoolArray2D]:
+            A sequence of boolean values or a 2D array representing whether each edge is passed
+            by the cycle.
     """
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
@@ -974,7 +991,7 @@ def _active_edges_single_path(
     is_active_edge: Sequence[BoolExprLike],
     graph: Graph,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> BoolArray1D:
     if use_graph_primitive is None:
         use_graph_primitive = config.use_graph_primitive
     n = graph.num_vertices
@@ -1001,7 +1018,7 @@ def _active_edges_single_path(
 @overload
 def active_edges_single_path(
     solver: Solver, is_active_edge: BoolGridFrame, *, use_graph_primitive: Optional[bool] = None
-): ...
+) -> BoolArray2D: ...
 
 
 @overload
@@ -1011,7 +1028,7 @@ def active_edges_single_path(
     graph: Graph,
     *,
     use_graph_primitive: Optional[bool] = None,
-): ...
+) -> BoolArray1D: ...
 
 
 def active_edges_single_path(
@@ -1020,7 +1037,7 @@ def active_edges_single_path(
     graph: Optional[Graph] = None,
     *,
     use_graph_primitive: Optional[bool] = None,
-):
+) -> Union[BoolArray1D, BoolArray2D]:
     """Add a constraint that the active edges form a single path in the given `graph`, or there
     is no active edge.
 
@@ -1052,7 +1069,10 @@ def active_edges_single_path(
             TODO: add implementation which does not use graph primitives
 
     Returns:
-        ~cspuz.BoolArray2D: A 2D array representing whether the path passes through each vertex.
+        BoolArray1D | BoolArray2D:
+            If `is_active_edge` is a :class:`BoolGridFrame`, a 2D array of boolean values
+            representing whether the path passes through each vertex. Otherwise, a 1D array of
+            boolean values representing whether the path passes through each vertex.
     """
     if graph is None:
         if not isinstance(is_active_edge, BoolGridFrame):
