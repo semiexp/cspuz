@@ -149,7 +149,7 @@ class Expr:
     def is_variable(self) -> bool:
         return False
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         raise ValueError(
             "CSP values cannot be converted to a bool value. "
             "Perhaps you are using 'and', 'or' or 'not' on CSP values. "
@@ -266,7 +266,7 @@ class BoolExpr(Expr):
         raise ValueError("sol property is available only for variables")
 
     @sol.setter
-    def sol(self, value: Optional[bool]):
+    def sol(self, value: Optional[bool]) -> None:
         raise ValueError("sol property is available only for variables")
 
 
@@ -312,7 +312,7 @@ class IntExpr(Expr):
         raise ValueError("sol property is available only for variables")
 
     @sol.setter
-    def sol(self, value: Optional[int]):
+    def sol(self, value: Optional[int]) -> None:
         raise ValueError("sol property is available only for variables")
 
 
@@ -330,7 +330,7 @@ class BoolVar(BoolExpr):
         return self.__sol
 
     @sol.setter
-    def sol(self, value: Optional[bool]):
+    def sol(self, value: Optional[bool]) -> None:
         self.__sol = value
 
 
@@ -350,5 +350,5 @@ class IntVar(IntExpr):
         return self.__sol
 
     @sol.setter
-    def sol(self, value: Optional[int]):
+    def sol(self, value: Optional[int]) -> None:
         self.__sol = value
