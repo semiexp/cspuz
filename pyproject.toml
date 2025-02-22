@@ -20,5 +20,6 @@ line-length = 99
 module = [
     "cspuz.graph",
     "cspuz.array",
+    "cspuz.solver",
 ]
 disallow_untyped_defs = true
