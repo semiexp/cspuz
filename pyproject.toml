@@ -19,5 +19,6 @@ line-length = 99
 [[tool.mypy.overrides]]
 module = [
     "cspuz.graph",
+    "cspuz.array",
 ]
 disallow_untyped_defs = true
