@@ -118,7 +118,7 @@ class Graph(object):
         return ret
 
 
-def _get_array_shape_2d(array: Array2D | Sequence[Sequence[Any]]) -> tuple[int, int]:
+def _get_array_shape_2d(array: Union[Array2D, Sequence[Sequence[Any]]]) -> tuple[int, int]:
     if isinstance(array, Array2D):
         return array.shape
     else:
@@ -682,7 +682,7 @@ def division_connected_variable_groups(
         IntArray2D,
         Sequence[Sequence[Optional[IntExprLike]]],
     ] = None,
-) -> IntArray1D | IntArray2D:
+) -> Union[IntArray1D, IntArray2D]:
     """Add a constraint that partitions the vertices of a graph into connected components, where
     each component has a size specified by `group_size`.
 
@@ -932,7 +932,7 @@ def active_edges_single_cycle(
     graph: Optional[Graph] = None,
     *,
     use_graph_primitive: Optional[bool] = None,
-) -> BoolArray1D | BoolArray2D:
+) -> Union[BoolArray1D, BoolArray2D]:
     """Add a constraint that the active edges form a single cycle in the given `graph`, or there
     is no active edge.
 
@@ -1037,7 +1037,7 @@ def active_edges_single_path(
     graph: Optional[Graph] = None,
     *,
     use_graph_primitive: Optional[bool] = None,
-) -> BoolArray1D | BoolArray2D:
+) -> Union[BoolArray1D, BoolArray2D]:
     """Add a constraint that the active edges form a single path in the given `graph`, or there
     is no active edge.
 
