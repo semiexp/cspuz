@@ -23,5 +23,6 @@ module = [
     "cspuz.solver",
     "cspuz.expr",
     "cspuz.constraints",
+    "cspuz.configuration",
 ]
 disallow_untyped_defs = true
