@@ -1,8 +1,9 @@
 import itertools
 from typing import Iterator, Optional, Tuple, Union
 
-from .array import BoolArray1D
+from .array import BoolArray1D, BoolArray2D
 from .expr import BoolExpr
+from .solver import Solver
 
 
 class BoolGridFrame:
@@ -11,7 +12,14 @@ class BoolGridFrame:
     a bool variable.
     """
 
-    def __init__(self, solver, height, width, horizontal=None, vertical=None):
+    def __init__(
+        self,
+        solver: Solver,
+        height: int,
+        width: int,
+        horizontal: Optional[BoolArray2D] = None,
+        vertical: Optional[BoolArray2D] = None,
+    ):
         self.solver = solver
         self.height = height
         self.width = width
@@ -101,14 +109,21 @@ class BoolGridFrame:
             vertical=self.horizontal,
         )
 
-    def single_loop(self):
+    def single_loop(self) -> BoolArray2D:
         from . import graph
 
         return graph.active_edges_single_cycle(self.solver, self)
 
 
 class BoolInnerGridFrame:
-    def __init__(self, solver, height, width, horizontal=None, vertical=None):
+    def __init__(
+        self,
+        solver: Solver,
+        height: int,
+        width: int,
+        horizontal: Optional[BoolArray2D] = None,
+        vertical: Optional[BoolArray2D] = None,
+    ) -> None:
         self.solver = solver
         self.height = height
         self.width = width

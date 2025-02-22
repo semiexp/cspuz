@@ -24,5 +24,6 @@ module = [
     "cspuz.expr",
     "cspuz.constraints",
     "cspuz.configuration",
+    "cspuz.grid_frame",
 ]
 disallow_untyped_defs = true
