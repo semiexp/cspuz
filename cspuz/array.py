@@ -8,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     TypeVar,
     Union,
@@ -58,7 +59,7 @@ class Array1D(Generic[T]):
         )
 
 
-def _infer_shape(data: List[List[T]]) -> Tuple[int, int]:
+def _infer_shape(data: Sequence[Sequence[T]]) -> Tuple[int, int]:
     if len(data) == 0:
         raise ValueError("shape cannot be inferred for empty lists")
     height = len(data)
