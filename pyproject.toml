@@ -29,5 +29,6 @@ module = [
     "tests.test_backend",
     "tests.test_constraints",
     "tests.test_expr",
+    "tests.test_array",
 ]
 disallow_untyped_defs = true
