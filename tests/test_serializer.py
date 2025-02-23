@@ -23,9 +23,9 @@ from cspuz.puzzle.slitherlink import serialize_slitherlink, deserialize_slitherl
 
 
 class TestSerializerCombinators:
-    def test_dict(self):
+    def test_dict(self) -> None:
         env = CombinatorEnv(height=1, width=1)
-        combinator = Dict([1, 2], ["x", "y"])
+        combinator: Dict[int] = Dict([1, 2], ["x", "y"])
 
         assert combinator.serialize(env, [1, 2, 3], 0) == (1, "x")
         assert combinator.serialize(env, [1, 2, 3], 1) == (1, "y")
@@ -38,7 +38,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "xyz", 2) is None
         assert combinator.deserialize(env, "xyz", 3) is None
 
-    def test_fixstr(self):
+    def test_fixstr(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = FixStr("foo")
 
@@ -50,7 +50,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "foobar", 4) is None
         assert combinator.deserialize(env, "barfoo", 3) == (3, [])
 
-    def test_spaces(self):
+    def test_spaces(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = Spaces(0, "f")
 
@@ -65,7 +65,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "e", 0) is None
         assert combinator.deserialize(env, "z", 0) == (1, [0] * 21)
 
-    def test_decint(self):
+    def test_decint(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = DecInt()
 
@@ -80,7 +80,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "42/-3", 4) == (1, [3])
         assert combinator.deserialize(env, "42/-3", 5) is None
 
-    def test_hexint(self):
+    def test_hexint(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = HexInt()
 
@@ -102,7 +102,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, ".1234", 0) is None
         assert combinator.deserialize(env, "-1", 0) is None
 
-    def test_int_spaces(self):
+    def test_int_spaces(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = IntSpaces(-1, 4, 2)
 
@@ -121,7 +121,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "f", 0) is None
         assert combinator.deserialize(env, "c0", 0) == (1, [2, -1, -1])
 
-    def test_multidigit(self):
+    def test_multidigit(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = MultiDigit(base=4, digits=2)
 
@@ -136,7 +136,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "7eg", 2) is None
         assert combinator.deserialize(env, "7eg", 3) is None
 
-    def test_oneof(self):
+    def test_oneof(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = OneOf(Spaces(-1, "g"), HexInt())
 
@@ -153,7 +153,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "hg-2a0", 6) is None
         assert combinator.deserialize(env, ".12345", 0) is None
 
-    def test_tupl(self):
+    def test_tupl(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = Tupl(HexInt(), Spaces(-1, "g"))
 
@@ -165,7 +165,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "7h", 1) is None
         assert combinator.deserialize(env, "775", 1) is None
 
-    def test_seq(self):
+    def test_seq(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = Seq(HexInt(), 3)
 
@@ -175,7 +175,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "1-2a+100", 0) == (8, [[1, 42, 256]])
         assert combinator.deserialize(env, "1-2a+100", 1) is None
 
-    def test_grid(self):
+    def test_grid(self) -> None:
         env = CombinatorEnv(height=2, width=3)
         combinator = Grid(HexInt())
 
@@ -206,7 +206,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "1-2a+100012", 0) == (11, [[[1, 42, 256], [0, 1, 2]]])
         assert combinator.deserialize(env, "1-2a+100012", 1) is None
 
-    def test_grid_fixed_size(self):
+    def test_grid_fixed_size(self) -> None:
         env = CombinatorEnv(height=1, width=1)
         combinator = Grid(HexInt(), height=2, width=3)
 
@@ -237,7 +237,7 @@ class TestSerializerCombinators:
         assert combinator.deserialize(env, "1-2a+100012", 0) == (11, [[[1, 42, 256], [0, 1, 2]]])
         assert combinator.deserialize(env, "1-2a+100012", 1) is None
 
-    def test_rooms(self):
+    def test_rooms(self) -> None:
         env = CombinatorEnv(height=4, width=3)
         combinator = Rooms()
 
@@ -283,7 +283,7 @@ class TestSerializerCombinators:
         with pytest.raises(ValueError):
             combinator.deserialize(env, "dkpg", 0)  # redundant border
 
-    def test_valued_rooms(self):
+    def test_valued_rooms(self) -> None:
         env = CombinatorEnv(height=4, width=3)
         combinator = ValuedRooms(OneOf(HexInt(), Spaces(-1, "g")))
 
@@ -320,7 +320,7 @@ class TestSerializerCombinators:
 
 
 class TestSerializerPuzzles:
-    def test_nurikabe(self):
+    def test_nurikabe(self) -> None:
         # https://twitter.com/semiexp/status/1222541993638678530
         url = "https://puzz.link/p?nurikabe/10/10/zj7n7j9n7t7i7n7zj"
         problem = deserialize_nurikabe(url)
@@ -339,7 +339,7 @@ class TestSerializerPuzzles:
         reserialized_url = serialize_nurikabe(problem)
         assert url == reserialized_url
 
-    def test_masyu(self):
+    def test_masyu(self) -> None:
         # https://puzsq.jp/main/puzzle_play.php?pid=9833
         url = "https://puzz.link/p?masyu/10/10/0600003i06b1300600000a30600i090330"  # noqa: E501
         problem = deserialize_masyu(url)
@@ -358,7 +358,7 @@ class TestSerializerPuzzles:
         reserialized_url = serialize_masyu(problem)
         assert url == reserialized_url
 
-    def test_norinori(self):
+    def test_norinori(self) -> None:
         # https://puzsq.jp/main/puzzle_play.php?pid=7919
         url = "https://puzz.link/p?norinori/6/6/93op35pb9vpq"
         problem = deserialize_norinori(url)
@@ -380,7 +380,7 @@ class TestSerializerPuzzles:
         reserialized_url = serialize_norinori(*problem)
         assert url == reserialized_url
 
-    def test_slitherlink(self):
+    def test_slitherlink(self) -> None:
         # https://puzz.link/p.html?slither/4/4/dgdh2c7b
         url = "https://puzz.link/p?slither/4/4/dgdh2c71"
         problem = deserialize_slitherlink(url)
