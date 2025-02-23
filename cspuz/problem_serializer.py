@@ -1,8 +1,11 @@
 import re
-from typing import Any, List, Optional, Tuple
+from typing import Any, Generic, List, Literal, Optional, Set, Tuple, Union, TypeVar, overload
 
 
-def _as_list(x):
+T = TypeVar("T")
+
+
+def _as_list(x: Union[T, List[T], Set[T]]) -> List[T]:
     if isinstance(x, list):
         return x
     elif isinstance(x, set):
@@ -58,35 +61,37 @@ class CombinatorEnv:
     height: int
     width: int
 
-    def __init__(self, height: int, width: int):
+    def __init__(self, height: int, width: int) -> None:
         self.height = height
         self.width = width
 
 
-class Combinator:
-    def __init__(self):
+class Combinator(Generic[T]):
+    def __init__(self) -> None:
         pass
 
-    def serialize(
-        self, env: CombinatorEnv, data: List[Any], idx: int
-    ) -> Optional[Tuple[int, str]]:
+    def serialize(self, env: CombinatorEnv, data: List[T], idx: int) -> Optional[Tuple[int, str]]:
         raise NotImplementedError()
 
     def deserialize(
         self, env: CombinatorEnv, data: str, idx: int
-    ) -> Optional[Tuple[int, List[Any]]]:
+    ) -> Optional[Tuple[int, List[T]]]:
         raise NotImplementedError()
 
 
-class FixStr(Combinator):
-    def __init__(self, s):
+class FixStr(Combinator[Any]):
+    def __init__(self, s: str) -> None:
         super().__init__()
         self._s = s
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[Any], idx: int
+    ) -> Optional[Tuple[int, str]]:
         return 0, self._s
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[Any]]]:
         if idx + len(self._s) > len(data):
             return None
         if data[idx : idx + len(self._s)] == self._s:
@@ -95,8 +100,8 @@ class FixStr(Combinator):
             return None
 
 
-class Dict(Combinator):
-    def __init__(self, before, after):
+class Dict(Combinator[T]):
+    def __init__(self, before: Union[T, List[T], Set[T]], after: Union[str, List[str], Set[str]]):
         super(Dict, self).__init__()
         self._before = _as_list(before)
         self._after = _as_list(after)
@@ -104,7 +109,7 @@ class Dict(Combinator):
         if len(self._before) != len(self._after):
             raise ValueError("`before` and `after` should have the same number of elements")
 
-    def serialize(self, env, data, idx):
+    def serialize(self, env: CombinatorEnv, data: List[T], idx: int) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         for i in range(len(self._before)):
@@ -112,7 +117,9 @@ class Dict(Combinator):
                 return 1, self._after[i]
         return None
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[T]]]:
         if idx == len(data):
             return None
         for i in range(len(self._before)):
@@ -124,8 +131,8 @@ class Dict(Combinator):
         return None
 
 
-class Spaces(Combinator):
-    def __init__(self, space, smallest):
+class Spaces(Combinator[T]):
+    def __init__(self, space: T, smallest: str):
         super(Spaces, self).__init__()
         self._space = space
         self._smallest = smallest
@@ -135,7 +142,7 @@ class Spaces(Combinator):
         self._offset = _from_base36(smallest) - 1
         self._max_consecutive = 35 - self._offset
 
-    def serialize(self, env, data, idx):
+    def serialize(self, env: CombinatorEnv, data: List[T], idx: int) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if data[idx] != self._space:
@@ -145,7 +152,9 @@ class Spaces(Combinator):
             i += 1
         return i, _to_base36(self._offset + i)
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[T]]]:
         if idx == len(data):
             return None
         if not _is_alnum_lower(data[idx]):
@@ -157,10 +166,12 @@ class Spaces(Combinator):
 
 
 class DecInt(Combinator):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[int], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if not isinstance(data[idx], int):
@@ -169,7 +180,9 @@ class DecInt(Combinator):
             return None
         return 1, str(data[idx])
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[int]]]:
         if idx == len(data):
             return None
         n_digits = 0
@@ -180,11 +193,13 @@ class DecInt(Combinator):
         return n_digits, [int(data[idx : idx + n_digits])]
 
 
-class HexInt(Combinator):
-    def __init__(self):
+class HexInt(Combinator[int]):
+    def __init__(self) -> None:
         super(HexInt, self).__init__()
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[int], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if not isinstance(data[idx], int):
@@ -199,7 +214,9 @@ class HexInt(Combinator):
             prefix = "+"
         return 1, prefix + _to_base16(v)
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[int]]]:
         if idx == len(data):
             return None
         c = data[idx]
@@ -217,8 +234,8 @@ class HexInt(Combinator):
             return None
 
 
-class IntSpaces(Combinator):
-    def __init__(self, space, max_int, max_num_spaces):
+class IntSpaces(Combinator[int]):
+    def __init__(self, space: int, max_int: int, max_num_spaces: int) -> None:
         super().__init__()
 
         if (max_int + 1) * (max_num_spaces + 1) > 36:
@@ -227,7 +244,9 @@ class IntSpaces(Combinator):
         self._max_int = max_int
         self._max_num_spaces = max_num_spaces
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[int], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if not isinstance(data[idx], int):
@@ -242,7 +261,9 @@ class IntSpaces(Combinator):
             num_spaces += 1
         return (1 + num_spaces), _to_base36(num_spaces * (self._max_int + 1) + v)
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[int]]]:
         if idx == len(data):
             return None
         v = data[idx]
@@ -256,8 +277,8 @@ class IntSpaces(Combinator):
         return 1, ([num] + [self._space for _ in range(num_spaces)])
 
 
-class MultiDigit(Combinator):
-    def __init__(self, base, digits):
+class MultiDigit(Combinator[int]):
+    def __init__(self, base: int, digits: int) -> None:
         super(MultiDigit, self).__init__()
 
         if base**digits > 36:
@@ -265,7 +286,9 @@ class MultiDigit(Combinator):
         self._base = base
         self._digits = digits
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[int], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
 
@@ -278,7 +301,9 @@ class MultiDigit(Combinator):
                 value += data[idx + i]
         return min(len(data) - idx, self._digits), _to_base36(value)
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[int]]]:
         if idx == len(data):
             return None
 
@@ -296,24 +321,26 @@ class MultiDigit(Combinator):
         return 1, unpacked
 
 
-class OneOf(Combinator):
-    def __init__(self, *choices):
+class OneOf(Combinator[T]):
+    def __init__(self, *choices: Union[List[Combinator[T]], Combinator[T]]) -> None:
         super(OneOf, self).__init__()
-        self._choices = []
+        self._choices: List[Combinator[T]] = []
         for choice in choices:
             if isinstance(choice, list):
                 self._choices += choice
             else:
                 self._choices.append(choice)
 
-    def serialize(self, env, data, idx):
+    def serialize(self, env: CombinatorEnv, data: List[T], idx: int) -> Optional[Tuple[int, str]]:
         for choice in self._choices:
             res = choice.serialize(env, data, idx)
             if res is not None:
                 return res
         return None
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[T]]]:
         for choice in self._choices:
             res = choice.deserialize(env, data, idx)
             if res is not None:
@@ -321,8 +348,8 @@ class OneOf(Combinator):
         return None
 
 
-class Tupl(Combinator):
-    def __init__(self, *elements):
+class Tupl(Combinator[tuple]):
+    def __init__(self, *elements: Union[List[Combinator[Any]], Combinator[Any]]) -> None:
         super().__init__()
         self._elements = []
         for element in elements:
@@ -331,7 +358,9 @@ class Tupl(Combinator):
             else:
                 self._elements.append(element)
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[tuple], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         d = data[idx]
@@ -348,7 +377,9 @@ class Tupl(Combinator):
 
         return 1, "".join(parts)
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[tuple]]]:
         if idx == len(data):
             return None
         parts = []
@@ -364,13 +395,15 @@ class Tupl(Combinator):
         return ofs, [tuple(parts)]
 
 
-class Seq(Combinator):
-    def __init__(self, base, n):
+class Seq(Combinator[List[T]]):
+    def __init__(self, base: Combinator[T], n: int) -> None:
         super(Seq, self).__init__()
         self._base = base
         self._n = n
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[List[T]], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if not isinstance(data[idx], list):
@@ -389,8 +422,10 @@ class Seq(Combinator):
         assert n_read == self._n
         return 1, "".join(ret)
 
-    def deserialize(self, env, data, idx):
-        ret = []
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[List[T]]]]:
+        ret: List[T] = []
         n_read = 0
         while len(ret) < self._n:
             tmp = self._base.deserialize(env, data, idx + n_read)
@@ -402,8 +437,10 @@ class Seq(Combinator):
         return n_read, [ret[: self._n]]
 
 
-class Grid(Combinator):
-    def __init__(self, base, height=None, width=None):
+class Grid(Combinator[List[List[T]]]):
+    def __init__(
+        self, base: Combinator[T], height: Optional[int] = None, width: Optional[int] = None
+    ) -> None:
         super(Grid, self).__init__()
         self._base = base
         if (height is None) != (width is None):
@@ -411,7 +448,9 @@ class Grid(Combinator):
         self._height = height
         self._width = width
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[List[List[T]]], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         if not isinstance(data[idx], list):
@@ -429,7 +468,9 @@ class Grid(Combinator):
         tmp = seq_combinator.serialize(env, [d_flat], idx)
         return tmp
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[List[List[T]]]]]:
         height = self._height or env.height
         width = self._width or env.width
         seq_combinator = Seq(self._base, height * width)
@@ -439,25 +480,30 @@ class Grid(Combinator):
             return None
         ofs, d = tmp
         assert len(d) == 1
-        d = d[0]
-        assert len(d) == height * width
+        d2 = d[0]
+        assert len(d2) == height * width
         ret = []
         for i in range(height):
             row = []
             for j in range(width):
-                row.append(d[i * width + j])
+                row.append(d2[i * width + j])
             ret.append(row)
         return ofs, [ret]
 
 
-class Rooms(Combinator):
-    def __init__(self, skip_on_error=False, allow_redundant_border=False):
+RoomsType = List[List[Tuple[int, int]]]
+
+
+class Rooms(Combinator[RoomsType]):
+    def __init__(self, skip_on_error: bool = False, allow_redundant_border: bool = False) -> None:
         super().__init__()
 
         self._skip_on_error = skip_on_error
         self._allow_redundant_border = allow_redundant_border
 
-    def _serialize(self, env, data, idx):
+    def _serialize(
+        self, env: CombinatorEnv, data: List[RoomsType], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             raise ValueError("index out of bounds")
         d = data[idx]
@@ -497,7 +543,9 @@ class Rooms(Combinator):
         )
         return combinator.serialize(env, [([vertical], [horizontal])], 0)
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[RoomsType], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if self._skip_on_error:
             try:
                 res = self._serialize(env, data, idx)
@@ -507,7 +555,9 @@ class Rooms(Combinator):
         else:
             return self._serialize(env, data, idx)
 
-    def _deserialize(self, env, data, idx):
+    def _deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[RoomsType]]]:
         if idx == len(data):
             raise ValueError("index out of bounds")
         height = env.height
@@ -523,7 +573,7 @@ class Rooms(Combinator):
         n_read, [([vertical], [horizontal])] = res
         room_id = [[-1 for _ in range(width)] for _ in range(height)]
 
-        def dfs(y: int, x: int, id: int):
+        def dfs(y: int, x: int, id: int) -> None:
             nonlocal room_id
             nonlocal vertical
             nonlocal horizontal
@@ -557,7 +607,7 @@ class Rooms(Combinator):
                     if x < width - 1 and vertical[y][x] and room_id[y][x] == room_id[y][x + 1]:
                         raise ValueError("redundant vertical border found")
 
-        rooms = [[] for _ in range(last_id)]
+        rooms: List[List[Tuple[int, int]]] = [[] for _ in range(last_id)]
         for y in range(height):
             for x in range(width):
                 assert room_id[y][x] != -1
@@ -565,7 +615,9 @@ class Rooms(Combinator):
 
         return n_read, [rooms]
 
-    def deserialize(self, env, data, idx):
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[RoomsType]]]:
         if self._skip_on_error:
             try:
                 res = self._deserialize(env, data, idx)
@@ -576,14 +628,16 @@ class Rooms(Combinator):
             return self._deserialize(env, data, idx)
 
 
-class ValuedRooms(Combinator):
-    def __init__(self, value_combinator, **kwargs):
+class ValuedRooms(Combinator[Tuple[RoomsType, List[T]]]):
+    def __init__(self, value_combinator: Combinator[T], **kwargs: Any) -> None:
         super().__init__()
 
         self._value_combinator = value_combinator
         self._room_combinator = Rooms(**kwargs)
 
-    def serialize(self, env, data, idx):
+    def serialize(
+        self, env: CombinatorEnv, data: List[Tuple[RoomsType, List[T]]], idx: int
+    ) -> Optional[Tuple[int, str]]:
         if idx == len(data):
             return None
         d = data[idx]
@@ -593,32 +647,37 @@ class ValuedRooms(Combinator):
 
         combinator = Tupl(self._room_combinator, Seq(self._value_combinator, len(rooms)))
         res = combinator.serialize(env, [([rooms], [values])], 0)
-        return res or (1, res[1])
 
-    def deserialize(self, env, data, idx):
+        if res is None:
+            return None
+        return 1, res[1]
+
+    def deserialize(
+        self, env: CombinatorEnv, data: str, idx: int
+    ) -> Optional[Tuple[int, List[Tuple[RoomsType, List[T]]]]]:
         rooms_res = self._room_combinator.deserialize(env, data, idx)
         if rooms_res is None:
             return None
         ofs, rooms = rooms_res
-        rooms = rooms[0]
-        value_combinator = Seq(self._value_combinator, len(rooms))
+        rooms0 = rooms[0]
+        value_combinator = Seq(self._value_combinator, len(rooms0))
         values_res = value_combinator.deserialize(env, data, idx + ofs)
         if values_res is None:
             return None
         ofs2, values = values_res
-        values = values[0]
+        values0 = values[0]
 
-        return ofs + ofs2, [(rooms, values)]
+        return ofs + ofs2, [(rooms0, values0)]
 
 
-def serialize_problem(combinator, problem, **kwargs):
+def serialize_problem(combinator: Combinator[T], problem: T, **kwargs: Any) -> str:
     env = CombinatorEnv(**kwargs)
     tmp = combinator.serialize(env, [problem], 0)
     assert tmp is not None
     return tmp[1]
 
 
-def deserialize_problem(combinator, serialized, **kwargs):
+def deserialize_problem(combinator: Combinator[T], serialized: str, **kwargs: Any) -> Optional[T]:
     env = CombinatorEnv(**kwargs)
     tmp = combinator.deserialize(env, serialized, 0)
     if tmp is None:
@@ -630,8 +689,13 @@ def deserialize_problem(combinator, serialized, **kwargs):
 
 
 def serialize_problem_as_url(
-    combinator, puzzle, height, width, problem, prefix="https://puzz.link/p?"
-):
+    combinator: Combinator[T],
+    puzzle: str,
+    height: int,
+    width: int,
+    problem: T,
+    prefix: str = "https://puzz.link/p?",
+) -> str:
     serialized = serialize_problem(combinator, problem, height=height, width=width)
     return f"{prefix}{puzzle}/{width}/{height}/{serialized}"
 
@@ -647,9 +711,33 @@ def get_puzzle_info_from_url(url: str) -> Optional[Tuple[str, int, int]]:
         return (m[1], int(m[3]), int(m[2]))
 
 
+@overload
 def deserialize_problem_as_url(
-    combinator, url, allowed_puzzles=None, allow_failure=False, return_size=False
-):
+    combinator: Combinator[T],
+    url: str,
+    allowed_puzzles: Union[None, str, List[str]] = None,
+    allow_failure: bool = False,
+    return_size: Literal[True] = ...,
+) -> Optional[Tuple[int, int, T]]: ...
+
+
+@overload
+def deserialize_problem_as_url(
+    combinator: Combinator[T],
+    url: str,
+    allowed_puzzles: Union[None, str, List[str]] = None,
+    allow_failure: bool = False,
+    return_size: Literal[False] = ...,
+) -> Optional[T]: ...
+
+
+def deserialize_problem_as_url(
+    combinator: Combinator[T],
+    url: str,
+    allowed_puzzles: Union[None, str, List[str]] = None,
+    allow_failure: bool = False,
+    return_size: bool = False,
+) -> Optional[T | Tuple[int, int, T]]:
     m = _DESERIALIZE_URL_REG.match(url)
     if allow_failure and m is None:
         return None

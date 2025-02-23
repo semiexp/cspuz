@@ -1,5 +1,5 @@
 import argparse
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 import random
 import sys
 import math
@@ -279,7 +279,7 @@ def serialize_heyawake(height, width, *problem):
     return serialize_problem_as_url(HEYAWAKE_COMBINATOR, "heyawake", height, width, (rooms, clues))
 
 
-def deserialize_heyawake(url) -> RoomRepr:
+def deserialize_heyawake(url) -> Optional[Tuple[int, int, RoomRepr]]:
     return deserialize_problem_as_url(
         HEYAWAKE_COMBINATOR, url, allowed_puzzles="heyawake", allow_failure=True, return_size=True
     )
