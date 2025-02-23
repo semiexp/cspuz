@@ -1,7 +1,8 @@
 import pytest
 
 import cspuz
-from cspuz import graph, BoolGridFrame
+from cspuz import graph, BoolGridFrame, Solver
+from cspuz.graph import Graph
 
 
 @pytest.fixture(
@@ -11,7 +12,7 @@ from cspuz import graph, BoolGridFrame
         ("cspuz_core", True, True),
     ],
 )
-def default_backend(request):
+def default_backend(request: pytest.FixtureRequest) -> None:
     default_backend, use_graph_primitive, use_graph_division_primitive = request.param
     cspuz.config.default_backend = default_backend
     cspuz.config.use_graph_primitive = use_graph_primitive
@@ -19,12 +20,12 @@ def default_backend(request):
 
 
 @pytest.fixture
-def solver():
-    return cspuz.Solver()
+def solver() -> Solver:
+    return Solver()
 
 
 @pytest.fixture
-def default_graph():
+def default_graph() -> Graph:
     # 0 - 1 - 2
     # |   |   |
     # 3 - 4 - 5
@@ -44,15 +45,15 @@ def default_graph():
     return g
 
 
-def test_graph_len(default_graph):
+def test_graph_len(default_graph: Graph) -> None:
     assert len(default_graph) == 10
 
 
-def test_graph_getitem(default_graph):
+def test_graph_getitem(default_graph: Graph) -> None:
     assert default_graph[4] == (2, 5)
 
 
-def test_active_vertices_connected_grid(solver):
+def test_active_vertices_connected_grid(solver: Solver) -> None:
     is_active = solver.bool_array((3, 4))
     graph.active_vertices_connected(solver, is_active)
 
@@ -67,7 +68,7 @@ def test_active_vertices_connected_grid(solver):
     assert not solver.find_answer()
 
 
-def test_active_vertices_connected_graph(solver, default_graph):
+def test_active_vertices_connected_graph(solver: Solver, default_graph: Graph) -> None:
     is_active = solver.bool_array(8)
     graph.active_vertices_connected(solver, is_active, graph=default_graph)
 
@@ -80,7 +81,7 @@ def test_active_vertices_connected_graph(solver, default_graph):
     assert not solver.find_answer()
 
 
-def test_active_vertices_not_adjacent_and_not_segmenting_grid(solver):
+def test_active_vertices_not_adjacent_and_not_segmenting_grid(solver: Solver) -> None:
     is_active = solver.bool_array((3, 4))
     solver.add_answer_key(is_active)
     graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_active)
@@ -93,7 +94,9 @@ def test_active_vertices_not_adjacent_and_not_segmenting_grid(solver):
     assert is_active[0, 3].sol is None
 
 
-def test_active_vertices_not_adjacent_and_not_segmenting_graph(solver, default_graph):
+def test_active_vertices_not_adjacent_and_not_segmenting_graph(
+    solver: Solver, default_graph: Graph
+) -> None:
     is_active = solver.bool_array(8)
     solver.add_answer_key(is_active)
     graph.active_vertices_not_adjacent_and_not_segmenting(solver, is_active, graph=default_graph)
@@ -103,7 +106,7 @@ def test_active_vertices_not_adjacent_and_not_segmenting_graph(solver, default_g
     assert is_active[4].sol is False
 
 
-def test_active_edges_acyclic(solver, default_graph):
+def test_active_edges_acyclic(solver: Solver, default_graph: Graph) -> None:
     is_active_edge = solver.bool_array(10)
     graph.active_edges_acyclic(solver, is_active_edge, default_graph)
 
@@ -116,7 +119,7 @@ def test_active_edges_acyclic(solver, default_graph):
     assert not solver.find_answer()
 
 
-def test_division_connected_grid(solver):
+def test_division_connected_grid(solver: Solver) -> None:
     division = solver.int_array((5, 5), 0, 3)
     solver.add_answer_key(division)
     graph.division_connected(solver, division, 4)
@@ -137,7 +140,7 @@ def test_division_connected_grid(solver):
     assert division[3, 0].sol == 0
 
 
-def test_division_connected_grid_roots(solver):
+def test_division_connected_grid_roots(solver: Solver) -> None:
     division = solver.int_array((5, 5), 0, 3)
     solver.add_answer_key(division)
     graph.division_connected(solver, division, 4, roots=[(2, 4), (1, 2), None, None])
@@ -156,7 +159,7 @@ def test_division_connected_grid_roots(solver):
     assert division[3, 0].sol == 0
 
 
-def test_division_connected_graph(solver, default_graph):
+def test_division_connected_graph(solver: Solver, default_graph: Graph) -> None:
     division = solver.int_array(8, 0, 1)
     solver.add_answer_key(division)
     graph.division_connected(solver, division, 2, graph=default_graph)
@@ -170,7 +173,7 @@ def test_division_connected_graph(solver, default_graph):
     assert division[6].sol == 1
 
 
-def test_division_connected_graph_roots(solver, default_graph):
+def test_division_connected_graph_roots(solver: Solver, default_graph: Graph) -> None:
     division = solver.int_array(8, 0, 1)
     solver.add_answer_key(division)
     graph.division_connected(solver, division, 2, graph=default_graph, roots=[None, 7])
@@ -183,7 +186,7 @@ def test_division_connected_graph_roots(solver, default_graph):
     assert division[6].sol == 1
 
 
-def test_division_connected_variable_groups_grid(solver):
+def test_division_connected_variable_groups_grid(solver: Solver) -> None:
     group_id = graph.division_connected_variable_groups(
         solver,
         shape=(4, 4),
@@ -198,7 +201,7 @@ def test_division_connected_variable_groups_grid(solver):
     assert solver.find_answer()
 
 
-def test_active_edges_single_cycle_grid_frame(solver):
+def test_active_edges_single_cycle_grid_frame(solver: Solver) -> None:
     grid_frame = BoolGridFrame(solver, 4, 4)
     solver.add_answer_key(grid_frame)
     graph.active_edges_single_cycle(solver, grid_frame)
@@ -218,7 +221,7 @@ def test_active_edges_single_cycle_grid_frame(solver):
     assert grid_frame.horizontal[2, 3].sol is None
 
 
-def test_active_edges_single_cycle_graph(solver, default_graph):
+def test_active_edges_single_cycle_graph(solver: Solver, default_graph: Graph) -> None:
     is_active_edge = solver.bool_array(10)
     solver.add_answer_key(is_active_edge)
     graph.active_edges_single_cycle(solver, is_active_edge, graph=default_graph)
@@ -230,7 +233,9 @@ def test_active_edges_single_cycle_graph(solver, default_graph):
     assert is_active_edge[9].sol is True
 
 
-def test_division_connected_variable_groups_with_borders(solver, default_graph):
+def test_division_connected_variable_groups_with_borders(
+    solver: Solver, default_graph: Graph
+) -> None:
     v = solver.int_var(1, 8)
     is_border = solver.bool_array(10)
     solver.add_answer_key(is_border)
@@ -247,7 +252,7 @@ def test_division_connected_variable_groups_with_borders(solver, default_graph):
     assert is_border[5].sol is True
 
 
-def test_active_edges_single_cycle_crossable(solver):
+def test_active_edges_single_cycle_crossable(solver: Solver) -> None:
     grid_frame = BoolGridFrame(solver, 4, 3)
     solver.add_answer_key(grid_frame)
     is_passed, is_crossing = graph.active_edges_single_cycle_crossable(solver, grid_frame)
@@ -264,7 +269,7 @@ def test_active_edges_single_cycle_crossable(solver):
     assert grid_frame.horizontal[4, 2].sol is True
 
 
-def test_active_edges_connected_crossable(solver):
+def test_active_edges_connected_crossable(solver: Solver) -> None:
     grid_frame = BoolGridFrame(solver, 4, 3)
     solver.add_answer_key(grid_frame)
     _, is_crossing = graph.active_edges_connected_crossable(solver, grid_frame)

@@ -502,7 +502,7 @@ def division_connected(
     division: IntArray2D,
     num_regions: int,
     *,
-    roots: Optional[Sequence[Optional[int]]] = None,
+    roots: Optional[Sequence[Optional[Tuple[int, int]]]] = None,
     allow_empty_group: bool = False,
 ) -> None: ...
 
@@ -762,7 +762,7 @@ def _division_connected_variable_groups_with_borders(
     solver: Solver,
     graph: Graph,
     group_size: Union[IntArray1D, Sequence[Optional[IntExprLike]]],
-    is_border: Sequence[BoolExprLike],
+    is_border: Union[BoolArray1D, Sequence[BoolExprLike]],
     use_graph_primitive: Optional[bool],
 ) -> None:
     if use_graph_primitive is None:
@@ -799,7 +799,7 @@ def division_connected_variable_groups_with_borders(
         Sequence[Optional[IntExprLike]],
         IntArray2D,
     ],
-    is_border: Union[Sequence[BoolExprLike], BoolInnerGridFrame],
+    is_border: Union[Sequence[BoolExprLike], BoolArray1D, BoolInnerGridFrame],
     graph: Optional[Graph] = None,
     use_graph_primitive: Optional[bool] = None,
 ) -> None:
@@ -828,7 +828,7 @@ def division_connected_variable_groups_with_borders(
             are applied. If a 1D sequence, `group_size[i]` specifies the size of the component
             containing vertex `i`. If a 2D sequence, `group_size[i][j]` specifies the size of the
             component containing vertex `(i, j)`.
-        is_border (Union[Sequence[BoolExprLike], BoolInnerGridFrame]):
+        is_border (Union[Sequence[BoolExprLike], BoolArray1D, BoolInnerGridFrame]):
             The boundaries between different connected components. If `is_border` is a
             :class:`BoolInnerGridFrame`, the graph is automatically inferred from it.
         graph (Optional[Graph], optional):
