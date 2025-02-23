@@ -26,5 +26,6 @@ module = [
     "cspuz.configuration",
     "cspuz.grid_frame",
     "tests.test_graph",
+    "tests.test_backend",
 ]
 disallow_untyped_defs = true
