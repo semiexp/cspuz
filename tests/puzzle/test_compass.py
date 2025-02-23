@@ -1,7 +1,7 @@
 from cspuz.puzzle import compass
 
 
-def test_serialization():
+def test_serialization() -> None:
     height = 5
     width = 4
     problem = [(1, 1, 1, 2, -1, 3), (2, 3, -1, 6, -1, -1), (3, 1, 4, -1, -1, 5)]

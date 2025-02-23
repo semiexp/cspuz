@@ -1,7 +1,7 @@
 from cspuz.puzzle import star_battle
 
 
-def test_serialization():
+def test_serialization() -> None:
     n = 6
     k = 1
     block_id = [
