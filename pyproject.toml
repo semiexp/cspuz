@@ -31,5 +31,6 @@ module = [
     "tests.test_constraints",
     "tests.test_expr",
     "tests.test_array",
+    "tests.test_serializer",
 ]
 disallow_untyped_defs = true
