@@ -1,7 +1,7 @@
 from cspuz.expr import Expr, ExprLike, BoolVar, IntVar
 
 
-def check_equality_expr(left: ExprLike, right: ExprLike):
+def check_equality_expr(left: ExprLike, right: ExprLike) -> bool:
     if not isinstance(left, Expr) or not isinstance(right, Expr):
         if isinstance(left, Expr) or isinstance(right, Expr):
             return False

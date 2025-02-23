@@ -26,11 +26,6 @@ module = [
     "cspuz.configuration",
     "cspuz.grid_frame",
     "cspuz.problem_serializer",
-    "tests.test_graph",
-    "tests.test_backend",
-    "tests.test_constraints",
-    "tests.test_expr",
-    "tests.test_array",
-    "tests.test_serializer",
+    "tests.*",
 ]
 disallow_untyped_defs = true
