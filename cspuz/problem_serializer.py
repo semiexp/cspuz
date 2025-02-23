@@ -737,7 +737,7 @@ def deserialize_problem_as_url(
     allowed_puzzles: Union[None, str, List[str]] = None,
     allow_failure: bool = False,
     return_size: bool = False,
-) -> Optional[T | Tuple[int, int, T]]:
+) -> Optional[Union[T, Tuple[int, int, T]]]:
     m = _DESERIALIZE_URL_REG.match(url)
     if allow_failure and m is None:
         return None
