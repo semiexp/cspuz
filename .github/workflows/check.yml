@@ -100,11 +100,12 @@ jobs:
       run: pip install .[test]
     - name: Run tests
       run: pytest
-  test-ubuntu-all-backends:
-    runs-on: ubuntu-latest
+  test-all-backends:
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.9", "3.13"]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
     - name: Update Rust
@@ -118,7 +119,10 @@ jobs:
         cd ${{ runner.temp }}
         git clone https://github.com/semiexp/csugar.git
         cd csugar
+        mkdir build
+        cd build
         cmake -DCMAKE_BUILD_TYPE=Release .. && make
+        cd ..
         pip install .
     - name: Build cspuz_core
       run: |
