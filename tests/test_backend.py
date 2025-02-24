@@ -4,7 +4,14 @@ import cspuz
 
 
 # TODO: test sugar, sugar_extended, csugar and enigma_csp
-@pytest.fixture(autouse=True, params=["z3", "cspuz_core"])
+@pytest.fixture(
+    autouse=True,
+    params=[
+        pytest.param("z3"),
+        pytest.param("cspuz_core"),
+        pytest.param("csugar", marks=pytest.mark.all_backends),
+    ],
+)
 def default_backend(request: pytest.FixtureRequest) -> None:
     cspuz.config.default_backend = request.param
 

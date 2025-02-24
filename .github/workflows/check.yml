@@ -100,3 +100,38 @@ jobs:
       run: pip install .[test]
     - name: Run tests
       run: pytest
+  test-all-backends:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9", "3.13"]
+    if: github.event_name == 'schedule'
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Update Rust
+      run: rustup update
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build csugar
+      run: |
+        cd ${{ runner.temp }}
+        git clone https://github.com/semiexp/csugar.git
+        cd csugar
+        mkdir build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release .. && make
+        cd ..
+        pip install .
+    - name: Build cspuz_core
+      run: |
+        cd ${{ runner.temp }}
+        git clone --recursive https://github.com/semiexp/cspuz_core.git
+        cd cspuz_core
+        pip install .
+    - name: Install cspuz
+      run: pip install .[test]
+    - name: Run tests
+      run: pytest -m ""  # run all tests
