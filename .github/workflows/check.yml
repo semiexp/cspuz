@@ -103,7 +103,7 @@ jobs:
   test-all-backends:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         python-version: ["3.9", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -133,4 +133,4 @@ jobs:
     - name: Install cspuz
       run: pip install .[test]
     - name: Run tests
-      run: pytest -m "all_backends"
+      run: pytest -m ""  # run all tests
