@@ -1,21 +1,24 @@
 import random
 from collections import deque
 from copy import deepcopy
+from typing import Optional
 
 from cspuz.generator.builder import Builder
 
 
-class SegmentationBuilder2D(Builder):
+class SegmentationBuilder2D(
+    Builder[list[list[tuple[int, int]]], tuple[list[int], list[list[tuple[int, int]]]]]
+):
     def __init__(
         self,
-        height,
-        width,
-        min_num_blocks=None,
-        max_num_blocks=None,
-        min_block_size=None,
-        max_block_size=None,
-        allow_unmet_constraints_first=False,
-        initial_blocks=None,
+        height: int,
+        width: int,
+        min_num_blocks: Optional[int] = None,
+        max_num_blocks: Optional[int] = None,
+        min_block_size: Optional[int] = None,
+        max_block_size: Optional[int] = None,
+        allow_unmet_constraints_first: bool = False,
+        initial_blocks: Optional[list[list[tuple[int, int]]]] = None,
     ):
         self.height = height
         self.width = width
@@ -26,7 +29,7 @@ class SegmentationBuilder2D(Builder):
         self.allow_unmet_constraints_first = allow_unmet_constraints_first
         self.initial_blocks = initial_blocks
 
-    def initial(self):
+    def initial(self) -> list[list[tuple[int, int]]]:
         if self.initial_blocks is None:
             block = []
             for y in range(self.height):
@@ -50,7 +53,9 @@ class SegmentationBuilder2D(Builder):
             cand = random.choice(cands)
             blocks = self._copy_with_update(blocks, cand, use_deepcopy=False)
 
-    def candidates(self, current):
+    def candidates(
+        self, current: list[list[tuple[int, int]]]
+    ) -> list[tuple[list[int], list[list[tuple[int, int]]]]]:
         ret = []
 
         num_blocks = len(current)
@@ -176,10 +181,19 @@ class SegmentationBuilder2D(Builder):
 
         return ret
 
-    def copy_with_update(self, previous, update):
+    def copy_with_update(
+        self,
+        previous: list[list[tuple[int, int]]],
+        update: tuple[list[int], list[list[tuple[int, int]]]],
+    ) -> list[list[tuple[int, int]]]:
         return self._copy_with_update(previous, update, use_deepcopy=True)
 
-    def _copy_with_update(self, previous, update, use_deepcopy):
+    def _copy_with_update(
+        self,
+        previous: list[list[tuple[int, int]]],
+        update: tuple[list[int], list[list[tuple[int, int]]]],
+        use_deepcopy: bool,
+    ) -> list[list[tuple[int, int]]]:
         exclude, append = update
         if use_deepcopy:
             return [
@@ -189,7 +203,9 @@ class SegmentationBuilder2D(Builder):
             return [previous[i] for i in range(len(previous)) if i not in exclude] + append
 
 
-def split_block(block):
+def split_block(
+    block: list[tuple[int, int]],
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
     assert len(block) >= 2
     while True:
         seed_a = random.randint(0, len(block) - 1)
@@ -198,8 +214,8 @@ def split_block(block):
             break
     block_set = set(block)
 
-    def bfs(seed):
-        q = deque()
+    def bfs(seed: tuple[int, int]) -> dict[tuple[int, int], int]:
+        q: deque[tuple[int, int]] = deque()
         q.append(seed)
         ans = dict()
         ans[seed] = 0
@@ -227,11 +243,11 @@ def split_block(block):
     return block_a, block_b
 
 
-def _is_connected(block, excluded):
+def _is_connected(block: list[tuple[int, int]], excluded: Optional[tuple[int, int]]) -> bool:
     block_set = set(block)
     visited = set()
 
-    def visit(y, x):
+    def visit(y: int, x: int) -> None:
         if (y, x) not in block or (y, x) in visited or (y, x) == excluded:
             return
         visited.add((y, x))
