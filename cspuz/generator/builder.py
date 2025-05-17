@@ -1,11 +1,13 @@
 import copy
+from typing import Any, Callable, Generic, Iterator, Iterable, Optional, TypeVar
+
 import cspuz.generator.srandom as srandom
 
 
-def build_neighbor_generator(pattern):
+def build_neighbor_generator(pattern: Any) -> tuple[Any, Callable[[Any], Iterator[Any]]]:
     variables = []
 
-    def enumerate_variables(pat, pos):
+    def enumerate_variables(pat: Any, pos: list[Any]) -> Any:
         if isinstance(pat, Builder):
             variables.append((pos, pat))
             return pat.initial()
@@ -22,12 +24,12 @@ def build_neighbor_generator(pattern):
 
     initial = enumerate_variables(pattern, [])
 
-    def get(pat, pos):
+    def get(pat: Any, pos: list[Any]) -> Any:
         if len(pos) == 0:
             return pat
         return get(pat[pos[0]], pos[1:])
 
-    def with_update(problem, pat, pos, v):
+    def with_update(problem: Any, pat: Any, pos: list[Any], v: Any) -> Any:
         if len(pos) == 0:
             assert isinstance(pat, Builder)
             return pat.copy_with_update(problem, v)
@@ -37,10 +39,11 @@ def build_neighbor_generator(pattern):
                 for i in range(len(pat))
             ]
             if isinstance(pat, tuple):
-                ret = tuple(ret)
-            return ret
+                return tuple(ret)
+            else:
+                return ret
 
-    def generator(problem):
+    def generator(problem: Any) -> Iterator[Any]:
         global _use_deterministic_prng
         cands = []
         for pos, choice in variables:
@@ -56,44 +59,48 @@ def build_neighbor_generator(pattern):
     return initial, generator
 
 
-class Builder:
-    def initial(self):
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+class Builder(Generic[T, U]):
+    def initial(self) -> T:
         raise NotImplementedError
 
-    def candidates(self, current):
+    def candidates(self, current: T) -> Iterable[U]:
         raise NotImplementedError
 
-    def copy_with_update(self, previous, update):
+    def copy_with_update(self, previous: T, update: U) -> T:
         raise NotImplementedError
 
 
-class Choice(Builder):
-    def __init__(self, choice, default):
+class Choice(Generic[T], Builder[T, T]):
+    def __init__(self, choice: Iterable[T], default: T) -> None:
         self.choice = list(choice)
         self.default = default
 
-    def initial(self):
+    def initial(self) -> T:
         return self.default
 
-    def candidates(self, current):
+    def candidates(self, current: T) -> Iterable[T]:
         return [c for c in self.choice if c != current]
 
-    def copy_with_update(self, previous, update):
+    def copy_with_update(self, previous: T, update: T) -> T:
         return update
 
 
-class ArrayBuilder2D(Builder):
+class ArrayBuilder2D(Generic[T], Builder[list[list[T]], list[tuple[int, int, T]]]):
     def __init__(
         self,
-        height,
-        width,
-        choice,
-        default,
-        disallow_adjacent=False,
-        symmetry=False,
-        initial=None,
-        use_move=False,
-    ):
+        height: int,
+        width: int,
+        choice: Iterable[T],
+        default: T,
+        disallow_adjacent: bool = False,
+        symmetry: bool = False,
+        initial: Optional[list[list[T]]] = None,
+        use_move: bool = False,
+    ) -> None:
         self.height = height
         self.width = width
         self.choice = list(choice)
@@ -109,12 +116,12 @@ class ArrayBuilder2D(Builder):
         self.initial_problem = initial
         self.use_move = use_move
 
-    def initial(self):
+    def initial(self) -> list[list[T]]:
         if self.initial_problem is not None:
             return self.initial_problem
         return [[self.default for _ in range(self.width)] for _ in range(self.height)]
 
-    def candidates(self, current):
+    def candidates(self, current: list[list[T]]) -> Iterable[list[tuple[int, int, T]]]:
         global _use_deterministic_prng
         ret = []
         if self.use_move:
@@ -199,7 +206,9 @@ class ArrayBuilder2D(Builder):
                             ret.append([(y, x, v)])
         return ret
 
-    def copy_with_update(self, previous, update):
+    def copy_with_update(
+        self, previous: list[list[T]], update: list[tuple[int, int, T]]
+    ) -> list[list[T]]:
         ret = copy.deepcopy(previous)
         for y, x, v in update:
             ret[y][x] = v

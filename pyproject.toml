@@ -26,6 +26,7 @@ module = [
     "cspuz.configuration",
     "cspuz.grid_frame",
     "cspuz.problem_serializer",
+    "cspuz.generator.*",
     "tests.*",
 ]
 disallow_untyped_defs = true

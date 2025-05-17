@@ -14,7 +14,7 @@ class XorShift:
     8(14), 1-6. https://doi.org/10.18637/jss.v008.i14
     """
 
-    def __init__(self, seed) -> None:
+    def __init__(self, seed: int) -> None:
         """Initialize an XorShift PRNG with a seed.
 
         Args:
@@ -45,7 +45,7 @@ _XORSHIFT_DOMAIN_SIZE = 1 << 32
 _rng = XorShift(0)
 
 
-def seed(s: int):
+def seed(s: int) -> None:
     """Initialize the global PRNG with the given seed :obj:`s`.
 
     Args:
@@ -106,7 +106,7 @@ def choice(cand: Sequence[Any]) -> Any:
     return cand[idx]
 
 
-def shuffle(seq: List[Any]):
+def shuffle(seq: List[Any]) -> None:
     """Shuffle :obj:`seq` uniformly at random. :obj:`seq` is modified.
 
     Args:
