@@ -177,7 +177,7 @@ class Analyzer(Solver):
                     [self.answer_key_name[learnt_facts[i][0]] for i in best_cand[2]],
                 )
             )
-            learnt_facts += new_learnt_facts
+            learnt_facts += new_learnt_facts  # type: ignore
             unlearnt_facts = new_unlearnt_facts
 
         return res
