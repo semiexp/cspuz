@@ -123,7 +123,7 @@ class Analyzer(Solver):
         for i, v in enumerate(self.variables):
             if self.is_answer_key[i] and self.variables[i].sol is not None:
                 unlearnt_facts.append((i, self.variables[i].sol))
-        learnt_facts: List[Tuple[int, Union[BoolVar, IntVar]]] = []
+        learnt_facts: List[Tuple[int, Union[bool, int]]] = []
 
         res = []
         while len(unlearnt_facts) > 0:
