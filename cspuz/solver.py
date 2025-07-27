@@ -1,6 +1,6 @@
 import functools
 import warnings
-from typing import Any, List, Tuple, Union, cast, overload
+from typing import Any, List, Optional, Tuple, Union, cast, overload
 
 from . import backend
 from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D
@@ -44,11 +44,13 @@ class Solver(object):
     variables: List[Union[BoolVar, IntVar]]
     is_answer_key: List[bool]
     constraints: List[BoolExprLike]
+    _perf_stats: Optional[dict]
 
     def __init__(self) -> None:
         self.variables = []
         self.is_answer_key = []
         self.constraints = []
+        self._perf_stats = None
 
     def bool_var(self) -> BoolVar:
         v = BoolVar(len(self.variables))
@@ -123,7 +125,9 @@ class Solver(object):
         backend_type = _get_backend(backend)
         csp_solver = backend_type(self.variables)  # type: ignore
         csp_solver.add_constraint(self.constraints)
-        return csp_solver.solve()
+        res = csp_solver.solve()
+        self._perf_stats = csp_solver.perf_stats()
+        return res
 
     def solve(self, backend: Union[None, str, type] = None) -> bool:
         if not any(self.is_answer_key):
@@ -165,7 +169,12 @@ class Solver(object):
                 ):
                     answer[i] = None
 
+        self._perf_stats = csp_solver.perf_stats()
+
         for i in range(n_var):
             if self.is_answer_key[i]:
                 self.variables[i].sol = answer[i]
         return True
+
+    def perf_stats(self) -> Optional[dict]:
+        return self._perf_stats
