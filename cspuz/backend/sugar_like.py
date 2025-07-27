@@ -182,7 +182,16 @@ class EnigmaCSPBackend(SugarLikeBackend):
 
 
 class CspuzCoreBackend(SugarLikeBackend):
+    def __init__(self, variables):
+        super().__init__(variables)
+        self._perf_stats: dict | None = None
+
     def _call_solver(self, csp_description: str) -> str:
         import cspuz_core  # type: ignore
 
-        return cspuz_core.solver(csp_description)
+        desc, perf = cspuz_core.solver_with_perf(csp_description)
+        self._perf_stats = perf  # type: ignore
+        return desc
+
+    def perf_stats(self) -> dict | None:
+        return self._perf_stats
