@@ -1,6 +1,6 @@
 import functools
 import warnings
-from typing import Any, List, Tuple, Union, cast, overload
+from typing import Any, List, Optional, Tuple, Union, cast, overload
 
 from . import backend
 from .array import BoolArray1D, BoolArray2D, IntArray1D, IntArray2D
@@ -44,7 +44,7 @@ class Solver(object):
     variables: List[Union[BoolVar, IntVar]]
     is_answer_key: List[bool]
     constraints: List[BoolExprLike]
-    _perf_stats: dict | None
+    _perf_stats: Optional[dict]
 
     def __init__(self) -> None:
         self.variables = []
@@ -176,5 +176,5 @@ class Solver(object):
                 self.variables[i].sol = answer[i]
         return True
 
-    def perf_stats(self) -> dict | None:
+    def perf_stats(self) -> Optional[dict]:
         return self._perf_stats

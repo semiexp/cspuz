@@ -2,6 +2,8 @@
 CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 """
 
+from typing import Optional
+
 from ..configuration import config
 from ..expr import Op, Expr, BoolVar, IntVar
 
@@ -184,7 +186,7 @@ class EnigmaCSPBackend(SugarLikeBackend):
 class CspuzCoreBackend(SugarLikeBackend):
     def __init__(self, variables):
         super().__init__(variables)
-        self._perf_stats: dict | None = None
+        self._perf_stats: Optional[dict] = None
 
     def _call_solver(self, csp_description: str) -> str:
         import cspuz_core  # type: ignore
@@ -193,5 +195,5 @@ class CspuzCoreBackend(SugarLikeBackend):
         self._perf_stats = perf  # type: ignore
         return desc
 
-    def perf_stats(self) -> dict | None:
+    def perf_stats(self) -> Optional[dict]:
         return self._perf_stats
