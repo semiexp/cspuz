@@ -2,13 +2,66 @@
 CSP backend using the Sugar CSP solver (http://bach.istc.kobe-u.ac.jp/sugar/).
 """
 
-from typing import Optional
+import multiprocessing
+import pickle
+import subprocess
+import tempfile
+from typing import Any, BinaryIO, Callable, Optional, TypeVar
 
 from ..configuration import config
 from ..expr import Op, Expr, BoolVar, IntVar
 
 from .backend import Backend
 from ._subproc import run_subprocess
+
+T = TypeVar("T")
+
+
+def _subprocess_worker(func: Callable[..., Any], args: tuple, result_file: BinaryIO) -> None:
+    try:
+        result = (True, func(*args))
+    except BaseException as exc:
+        result = (False, exc)
+    pickle.dump(result, result_file)
+    result_file.flush()
+
+
+def _run_with_timeout(func: Callable[..., T], *args: Any, timeout: Optional[float]) -> T:
+    """Run a function with a timeout, inheriting Python and native library configuration.
+
+    A fork context is required to preserve settings such as cspuz_core.set_config().
+    Call this from a single-threaded process: native locks may not be safe after fork.
+    With no timeout, call the function directly without serializing its result.
+    """
+    if timeout is None:
+        return func(*args)
+
+    context = multiprocessing.get_context("fork")
+    # A pipe can fill up and block the child while the parent waits for it to exit.
+    # A temporary file lets us wait with a timeout even for large results.
+    with tempfile.TemporaryFile() as result_file:
+        process = context.Process(target=_subprocess_worker, args=(func, args, result_file))
+        process.start()
+        try:
+            process.join(timeout)
+            if process.is_alive():
+                raise subprocess.TimeoutExpired(getattr(func, "__name__", repr(func)), timeout)
+            if process.exitcode != 0:
+                raise RuntimeError(f"Solver subprocess exited with code {process.exitcode}")
+            result_file.seek(0)
+            try:
+                success, result = pickle.load(result_file)
+            except EOFError as exc:
+                raise RuntimeError("Solver subprocess exited without returning a result") from exc
+            if not success:
+                raise result
+            return result
+        finally:
+            if process.is_alive():
+                process.kill()
+            process.join()
+            process.close()
+
 
 OP_TO_OPNAME = {
     Op.NEG: "-",
@@ -173,14 +226,14 @@ class CSugarBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import pycsugar  # type: ignore
 
-        return pycsugar.solver(csp_description)
+        return _run_with_timeout(pycsugar.solver, csp_description, timeout=config.solver_timeout)
 
 
 class EnigmaCSPBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import enigma_csp  # type: ignore
 
-        return enigma_csp.solver(csp_description)
+        return _run_with_timeout(enigma_csp.solver, csp_description, timeout=config.solver_timeout)
 
 
 class CspuzCoreBackend(SugarLikeBackend):
@@ -191,7 +244,9 @@ class CspuzCoreBackend(SugarLikeBackend):
     def _call_solver(self, csp_description: str) -> str:
         import cspuz_core  # type: ignore
 
-        desc, perf = cspuz_core.solver_with_perf(csp_description)
+        desc, perf = _run_with_timeout(
+            cspuz_core.solver_with_perf, csp_description, timeout=config.solver_timeout
+        )
         self._perf_stats = perf  # type: ignore
         return desc
 
