@@ -114,6 +114,10 @@ def _convert_expr(e):
     elif e.op == Op.INT_CONSTANT:
         return str(e.operands[0])
     else:
+        if e.op == Op.AND and len(e.operands) == 0:
+            return "true"
+        elif e.op == Op.OR and len(e.operands) == 0:
+            return "false"
         return "({} {})".format(OP_TO_OPNAME[e.op], " ".join(map(_convert_expr, e.operands)))
 
 
