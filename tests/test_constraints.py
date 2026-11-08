@@ -49,6 +49,7 @@ def test_fold_or_with_true_constant(solver: cspuz.Solver) -> None:
 
 def test_direct_construction_empty_or(solver: cspuz.Solver) -> None:
     from cspuz.expr import BoolExpr, Op
+
     c = BoolExpr(Op.OR, [])
     solver.ensure(c)
     assert solver.find_answer() is False
@@ -56,6 +57,7 @@ def test_direct_construction_empty_or(solver: cspuz.Solver) -> None:
 
 def test_direct_construction_empty_and(solver: cspuz.Solver) -> None:
     from cspuz.expr import BoolExpr, Op
+
     c = BoolExpr(Op.AND, [])
     solver.ensure(c)
     assert solver.find_answer() is True
